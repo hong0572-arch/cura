@@ -1,0 +1,754 @@
+import React, { useState, useEffect } from 'react';
+import { Calculator, CheckCircle2, ShieldCheck, CreditCard, Loader2 } from 'lucide-react';
+
+export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    serviceType: 'arrival',
+    date: '',
+    flight: '',
+    passengers: 1,
+    luggage: 0,
+    msg: ''
+  });
+
+  const [prices, setPrices] = useState({
+    base: 200,
+    vehicle: 0,
+    extraPass: 0,
+    extraLug: 0,
+    totalUsd: 200,
+    totalKrw: 270000
+  });
+
+  const [status, setStatus] = useState('idle'); // idle | submitting | success
+  const [bookingId, setBookingId] = useState('');
+
+  // Exchange rate constant: 1 USD = 1,350 KRW
+  const EX_RATE = 1350;
+
+  // Handle vehicle type prop updates from Fleet component selection
+  useEffect(() => {
+    if (selectedVehicle) {
+      setFormData(prev => ({ ...prev, vehicleType: selectedVehicle }));
+    }
+  }, [selectedVehicle]);
+
+  // Handle local state for Chauffeur selection
+  const [vehicleType, setLocalVehicleType] = useState('none');
+
+  useEffect(() => {
+    if (selectedVehicle) {
+      setLocalVehicleType(selectedVehicle);
+    }
+  }, [selectedVehicle]);
+
+  const handleVehicleChange = (val) => {
+    setLocalVehicleType(val);
+    setSelectedVehicle(val);
+  };
+
+  // Recalculate prices in real-time
+  useEffect(() => {
+    const baseFee = 200; // Base $200 USD
+    
+    // Vehicle pricing in KRW
+    let vehicleKrw = 0;
+    if (vehicleType === 'staria') vehicleKrw = 140000;
+    else if (vehicleType === 'g90') vehicleKrw = 240000;
+    else if (vehicleType === 'sprinter') vehicleKrw = 240000;
+
+    const vehicleUsd = Math.round(vehicleKrw / EX_RATE);
+
+    // Extra passenger charges ($50 USD per person beyond 3)
+    const extraPassCount = Math.max(0, formData.passengers - 3);
+    const extraPassUsd = extraPassCount * 50;
+
+    // Extra luggage charges ($20 USD per bag beyond 3)
+    const extraLugCount = Math.max(0, formData.luggage - 3);
+    const extraLugUsd = extraLugCount * 20;
+
+    const totalUsd = baseFee + vehicleUsd + extraPassUsd + extraLugUsd;
+    const totalKrw = (baseFee + extraPassUsd + extraLugUsd) * EX_RATE + vehicleKrw;
+
+    setPrices({
+      base: baseFee,
+      vehicle: vehicleUsd,
+      extraPass: extraPassUsd,
+      extraLug: extraLugUsd,
+      totalUsd,
+      totalKrw
+    });
+  }, [formData.passengers, formData.luggage, vehicleType]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleNumChange = (name, val) => {
+    setFormData(prev => ({ ...prev, [name]: Math.max(0, val) }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.phone || !formData.date) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    setStatus('submitting');
+
+    // Simulate API request and payment link creation
+    setTimeout(() => {
+      const randNum = Math.floor(100000 + Math.random() * 900000);
+      setBookingId(`BTG-2026-${randNum}`);
+      setStatus('success');
+    }, 2000);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      serviceType: 'arrival',
+      date: '',
+      flight: '',
+      passengers: 1,
+      luggage: 0,
+      msg: ''
+    });
+    setLocalVehicleType('none');
+    setSelectedVehicle('none');
+    setStatus('idle');
+  };
+
+  return (
+    <section id="reserve" className="reserve-section section-padding">
+      <div className="container">
+        <div className="section-header">
+          <span className="badge-gold">Reservation Portal</span>
+          <h2 className="font-serif text-gold">{t.form.title}</h2>
+          <p>{t.form.subtitle}</p>
+        </div>
+
+        <div className="reserve-wrapper">
+          {status !== 'success' ? (
+            <div className="reserve-grid grid-2">
+              {/* Left Side: Form */}
+              <form onSubmit={handleSubmit} className="reserve-form-panel glass-panel">
+                <div className="form-group-row">
+                  <div className="form-item">
+                    <label htmlFor="name" className="required">{t.form.name}</label>
+                    <input 
+                      type="text" 
+                      id="name"
+                      name="name" 
+                      value={formData.name} 
+                      onChange={handleChange}
+                      placeholder="e.g. John Doe"
+                      required
+                    />
+                  </div>
+                  <div className="form-item">
+                    <label htmlFor="email" className="required">{t.form.email}</label>
+                    <input 
+                      type="email" 
+                      id="email"
+                      name="email" 
+                      value={formData.email} 
+                      onChange={handleChange}
+                      placeholder="name@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group-row">
+                  <div className="form-item">
+                    <label htmlFor="phone" className="required">{t.form.phone}</label>
+                    <input 
+                      type="tel" 
+                      id="phone"
+                      name="phone" 
+                      value={formData.phone} 
+                      onChange={handleChange}
+                      placeholder="+82 10-0000-0000"
+                      required
+                    />
+                  </div>
+                  <div className="form-item">
+                    <label htmlFor="date" className="required">{t.form.date}</label>
+                    <input 
+                      type="datetime-local" 
+                      id="date"
+                      name="date" 
+                      value={formData.date} 
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group-row">
+                  <div className="form-item">
+                    <label htmlFor="serviceType">{t.form.service_type}</label>
+                    <select 
+                      id="serviceType"
+                      name="serviceType" 
+                      value={formData.serviceType} 
+                      onChange={handleChange}
+                    >
+                      <option value="arrival">{t.services.tabs.arrival}</option>
+                      <option value="departure">{t.services.tabs.departure}</option>
+                      <option value="transfer">{t.services.tabs.transfer}</option>
+                    </select>
+                  </div>
+                  <div className="form-item">
+                    <label htmlFor="vehicleType">{t.form.vehicle_type}</label>
+                    <select 
+                      id="vehicleType"
+                      value={vehicleType} 
+                      onChange={(e) => handleVehicleChange(e.target.value)}
+                    >
+                      <option value="none">{t.form.none}</option>
+                      <option value="staria">{t.form.staria}</option>
+                      <option value="g90">{t.form.g90}</option>
+                      <option value="sprinter">{t.form.sprinter}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group-row">
+                  <div className="form-item">
+                    <label htmlFor="flight">{t.form.flight}</label>
+                    <input 
+                      type="text" 
+                      id="flight"
+                      name="flight" 
+                      value={formData.flight} 
+                      onChange={handleChange}
+                      placeholder="e.g. KE182"
+                    />
+                  </div>
+                  <div className="form-item-counters">
+                    <div className="counter-box">
+                      <label>{t.form.passengers}</label>
+                      <div className="counter-controls">
+                        <button type="button" onClick={() => handleNumChange('passengers', formData.passengers - 1)}>-</button>
+                        <span>{formData.passengers}</span>
+                        <button type="button" onClick={() => handleNumChange('passengers', formData.passengers + 1)}>+</button>
+                      </div>
+                    </div>
+                    <div className="counter-box">
+                      <label>{t.form.luggage}</label>
+                      <div className="counter-controls">
+                        <button type="button" onClick={() => handleNumChange('luggage', formData.luggage - 1)}>-</button>
+                        <span>{formData.luggage}</span>
+                        <button type="button" onClick={() => handleNumChange('luggage', formData.luggage + 1)}>+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-item full-width">
+                  <label htmlFor="msg">{t.form.msg}</label>
+                  <textarea 
+                    id="msg"
+                    name="msg" 
+                    value={formData.msg} 
+                    onChange={handleChange}
+                    rows="3"
+                    placeholder="Provide airline details, special dietary, or child seats requested..."
+                  ></textarea>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="btn-premium primary btn-submit-reserve" 
+                  disabled={status === 'submitting'}
+                >
+                  {status === 'submitting' ? (
+                    <>
+                      <Loader2 size={18} className="spinner-icon animate-spin" />
+                      <span>{t.form.submitting}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard size={18} style={{ marginRight: '8px' }} />
+                      <span>{t.form.submit}</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Right Side: Tariff Details */}
+              <div className="tariff-calculator-panel glass-panel">
+                <div className="calc-header">
+                  <Calculator size={24} className="calc-header-icon" />
+                  <h3 className="font-serif">{t.form.calc_title}</h3>
+                </div>
+
+                <div className="calc-breakdown">
+                  <div className="calc-row">
+                    <span className="calc-row-lbl">{t.form.calc_base}</span>
+                    <span className="calc-row-val">${prices.base}</span>
+                  </div>
+                  
+                  {vehicleType !== 'none' && (
+                    <div className="calc-row">
+                      <span className="calc-row-lbl">
+                        {t.form.calc_vehicle} ({vehicleType.toUpperCase()})
+                      </span>
+                      <span className="calc-row-val">${prices.vehicle}</span>
+                    </div>
+                  )}
+
+                  {formData.passengers > 3 && (
+                    <div className="calc-row surcharge">
+                      <span className="calc-row-lbl">{t.form.calc_extra_pass}</span>
+                      <span className="calc-row-val">+${prices.extraPass}</span>
+                    </div>
+                  )}
+
+                  {formData.luggage > 3 && (
+                    <div className="calc-row surcharge">
+                      <span className="calc-row-lbl">{t.form.calc_extra_lug}</span>
+                      <span className="calc-row-val">+${prices.extraLug}</span>
+                    </div>
+                  )}
+
+                  <div className="calc-divider"></div>
+
+                  <div className="calc-total-box">
+                    <span className="total-title">{t.form.calc_total}</span>
+                    <div className="total-price-group">
+                      <span className="total-price-usd">${prices.totalUsd} <span className="currency-unit">USD</span></span>
+                      <span className="total-price-krw">≈ {prices.totalKrw.toLocaleString()} KRW</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="calc-footer">
+                  <ShieldCheck size={18} className="shield-icon" />
+                  <span>Secure 256-bit SSL encrypted booking portal. Final rates verified before billing email.</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Success confirmation card */
+            <div className="booking-success-card glass-panel">
+              <CheckCircle2 size={64} className="success-check-icon animate-bounce-slow" />
+              <h3 className="font-serif">{t.form.success_title}</h3>
+              <p className="success-desc">{t.form.success_desc}</p>
+              
+              <div className="ticket-summary">
+                <div className="ticket-header">
+                  <span className="ticket-brand">{t.brand}</span>
+                  <span className="ticket-id-label">{t.form.success_id}</span>
+                </div>
+                <div className="ticket-id">{bookingId}</div>
+                <div className="ticket-divider"></div>
+                <div className="ticket-body">
+                  <div className="ticket-info-row">
+                    <span>Client:</span> <strong>{formData.name}</strong>
+                  </div>
+                  <div className="ticket-info-row">
+                    <span>Service:</span> <strong>{formData.serviceType.toUpperCase()}</strong>
+                  </div>
+                  <div className="ticket-info-row">
+                    <span>Vehicle:</span> <strong>{vehicleType.toUpperCase()}</strong>
+                  </div>
+                  <div className="ticket-info-row">
+                    <span>Date:</span> <strong>{formData.date.replace('T', ' ')}</strong>
+                  </div>
+                  <div className="ticket-info-row">
+                    <span>Amount:</span> <strong>${prices.totalUsd} USD / {prices.totalKrw.toLocaleString()} KRW</strong>
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={resetForm} className="btn-premium primary btn-success-close">
+                {t.form.close}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        .reserve-section {
+          background: linear-gradient(to bottom, rgba(4, 9, 20, 1) 0%, rgba(13, 22, 42, 0.4) 100%);
+          position: relative;
+        }
+
+        .reserve-wrapper {
+          margin-top: 40px;
+        }
+
+        .reserve-form-panel {
+          padding: 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .form-group-row {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
+        }
+
+        .form-item {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .form-item.full-width {
+          grid-column: span 2;
+        }
+
+        .form-item label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .form-item label.required::after {
+          content: ' *';
+          color: var(--gold-primary);
+        }
+
+        .form-item input, 
+        .form-item select, 
+        .form-item textarea {
+          background: rgba(4, 9, 20, 0.5);
+          border: 1px solid var(--border-subtle);
+          color: #fff;
+          padding: 12px 16px;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          font-family: var(--font-sans);
+          transition: var(--transition-fast);
+        }
+
+        .form-item input:focus, 
+        .form-item select:focus, 
+        .form-item textarea:focus {
+          outline: none;
+          border-color: var(--border-focus);
+          box-shadow: 0 0 10px rgba(197, 168, 128, 0.15);
+        }
+
+        /* Number counters */
+        .form-item-counters {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 16px;
+          align-items: flex-end;
+        }
+
+        .counter-box {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .counter-box label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          text-transform: uppercase;
+        }
+
+        .counter-controls {
+          display: flex;
+          align-items: center;
+          background: rgba(4, 9, 20, 0.5);
+          border: 1px solid var(--border-subtle);
+          border-radius: 8px;
+          height: 46px;
+          justify-content: space-between;
+          padding: 0 6px;
+        }
+
+        .counter-controls button {
+          width: 32px;
+          height: 32px;
+          border-radius: 6px;
+          background: rgba(255, 255, 255, 0.05);
+          border: none;
+          color: #fff;
+          font-size: 1.2rem;
+          cursor: pointer;
+          transition: var(--transition-fast);
+        }
+
+        .counter-controls button:hover {
+          background: var(--gold-primary);
+          color: var(--bg-primary);
+        }
+
+        .counter-controls span {
+          font-weight: 600;
+          font-size: 1rem;
+        }
+
+        .btn-submit-reserve {
+          width: 100%;
+          border: none;
+          margin-top: 10px;
+          padding: 15px;
+          font-size: 1rem;
+        }
+
+        /* Tariff details panel */
+        .tariff-calculator-panel {
+          padding: 40px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          height: 100%;
+          border-left: 2px solid var(--gold-primary);
+        }
+
+        .calc-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 30px;
+        }
+
+        .calc-header-icon {
+          color: var(--gold-primary);
+        }
+
+        .calc-header h3 {
+          font-size: 1.6rem;
+          color: #fff;
+        }
+
+        .calc-breakdown {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          margin-bottom: 40px;
+        }
+
+        .calc-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.95rem;
+          color: var(--text-secondary);
+        }
+
+        .calc-row.surcharge {
+          color: var(--gold-primary);
+        }
+
+        .calc-row-val {
+          font-weight: 600;
+          color: #fff;
+        }
+
+        .calc-row.surcharge .calc-row-val {
+          color: var(--gold-primary);
+        }
+
+        .calc-divider {
+          height: 1px;
+          background: var(--border-subtle);
+          margin: 10px 0;
+        }
+
+        .calc-total-box {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .total-title {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .total-price-group {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .total-price-usd {
+          font-size: 2.4rem;
+          font-weight: 700;
+          color: var(--gold-primary);
+          font-family: var(--font-serif);
+          line-height: 1.1;
+        }
+
+        .currency-unit {
+          font-size: 1rem;
+          font-weight: 500;
+          color: var(--text-secondary);
+        }
+
+        .total-price-krw {
+          font-size: 0.95rem;
+          color: var(--text-secondary);
+          margin-top: 4px;
+        }
+
+        .calc-footer {
+          display: flex;
+          gap: 10px;
+          color: var(--text-muted);
+          font-size: 0.75rem;
+          line-height: 1.4;
+        }
+
+        .shield-icon {
+          color: var(--gold-primary);
+          flex-shrink: 0;
+        }
+
+        /* Success card styling */
+        .booking-success-card {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 50px 40px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+
+        .success-check-icon {
+          color: var(--gold-primary);
+          margin-bottom: 24px;
+        }
+
+        .booking-success-card h3 {
+          font-size: 1.8rem;
+          color: #fff;
+          margin-bottom: 12px;
+        }
+
+        .success-desc {
+          color: var(--text-secondary);
+          font-size: 0.95rem;
+          margin-bottom: 30px;
+          max-width: 450px;
+        }
+
+        .ticket-summary {
+          width: 100%;
+          background: rgba(4, 9, 20, 0.6);
+          border: 1px solid var(--border-subtle);
+          border-radius: 12px;
+          padding: 24px;
+          margin-bottom: 30px;
+          text-align: left;
+          position: relative;
+        }
+
+        .ticket-header {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 8px;
+        }
+
+        .ticket-brand {
+          font-weight: 700;
+          color: var(--gold-primary);
+        }
+
+        .ticket-id {
+          font-family: var(--font-serif);
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #fff;
+          margin-bottom: 16px;
+        }
+
+        .ticket-divider {
+          height: 1px;
+          border-top: 1px dashed var(--border-subtle);
+          margin-bottom: 16px;
+        }
+
+        .ticket-body {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .ticket-info-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+        }
+
+        .ticket-info-row strong {
+          color: #fff;
+        }
+
+        .btn-success-close {
+          width: 100%;
+          max-width: 250px;
+        }
+
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+
+        .animate-bounce-slow {
+          animation: bounce-slow 3s infinite;
+        }
+
+        @media (max-width: 768px) {
+          .form-group-row {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .form-item.full-width {
+            grid-column: span 1;
+          }
+          .form-item-counters {
+            grid-template-columns: 1fr 1fr;
+            align-items: flex-end;
+          }
+          .reserve-form-panel, .tariff-calculator-panel {
+            padding: 24px;
+          }
+          .tariff-calculator-panel {
+            border-left: none;
+            border-top: 2px solid var(--gold-primary);
+            margin-top: 24px;
+          }
+        }
+      `}</style>
+    </section>
+  );
+}
