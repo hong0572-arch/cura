@@ -1,7 +1,7 @@
 import React from 'react';
 import { Users, Briefcase, ChevronRight, Info } from 'lucide-react';
 
-export default function Fleet({ t, onSelectVehicle }) {
+export default function Fleet({ t, onSelectVehicle, customImage }) {
   const fleetItems = [
     {
       id: 'staria',
@@ -52,7 +52,7 @@ export default function Fleet({ t, onSelectVehicle }) {
         {/* Hero Visual Showcase */}
         <div className="fleet-hero-banner glass-panel">
           <div className="fleet-hero-overlay"></div>
-          <div className="fleet-hero-img" style={{ backgroundImage: "url('/luxury_fleet.png')" }}></div>
+          <div className="fleet-hero-img" style={{ backgroundImage: `url(${customImage || '/luxury_fleet.png'})` }}></div>
           <div className="fleet-hero-content">
             <h3 className="font-serif">The Beyond Premium Standard</h3>
             <p>Every vehicle in our fleet is meticulously maintained and driven by professional, English-speaking VIP chauffeurs.</p>

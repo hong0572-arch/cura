@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, ArrowUp, ExternalLink } from 'lucide-react';
+import { Mail, Phone, ArrowUp, ExternalLink, Lock } from 'lucide-react';
 
 export default function Footer({ t, onOpenTerms }) {
   
@@ -98,6 +98,10 @@ export default function Footer({ t, onOpenTerms }) {
               <span>{t.terms.title}</span>
               <ExternalLink size={12} className="legal-icon" />
             </button>
+
+            <a href="#admin" className="legal-btn admin-link-btn" title="Admin Portal" style={{ color: 'rgba(197, 168, 128, 0.45)', marginLeft: '4px' }}>
+              <Lock size={12} />
+            </a>
             
             <button onClick={scrollToTop} className="btn-to-top" aria-label="Scroll to top">
               <ArrowUp size={16} />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 
-export default function Hero({ t }) {
+export default function Hero({ t, customImage }) {
   const scrollToSection = (id) => {
     const element = document.getElementById(id);
     if (element) {
@@ -18,7 +18,7 @@ export default function Hero({ t }) {
   return (
     <section id="hero" className="hero-section">
       {/* Background Image Layer */}
-      <div className="hero-bg-image" style={{ backgroundImage: "url('/luxury_airport_vip.png')" }}></div>
+      <div className="hero-bg-image" style={{ backgroundImage: `url(${customImage || '/luxury_airport_vip.png'})` }}></div>
       <div className="hero-overlay"></div>
 
       <div className="container hero-container">
