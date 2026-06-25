@@ -156,14 +156,14 @@ export default function Navbar({ lang, setLang, t }) {
         }
 
         .brand-logo-img {
-          height: 48px;
+          height: 38px;
           width: auto;
           object-fit: contain;
           transition: var(--transition-smooth);
         }
 
         .navbar.scrolled .brand-logo-img {
-          height: 40px;
+          height: 32px;
         }
 
         .brand-logo-icon {

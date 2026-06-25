@@ -136,7 +136,7 @@ export default function Footer({ t, onOpenTerms }) {
         }
 
         .footer-logo-img {
-          height: 48px;
+          height: 38px;
           width: auto;
           object-fit: contain;
         }
