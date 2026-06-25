@@ -51,11 +51,7 @@ export default function Navbar({ lang, setLang, t }) {
       <div className="navbar-container">
         {/* Brand Logo */}
         <div className="nav-brand" onClick={() => handleNavClick('hero')}>
-          <span className="brand-logo-icon">✦</span>
-          <div className="brand-text-group">
-            <span className="brand-name">{t.brand}</span>
-            <span className="brand-subname">{t.brand_sub}</span>
-          </div>
+          <img src="/logo.png" alt="Beyond the Gate Logo" className="brand-logo-img" />
         </div>
 
         {/* Desktop Navigation Links */}
@@ -157,6 +153,17 @@ export default function Navbar({ lang, setLang, t }) {
           align-items: center;
           gap: 12px;
           cursor: pointer;
+        }
+
+        .brand-logo-img {
+          height: 48px;
+          width: auto;
+          object-fit: contain;
+          transition: var(--transition-smooth);
+        }
+
+        .navbar.scrolled .brand-logo-img {
+          height: 40px;
         }
 
         .brand-logo-icon {

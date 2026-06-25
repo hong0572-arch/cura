@@ -28,7 +28,7 @@ export default function Hero({ t, customImage }) {
           </div>
           
           <h1 className="hero-title font-serif">
-            {t.hero.title.split('\n').map((line, idx) => (
+            {(t?.hero?.title || '').split('\n').map((line, idx) => (
               <span key={idx} className="title-line">
                 {line}
                 {idx === 0 && <br />}

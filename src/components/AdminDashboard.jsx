@@ -117,7 +117,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Brand Name</label>
                       <input 
                         type="text" 
-                        value={editData.ko.brand} 
+                        value={editData.ko?.brand || ''} 
                         onChange={(e) => handleTextChange('ko', 'brand', e.target.value)}
                       />
                     </div>
@@ -125,7 +125,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Sub Branding Label</label>
                       <input 
                         type="text" 
-                        value={editData.ko.brand_sub} 
+                        value={editData.ko?.brand_sub || ''} 
                         onChange={(e) => handleTextChange('ko', 'brand_sub', e.target.value)}
                       />
                     </div>
@@ -133,7 +133,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Hero Title (Use \n for breakline)</label>
                       <textarea 
                         rows="3"
-                        value={editData.ko.hero.title} 
+                        value={editData.ko?.hero?.title || ''} 
                         onChange={(e) => handleTextChange('ko', 'hero.title', e.target.value)}
                       />
                     </div>
@@ -141,7 +141,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Hero Subtitle</label>
                       <textarea 
                         rows="4"
-                        value={editData.ko.hero.subtitle} 
+                        value={editData.ko?.hero?.subtitle || ''} 
                         onChange={(e) => handleTextChange('ko', 'hero.subtitle', e.target.value)}
                       />
                     </div>
@@ -153,7 +153,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Brand Name</label>
                       <input 
                         type="text" 
-                        value={editData.en.brand} 
+                        value={editData.en?.brand || ''} 
                         onChange={(e) => handleTextChange('en', 'brand', e.target.value)}
                       />
                     </div>
@@ -161,7 +161,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Sub Branding Label</label>
                       <input 
                         type="text" 
-                        value={editData.en.brand_sub} 
+                        value={editData.en?.brand_sub || ''} 
                         onChange={(e) => handleTextChange('en', 'brand_sub', e.target.value)}
                       />
                     </div>
@@ -169,7 +169,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Hero Title (Use \n for breakline)</label>
                       <textarea 
                         rows="3"
-                        value={editData.en.hero.title} 
+                        value={editData.en?.hero?.title || ''} 
                         onChange={(e) => handleTextChange('en', 'hero.title', e.target.value)}
                       />
                     </div>
@@ -177,7 +177,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Hero Subtitle</label>
                       <textarea 
                         rows="4"
-                        value={editData.en.hero.subtitle} 
+                        value={editData.en?.hero?.subtitle || ''} 
                         onChange={(e) => handleTextChange('en', 'hero.subtitle', e.target.value)}
                       />
                     </div>
@@ -196,7 +196,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Values Title</label>
                       <input 
                         type="text" 
-                        value={editData.ko.values.title} 
+                        value={editData.ko?.values?.title || ''} 
                         onChange={(e) => handleTextChange('ko', 'values.title', e.target.value)}
                       />
                     </div>
@@ -204,7 +204,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Values Subtitle</label>
                       <input 
                         type="text" 
-                        value={editData.ko.values.subtitle} 
+                        value={editData.ko?.values?.subtitle || ''} 
                         onChange={(e) => handleTextChange('ko', 'values.subtitle', e.target.value)}
                       />
                     </div>
@@ -215,7 +215,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Values Title</label>
                       <input 
                         type="text" 
-                        value={editData.en.values.title} 
+                        value={editData.en?.values?.title || ''} 
                         onChange={(e) => handleTextChange('en', 'values.title', e.target.value)}
                       />
                     </div>
@@ -223,7 +223,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Values Subtitle</label>
                       <input 
                         type="text" 
-                        value={editData.en.values.subtitle} 
+                        value={editData.en?.values?.subtitle || ''} 
                         onChange={(e) => handleTextChange('en', 'values.subtitle', e.target.value)}
                       />
                     </div>
@@ -234,7 +234,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
 
                 <div className="array-items-grid">
                   <h3>6 Premium Value Cards</h3>
-                  {editData.ko.values.items.map((item, index) => (
+                  {(editData.ko?.values?.items || []).map((item, index) => (
                     <div key={index} className="array-card glass-panel">
                       <span className="array-index">Value Card {index + 1} ({item.badge})</span>
                       <div className="form-row-2">
@@ -242,13 +242,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                           <label>Title (KO)</label>
                           <input 
                             type="text" 
-                            value={item.title} 
+                            value={item.title || ''} 
                             onChange={(e) => handleArrayElementChange('ko', 'values.items', index, 'title', e.target.value)}
                           />
                           <label style={{ marginTop: '8px' }}>Description (KO)</label>
                           <textarea 
                             rows="2"
-                            value={item.desc} 
+                            value={item.desc || ''} 
                             onChange={(e) => handleArrayElementChange('ko', 'values.items', index, 'desc', e.target.value)}
                           />
                         </div>
@@ -256,13 +256,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                           <label>Title (EN)</label>
                           <input 
                             type="text" 
-                            value={editData.en.values.items[index].title} 
+                            value={editData.en?.values?.items?.[index]?.title || ''} 
                             onChange={(e) => handleArrayElementChange('en', 'values.items', index, 'title', e.target.value)}
                           />
                           <label style={{ marginTop: '8px' }}>Description (EN)</label>
                           <textarea 
                             rows="2"
-                            value={editData.en.values.items[index].desc} 
+                            value={editData.en?.values?.items?.[index]?.desc || ''} 
                             onChange={(e) => handleArrayElementChange('en', 'values.items', index, 'desc', e.target.value)}
                           />
                         </div>
@@ -283,7 +283,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Services Main Title</label>
                       <input 
                         type="text" 
-                        value={editData.ko.services.title} 
+                        value={editData.ko?.services?.title || ''} 
                         onChange={(e) => handleTextChange('ko', 'services.title', e.target.value)}
                       />
                     </div>
@@ -291,7 +291,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Services Main Subtitle</label>
                       <input 
                         type="text" 
-                        value={editData.ko.services.subtitle} 
+                        value={editData.ko?.services?.subtitle || ''} 
                         onChange={(e) => handleTextChange('ko', 'services.subtitle', e.target.value)}
                       />
                     </div>
@@ -302,7 +302,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Services Main Title</label>
                       <input 
                         type="text" 
-                        value={editData.en.services.title} 
+                        value={editData.en?.services?.title || ''} 
                         onChange={(e) => handleTextChange('en', 'services.title', e.target.value)}
                       />
                     </div>
@@ -310,7 +310,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                       <label>Services Main Subtitle</label>
                       <input 
                         type="text" 
-                        value={editData.en.services.subtitle} 
+                        value={editData.en?.services?.subtitle || ''} 
                         onChange={(e) => handleTextChange('en', 'services.subtitle', e.target.value)}
                       />
                     </div>
@@ -330,13 +330,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                         <label>Title (KO)</label>
                         <input 
                           type="text" 
-                          value={editData.ko.services.arrival.title} 
+                          value={editData.ko?.services?.arrival?.title || ''} 
                           onChange={(e) => handleTextChange('ko', 'services.arrival.title', e.target.value)}
                         />
                         <label style={{ marginTop: '8px' }}>Description (KO)</label>
                         <input 
                           type="text" 
-                          value={editData.ko.services.arrival.desc} 
+                          value={editData.ko?.services?.arrival?.desc || ''} 
                           onChange={(e) => handleTextChange('ko', 'services.arrival.desc', e.target.value)}
                         />
                       </div>
@@ -344,13 +344,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                         <label>Title (EN)</label>
                         <input 
                           type="text" 
-                          value={editData.en.services.arrival.title} 
+                          value={editData.en?.services?.arrival?.title || ''} 
                           onChange={(e) => handleTextChange('en', 'services.arrival.title', e.target.value)}
                         />
                         <label style={{ marginTop: '8px' }}>Description (EN)</label>
                         <input 
                           type="text" 
-                          value={editData.en.services.arrival.desc} 
+                          value={editData.en?.services?.arrival?.desc || ''} 
                           onChange={(e) => handleTextChange('en', 'services.arrival.desc', e.target.value)}
                         />
                       </div>
@@ -365,13 +365,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                         <label>Title (KO)</label>
                         <input 
                           type="text" 
-                          value={editData.ko.services.departure.title} 
+                          value={editData.ko?.services?.departure?.title || ''} 
                           onChange={(e) => handleTextChange('ko', 'services.departure.title', e.target.value)}
                         />
                         <label style={{ marginTop: '8px' }}>Description (KO)</label>
                         <input 
                           type="text" 
-                          value={editData.ko.services.departure.desc} 
+                          value={editData.ko?.services?.departure?.desc || ''} 
                           onChange={(e) => handleTextChange('ko', 'services.departure.desc', e.target.value)}
                         />
                       </div>
@@ -379,13 +379,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                         <label>Title (EN)</label>
                         <input 
                           type="text" 
-                          value={editData.en.services.departure.title} 
+                          value={editData.en?.services?.departure?.title || ''} 
                           onChange={(e) => handleTextChange('en', 'services.departure.title', e.target.value)}
                         />
                         <label style={{ marginTop: '8px' }}>Description (EN)</label>
                         <input 
                           type="text" 
-                          value={editData.en.services.departure.desc} 
+                          value={editData.en?.services?.departure?.desc || ''} 
                           onChange={(e) => handleTextChange('en', 'services.departure.desc', e.target.value)}
                         />
                       </div>
@@ -400,7 +400,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
               <div className="tab-section">
                 <div className="array-items-grid">
                   <h3>Frequently Asked Questions Accordions</h3>
-                  {editData.ko.faq.items.map((item, index) => (
+                  {(editData.ko?.faq?.items || []).map((item, index) => (
                     <div key={index} className="array-card glass-panel">
                       <span className="array-index">Question {index + 1}</span>
                       <div className="form-row-2">
@@ -408,13 +408,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                           <label>Question Title (KO)</label>
                           <input 
                             type="text" 
-                            value={item.q} 
+                            value={item.q || ''} 
                             onChange={(e) => handleArrayElementChange('ko', 'faq.items', index, 'q', e.target.value)}
                           />
                           <label style={{ marginTop: '8px' }}>Answer Content (KO)</label>
                           <textarea 
                             rows="3"
-                            value={item.a} 
+                            value={item.a || ''} 
                             onChange={(e) => handleArrayElementChange('ko', 'faq.items', index, 'a', e.target.value)}
                           />
                         </div>
@@ -422,13 +422,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                           <label>Question Title (EN)</label>
                           <input 
                             type="text" 
-                            value={editData.en.faq.items[index].q} 
+                            value={editData.en?.faq?.items?.[index]?.q || ''} 
                             onChange={(e) => handleArrayElementChange('en', 'faq.items', index, 'q', e.target.value)}
                           />
                           <label style={{ marginTop: '8px' }}>Answer Content (EN)</label>
                           <textarea 
                             rows="3"
-                            value={editData.en.faq.items[index].a} 
+                            value={editData.en?.faq?.items?.[index]?.a || ''} 
                             onChange={(e) => handleArrayElementChange('en', 'faq.items', index, 'a', e.target.value)}
                           />
                         </div>
@@ -450,13 +450,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                     <label>Hero Section Background Image URL</label>
                     <input 
                       type="text" 
-                      value={editImages.heroBg} 
+                      value={editImages.heroBg || ''} 
                       onChange={(e) => handleImageChange('heroBg', e.target.value)}
                       placeholder="/luxury_airport_vip.png"
                     />
                     <div className="image-preview-admin">
                       <span>Live Preview:</span>
-                      <img src={editImages.heroBg} alt="Hero BG Preview" onError={(e) => e.target.src = 'https://placehold.co/600x400?text=Invalid+Image+Url'} />
+                      <img src={editImages.heroBg || ''} alt="Hero BG Preview" onError={(e) => e.target.src = 'https://placehold.co/600x400?text=Invalid+Image+Url'} />
                     </div>
                   </div>
                 </div>
@@ -466,13 +466,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                     <label>Chauffeur Showcase Image URL</label>
                     <input 
                       type="text" 
-                      value={editImages.fleetBg} 
+                      value={editImages.fleetBg || ''} 
                       onChange={(e) => handleImageChange('fleetBg', e.target.value)}
                       placeholder="/luxury_fleet.png"
                     />
                     <div className="image-preview-admin">
                       <span>Live Preview:</span>
-                      <img src={editImages.fleetBg} alt="Fleet BG Preview" onError={(e) => e.target.src = 'https://placehold.co/600x400?text=Invalid+Image+Url'} />
+                      <img src={editImages.fleetBg || ''} alt="Fleet BG Preview" onError={(e) => e.target.src = 'https://placehold.co/600x400?text=Invalid+Image+Url'} />
                     </div>
                   </div>
                 </div>

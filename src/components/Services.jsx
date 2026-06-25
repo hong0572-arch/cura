@@ -82,9 +82,9 @@ export default function Services({ t }) {
           <div className="price-banner-inner">
             <span className="price-tag">$200</span>
             <div className="price-info">
-              <h4 className="price-title">{t.services.base_price_info}</h4>
+              <h4 className="price-title">{t?.services?.base_price_info}</h4>
               <p className="price-desc">
-                {t.faq.items[5].a.substring(0, 120)}...
+                {(t?.faq?.items?.[5]?.a || '').substring(0, 120)}...
               </p>
             </div>
           </div>

@@ -33,11 +33,7 @@ export default function Footer({ t, onOpenTerms }) {
           {/* Brand Col */}
           <div className="footer-brand-col">
             <div className="footer-brand" onClick={scrollToTop}>
-              <span className="brand-logo-icon">✦</span>
-              <div className="brand-text-group">
-                <span className="brand-name">{t.brand}</span>
-                <span className="brand-subname">{t.brand_sub}</span>
-              </div>
+              <img src="/logo.png" alt="Beyond the Gate Logo" className="footer-logo-img" />
             </div>
             <p className="brand-motto">
               Elevating the luxury standard of global airport hospitality and premium transport.
@@ -137,6 +133,12 @@ export default function Footer({ t, onOpenTerms }) {
           align-items: center;
           gap: 12px;
           cursor: pointer;
+        }
+
+        .footer-logo-img {
+          height: 48px;
+          width: auto;
+          object-fit: contain;
         }
 
         .brand-motto {
