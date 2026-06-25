@@ -29,7 +29,12 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
   const handleArrayElementChange = (lang, arrayName, index, field, value) => {
     setEditData(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
-      copy[lang][arrayName][index][field] = value;
+      const keys = arrayName.split('.');
+      let current = copy[lang];
+      for (let i = 0; i < keys.length; i++) {
+        current = current[keys[i]];
+      }
+      current[index][field] = value;
       return copy;
     });
   };
