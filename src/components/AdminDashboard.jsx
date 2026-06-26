@@ -1056,6 +1056,35 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
           .admin-brand {
             justify-content: center;
           }
+          .form-row-2 {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .admin-scroll-body {
+            padding: 20px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .admin-content-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          .save-btn {
+            width: 100%;
+          }
+          .admin-scroll-body {
+            padding: 16px;
+          }
+          .reset-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          .reset-action-btn {
+            width: 100%;
+          }
         }
       `}</style>
     </div>

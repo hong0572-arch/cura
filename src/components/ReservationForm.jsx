@@ -727,6 +727,17 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
           animation: bounce-slow 3s infinite;
         }
 
+        @media (max-width: 992px) {
+          .reserve-grid {
+            grid-template-columns: 1fr;
+          }
+          .tariff-calculator-panel {
+            border-left: none;
+            border-top: 2px solid var(--gold-primary);
+            margin-top: 24px;
+          }
+        }
+
         @media (max-width: 768px) {
           .form-group-row {
             grid-template-columns: 1fr;
@@ -741,11 +752,6 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
           }
           .reserve-form-panel, .tariff-calculator-panel {
             padding: 24px;
-          }
-          .tariff-calculator-panel {
-            border-left: none;
-            border-top: 2px solid var(--gold-primary);
-            margin-top: 24px;
           }
         }
       `}</style>

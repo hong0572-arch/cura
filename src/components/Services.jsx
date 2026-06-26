@@ -280,8 +280,26 @@ export default function Services({ t }) {
           transition: var(--transition-fast);
         }
 
+        .timeline-icon-wrapper svg {
+          width: 16px;
+          height: 16px;
+        }
+
         .timeline-item:hover .timeline-icon-wrapper {
           color: var(--bg-primary);
+        }
+
+        @media (max-width: 768px) {
+          .timeline-dot {
+            width: 26px !important;
+            height: 26px !important;
+            left: -28px !important;
+            top: 4px !important;
+          }
+          .timeline-icon-wrapper svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
         }
 
         @media (max-width: 768px) {
