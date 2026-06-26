@@ -151,7 +151,19 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 16px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 24px;
+  }
 }
 
 .section-padding {
@@ -305,9 +317,6 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Responsive Breakpoints */
 @media (max-width: 1024px) {
-  .container {
-    padding: 0 20px;
-  }
   .grid-3 {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -317,9 +326,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 768px) {
-  .container {
-    padding: 0 16px;
-  }
   .grid-3, .grid-2 {
     grid-template-columns: 1fr;
   }

@@ -145,7 +145,19 @@ export default function Navbar({ lang, setLang, t }) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 24px;
+          padding: 0 16px;
+        }
+
+        @media (min-width: 768px) {
+          .navbar-container {
+            padding: 0 20px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .navbar-container {
+            padding: 0 24px;
+          }
         }
 
         .nav-brand {
@@ -351,9 +363,6 @@ export default function Navbar({ lang, setLang, t }) {
         }
 
         @media (max-width: 1024px) {
-          .navbar-container {
-            padding: 0 20px;
-          }
           .nav-links-desktop, .nav-actions-desktop {
             display: none;
           }
@@ -362,11 +371,6 @@ export default function Navbar({ lang, setLang, t }) {
           }
         }
 
-        @media (max-width: 768px) {
-          .navbar-container {
-            padding: 0 16px;
-          }
-        }
       `}</style>
     </nav>
   );
