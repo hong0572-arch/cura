@@ -44,7 +44,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
     <section id="fleet" className="fleet-section section-padding">
       <div className="container">
         <div className="section-header">
-          <span className="badge-gold">Exclusive Chauffeur</span>
+          <span className="badge-gold">{t.fleet.badge || 'Exclusive Chauffeur'}</span>
           <h2 className="font-serif text-gold">{t.fleet.title}</h2>
           <p>{t.fleet.subtitle}</p>
         </div>
@@ -54,8 +54,8 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
           <div className="fleet-hero-overlay"></div>
           <div className="fleet-hero-img" style={{ backgroundImage: `url(${customImage || '/luxury_fleet.png'})` }}></div>
           <div className="fleet-hero-content">
-            <h3 className="font-serif">The Beyond Premium Standard</h3>
-            <p>Every vehicle in our fleet is meticulously maintained and driven by professional, English-speaking VIP chauffeurs.</p>
+            <h3 className="font-serif">{t.fleet.hero_title || 'The Beyond Premium Standard'}</h3>
+            <p>{t.fleet.hero_desc || 'Every vehicle in our fleet is meticulously maintained and driven by professional, English-speaking VIP chauffeurs.'}</p>
           </div>
         </div>
 
@@ -71,7 +71,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
                   </div>
                   <h3 className="fleet-name">{data.name}</h3>
                   <div className="fleet-price-tag">
-                    <span className="price-label">Starts from</span>
+                    <span className="price-label">{t.fleet.starts_from || 'Starts from'}</span>
                     <span className="price-amount">{data.price}</span>
                   </div>
                 </div>
@@ -85,7 +85,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
                   </div>
                   <div className="spec-item">
                     <Briefcase size={16} className="spec-icon" />
-                    <span>{item.bags} Checked Bags Max</span>
+                    <span>{item.bags} {t.fleet.bags_max_label || 'Checked Bags Max'}</span>
                   </div>
                 </div>
 
@@ -93,7 +93,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
                   onClick={() => handleSelect(item.id)} 
                   className="btn-select-fleet"
                 >
-                  <span>Select & Get Quote</span>
+                  <span>{t.fleet.btn_select || 'Select & Get Quote'}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>

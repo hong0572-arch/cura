@@ -16,7 +16,7 @@ export default function Faq({ t }) {
     <section id="faq" className="faq-section section-padding">
       <div className="container">
         <div className="section-header">
-          <span className="badge-gold">Common Queries</span>
+          <span className="badge-gold">{t.faq.badge || 'Common Queries'}</span>
           <h2 className="font-serif text-gold">{t.faq.title}</h2>
           <p>{t.faq.subtitle}</p>
         </div>

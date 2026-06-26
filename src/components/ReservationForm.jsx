@@ -130,7 +130,7 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
     <section id="reserve" className="reserve-section section-padding">
       <div className="container">
         <div className="section-header">
-          <span className="badge-gold">Reservation Portal</span>
+          <span className="badge-gold">{t.form.badge || 'Reservation Portal'}</span>
           <h2 className="font-serif text-gold">{t.form.title}</h2>
           <p>{t.form.subtitle}</p>
         </div>
@@ -149,7 +149,7 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
                       name="name" 
                       value={formData.name} 
                       onChange={handleChange}
-                      placeholder="e.g. John Doe"
+                      placeholder={t.form.placeholder_name || 'e.g. John Doe'}
                       required
                     />
                   </div>
@@ -161,7 +161,7 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
                       name="email" 
                       value={formData.email} 
                       onChange={handleChange}
-                      placeholder="name@example.com"
+                      placeholder={t.form.placeholder_email || 'name@example.com'}
                       required
                     />
                   </div>
@@ -176,7 +176,7 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
                       name="phone" 
                       value={formData.phone} 
                       onChange={handleChange}
-                      placeholder="+82 10-0000-0000"
+                      placeholder={t.form.placeholder_phone || '+82 10-0000-0000'}
                       required
                     />
                   </div>
@@ -231,7 +231,7 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
                       name="flight" 
                       value={formData.flight} 
                       onChange={handleChange}
-                      placeholder="e.g. KE182"
+                      placeholder={t.form.placeholder_flight || 'e.g. KE182'}
                     />
                   </div>
                   <div className="form-item-counters">
@@ -262,7 +262,7 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
                     value={formData.msg} 
                     onChange={handleChange}
                     rows="3"
-                    placeholder="Provide airline details, special dietary, or child seats requested..."
+                    placeholder={t.form.placeholder_msg || 'Provide airline details, special dietary, or child seats requested...'}
                   ></textarea>
                 </div>
 
@@ -326,15 +326,15 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
                   <div className="calc-total-box">
                     <span className="total-title">{t.form.calc_total}</span>
                     <div className="total-price-group">
-                      <span className="total-price-usd">${prices.totalUsd} <span className="currency-unit">USD</span></span>
-                      <span className="total-price-krw">≈ {prices.totalKrw.toLocaleString()} KRW</span>
+                      <span className="total-price-usd">${prices.totalUsd} <span className="currency-unit">{t.form.currency_unit || 'USD'}</span></span>
+                      <span className="total-price-krw">{t.form.approx_label || '≈'} {prices.totalKrw.toLocaleString()} {t.form.approx_currency || 'KRW'}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="calc-footer">
                   <ShieldCheck size={18} className="shield-icon" />
-                  <span>Secure 256-bit SSL encrypted booking portal. Final rates verified before billing email.</span>
+                  <span>{t.form.calc_footer_text || 'Secure 256-bit SSL encrypted booking portal. Final rates verified before billing email.'}</span>
                 </div>
               </div>
             </div>
@@ -354,19 +354,19 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
                 <div className="ticket-divider"></div>
                 <div className="ticket-body">
                   <div className="ticket-info-row">
-                    <span>Client:</span> <strong>{formData.name}</strong>
+                    <span>{t.form.ticket_lbl_client || 'Client:'}</span> <strong>{formData.name}</strong>
                   </div>
                   <div className="ticket-info-row">
-                    <span>Service:</span> <strong>{formData.serviceType.toUpperCase()}</strong>
+                    <span>{t.form.ticket_lbl_service || 'Service:'}</span> <strong>{formData.serviceType.toUpperCase()}</strong>
                   </div>
                   <div className="ticket-info-row">
-                    <span>Vehicle:</span> <strong>{vehicleType.toUpperCase()}</strong>
+                    <span>{t.form.ticket_lbl_vehicle || 'Vehicle:'}</span> <strong>{vehicleType.toUpperCase()}</strong>
                   </div>
                   <div className="ticket-info-row">
-                    <span>Date:</span> <strong>{formData.date.replace('T', ' ')}</strong>
+                    <span>{t.form.ticket_lbl_date || 'Date:'}</span> <strong>{formData.date.replace('T', ' ')}</strong>
                   </div>
                   <div className="ticket-info-row">
-                    <span>Amount:</span> <strong>${prices.totalUsd} USD / {prices.totalKrw.toLocaleString()} KRW</strong>
+                    <span>{t.form.ticket_lbl_amount || 'Amount:'}</span> <strong>${prices.totalUsd} {t.form.currency_unit || 'USD'} / {t.form.approx_label || '≈'} {prices.totalKrw.toLocaleString()} {t.form.approx_currency || 'KRW'}</strong>
                   </div>
                 </div>
               </div>

@@ -12,7 +12,7 @@ export default function CasRoadmap({ t }) {
     <section id="cas" className="cas-section section-padding">
       <div className="container">
         <div className="section-header">
-          <span className="badge-gold">CAS Aviation Portfolio</span>
+          <span className="badge-gold">{t.cas.badge || 'CAS Aviation Portfolio'}</span>
           <h2 className="font-serif text-gold">{t.cas.title}</h2>
           <p>{t.cas.subtitle}</p>
         </div>

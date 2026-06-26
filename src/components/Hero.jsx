@@ -60,24 +60,24 @@ export default function Hero({ t, customImage }) {
         {/* Quick Stats Overlay (Luxurious Look) */}
         <div className="hero-stats-panel glass-panel">
           <div className="stat-item">
-            <span className="stat-number">24/7</span>
-            <span className="stat-label">Support</span>
+            <span className="stat-number">{t.hero.stats?.support_num || '24/7'}</span>
+            <span className="stat-label">{t.hero.stats?.support_lbl || 'Support'}</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat-item">
-            <span className="stat-number">100%</span>
-            <span className="stat-label">Privacy</span>
+            <span className="stat-number">{t.hero.stats?.privacy_num || '100%'}</span>
+            <span className="stat-label">{t.hero.stats?.privacy_lbl || 'Privacy'}</span>
           </div>
           <div className="stat-divider"></div>
           <div className="stat-item">
-            <span className="stat-number">VIP</span>
-            <span className="stat-label">Standard</span>
+            <span className="stat-number">{t.hero.stats?.standard_num || 'VIP'}</span>
+            <span className="stat-label">{t.hero.stats?.standard_lbl || 'Standard'}</span>
           </div>
         </div>
 
         {/* Scroll Indicator */}
         <div className="scroll-indicator-wrap" onClick={() => scrollToSection('values')}>
-          <span className="scroll-text">SCROLL DOWN</span>
+          <span className="scroll-text">{t.hero.scroll_down_text || 'SCROLL DOWN'}</span>
           <ChevronDown size={18} className="scroll-arrow" />
         </div>
       </div>

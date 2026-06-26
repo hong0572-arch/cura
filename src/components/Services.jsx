@@ -72,7 +72,7 @@ export default function Services({ t }) {
     <section id="services" className="services-section section-padding">
       <div className="container">
         <div className="section-header">
-          <span className="badge-gold">Meet & Assist</span>
+          <span className="badge-gold">{t.services.badge || 'Meet & Assist'}</span>
           <h2 className="font-serif text-gold">{t.services.title}</h2>
           <p>{t.services.subtitle}</p>
         </div>
@@ -80,11 +80,11 @@ export default function Services({ t }) {
         {/* Base Pricing Glass Banner */}
         <div className="price-banner glass-panel">
           <div className="price-banner-inner">
-            <span className="price-tag">$200</span>
+            <span className="price-tag">{t.services.base_price || '$200'}</span>
             <div className="price-info">
               <h4 className="price-title">{t?.services?.base_price_info}</h4>
               <p className="price-desc">
-                {(t?.faq?.items?.[5]?.a || '').substring(0, 120)}...
+                {t.services.base_price_desc || `${(t?.faq?.items?.[5]?.a || '').substring(0, 120)}...`}
               </p>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function Services({ t }) {
                   </div>
                 </div>
                 <div className="timeline-content">
-                  <span className="timeline-step">Step {idx + 1}</span>
+                  <span className="timeline-step">{(t.services.step_label || 'Step')} {idx + 1}</span>
                   <h4 className="timeline-title">{step.title}</h4>
                   <p className="timeline-desc">{step.desc}</p>
                 </div>

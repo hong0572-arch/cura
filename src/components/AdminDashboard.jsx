@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { 
   Save, Eye, RotateCcw, Layout, FileText, 
-  HelpCircle, Image, Settings, Sparkles, Check 
+  HelpCircle, Image, Settings, Sparkles, Check,
+  Car, Plane, Calendar, Calculator, ShieldAlert, 
+  Award, Lock, Activity, Navigation, FileSpreadsheet
 } from 'lucide-react';
 
 export default function AdminDashboard({ data, images, onSave, onReset, onPreview }) {
@@ -14,10 +16,10 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
   const handleTextChange = (lang, path, value) => {
     setEditData(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
-      // Traverse the path to update the nested key
       const keys = path.split('.');
       let current = copy[lang];
       for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) current[keys[i]] = {};
         current = current[keys[i]];
       }
       current[keys[keys.length - 1]] = value;
@@ -32,8 +34,10 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
       const keys = arrayName.split('.');
       let current = copy[lang];
       for (let i = 0; i < keys.length; i++) {
+        if (!current[keys[i]]) current[keys[i]] = [];
         current = current[keys[i]];
       }
+      if (!current[index]) current[index] = {};
       current[index][field] = value;
       return copy;
     });
@@ -53,13 +57,168 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
     setTimeout(() => setSaveStatus(false), 3000);
   };
 
+  // Helper to get nested values safely
+  const getNestedValue = (lang, path) => {
+    const keys = path.split('.');
+    let curr = editData[lang];
+    for (const key of keys) {
+      if (curr === undefined || curr === null) return '';
+      curr = curr[key];
+    }
+    return curr !== undefined && curr !== null ? curr : '';
+  };
+
+  // Helper to get nested array item value safely
+  const getArrayValue = (lang, arrayPath, index, fieldKey, isStringArray = false) => {
+    const keys = arrayPath.split('.');
+    let curr = editData[lang];
+    for (const key of keys) {
+      if (!curr) return '';
+      curr = curr[key];
+    }
+    if (!curr || !curr[index]) return '';
+    const rawVal = curr[index][fieldKey];
+    if (isStringArray && Array.isArray(rawVal)) {
+      return rawVal.join('\n');
+    }
+    return rawVal !== undefined && rawVal !== null ? rawVal : '';
+  };
+
+  const handleValChange = (lang, arrayName, i, key, value, isStringArray = false) => {
+    const processedValue = isStringArray ? value.split('\n').filter(line => line.trim() !== '') : value;
+    handleArrayElementChange(lang, arrayName, i, key, processedValue);
+  };
+
+  // Helper for direct array of strings (like terms.full_terms)
+  const getDirectArrayValue = (lang, path) => {
+    const keys = path.split('.');
+    let curr = editData[lang];
+    for (const key of keys) {
+      if (!curr) return '';
+      curr = curr[key];
+    }
+    return Array.isArray(curr) ? curr.join('\n') : '';
+  };
+
+  const handleDirectArrayChange = (lang, path, value) => {
+    const processed = value.split('\n').filter(line => line.trim() !== '');
+    handleTextChange(lang, path, processed);
+  };
+
+  // Reusable helper to render translation input pairs
+  const renderField = (label, path, isTextArea = false, rows = 2) => {
+    return (
+      <div className="form-field-pair">
+        <label className="field-main-label">{label}</label>
+        <div className="form-row-2">
+          <div className="form-field">
+            <span className="lang-indicator">KO</span>
+            {isTextArea ? (
+              <textarea
+                rows={rows}
+                value={getNestedValue('ko', path)}
+                onChange={(e) => handleTextChange('ko', path, e.target.value)}
+              />
+            ) : (
+              <input
+                type="text"
+                value={getNestedValue('ko', path)}
+                onChange={(e) => handleTextChange('ko', path, e.target.value)}
+              />
+            )}
+          </div>
+          <div className="form-field">
+            <span className="lang-indicator">EN</span>
+            {isTextArea ? (
+              <textarea
+                rows={rows}
+                value={getNestedValue('en', path)}
+                onChange={(e) => handleTextChange('en', path, e.target.value)}
+              />
+            ) : (
+              <input
+                type="text"
+                value={getNestedValue('en', path)}
+                onChange={(e) => handleTextChange('en', path, e.target.value)}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Reusable helper to render array items
+  const renderArrayCard = (titlePrefix, arrayName, size, fields) => {
+    const items = [];
+    for (let i = 0; i < size; i++) {
+      items.push(
+        <div key={i} className="array-card glass-panel">
+          <span className="array-index">{titlePrefix} {i + 1}</span>
+          <div className="form-row-2">
+            <div className="form-column">
+              <span className="lang-indicator">KO</span>
+              {fields.map(f => (
+                <div key={f.key} className="form-field-nested">
+                  <label>{f.label}</label>
+                  {f.isTextArea ? (
+                    <textarea
+                      rows={f.rows || 2}
+                      value={getArrayValue('ko', arrayName, i, f.key, f.isStringArray)}
+                      onChange={(e) => handleValChange('ko', arrayName, i, f.key, e.target.value, f.isStringArray)}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={getArrayValue('ko', arrayName, i, f.key, f.isStringArray)}
+                      onChange={(e) => handleValChange('ko', arrayName, i, f.key, e.target.value, f.isStringArray)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="form-column">
+              <span className="lang-indicator">EN</span>
+              {fields.map(f => (
+                <div key={f.key} className="form-field-nested">
+                  <label>{f.label}</label>
+                  {f.isTextArea ? (
+                    <textarea
+                      rows={f.rows || 2}
+                      value={getArrayValue('en', arrayName, i, f.key, f.isStringArray)}
+                      onChange={(e) => handleValChange('en', arrayName, i, f.key, e.target.value, f.isStringArray)}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={getArrayValue('en', arrayName, i, f.key, f.isStringArray)}
+                      onChange={(e) => handleValChange('en', arrayName, i, f.key, e.target.value, f.isStringArray)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return <div className="array-items-grid">{items}</div>;
+  };
+
   const tabs = [
-    { id: 'hero', label: 'Hero & Branding', icon: <Sparkles size={18} /> },
-    { id: 'values', label: 'Premium Values', icon: <Layout size={18} /> },
-    { id: 'services', label: 'Meet & Assist', icon: <FileText size={18} /> },
-    { id: 'faqs', label: 'FAQs Accordion', icon: <HelpCircle size={18} /> },
-    { id: 'images', label: 'Assets & Media', icon: <Image size={18} /> },
-    { id: 'system', label: 'System Control', icon: <Settings size={18} /> }
+    { id: 'hero', label: 'Branding & Hero', icon: <Sparkles size={18} /> },
+    { id: 'nav_footer', label: 'Navbar & Footer', icon: <Layout size={18} /> },
+    { id: 'values', label: 'Premium Values', icon: <Award size={18} /> },
+    { id: 'services', label: 'Meet & Assist Header', icon: <FileText size={18} /> },
+    { id: 'service_flows', label: 'Meet & Assist Steps', icon: <Activity size={18} /> },
+    { id: 'fleet_header', label: 'Chauffeur Fleet Header', icon: <Car size={18} /> },
+    { id: 'fleet_vehicles', label: 'Fleet Vehicles', icon: <Navigation size={18} /> },
+    { id: 'cas', label: 'CAS Aviation', icon: <Plane size={18} /> },
+    { id: 'form', label: 'Reservation Form', icon: <Calendar size={18} /> },
+    { id: 'form_calculator', label: 'Calculator & Ticket', icon: <Calculator size={18} /> },
+    { id: 'faq', label: 'FAQs Accordion', icon: <HelpCircle size={18} /> },
+    { id: 'policies', label: 'Policies & T&C', icon: <ShieldAlert size={18} /> },
+    { id: 'media_system', label: 'Media & System', icon: <Settings size={18} /> }
   ];
 
   return (
@@ -78,6 +237,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
           {tabs.map(tab => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id)}
               className={`admin-nav-btn ${activeTab === tab.id ? 'active' : ''}`}
             >
@@ -88,7 +248,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
         </nav>
 
         <div className="sidebar-footer">
-          <button onClick={onPreview} className="btn-premium secondary preview-btn">
+          <button type="button" onClick={onPreview} className="btn-premium secondary preview-btn">
             <Eye size={16} style={{ marginRight: '8px' }} />
             View Site
           </button>
@@ -112,340 +272,355 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
 
           <div className="admin-scroll-body">
             
-            {/* Tab: Hero & Branding */}
+            {/* Tab: Branding & Hero */}
             {activeTab === 'hero' && (
               <div className="tab-section">
-                <div className="form-row-2">
-                  <div className="form-column">
-                    <h4>Korean (KO)</h4>
-                    <div className="form-field">
-                      <label>Brand Name</label>
-                      <input 
-                        type="text" 
-                        value={editData.ko?.brand || ''} 
-                        onChange={(e) => handleTextChange('ko', 'brand', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Sub Branding Label</label>
-                      <input 
-                        type="text" 
-                        value={editData.ko?.brand_sub || ''} 
-                        onChange={(e) => handleTextChange('ko', 'brand_sub', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Hero Title (Use \n for breakline)</label>
-                      <textarea 
-                        rows="3"
-                        value={editData.ko?.hero?.title || ''} 
-                        onChange={(e) => handleTextChange('ko', 'hero.title', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Hero Subtitle</label>
-                      <textarea 
-                        rows="4"
-                        value={editData.ko?.hero?.subtitle || ''} 
-                        onChange={(e) => handleTextChange('ko', 'hero.subtitle', e.target.value)}
-                      />
-                    </div>
-                  </div>
+                <h3>Core Brand Slogans</h3>
+                {renderField('Brand Name', 'brand')}
+                {renderField('Sub Branding Label', 'brand_sub')}
+                
+                <div className="divider"></div>
+                <h3>Hero Section Copy</h3>
+                {renderField('Hero Title (Use \\n for breakline)', 'hero.title', true, 3)}
+                {renderField('Hero Subtitle', 'hero.subtitle', true, 4)}
+                {renderField('Reserve Button CTA', 'hero.cta_reserve')}
+                {renderField('Explore Button CTA', 'hero.cta_explore')}
+                {renderField('Scroll Indicator Text', 'hero.scroll_down_text')}
 
-                  <div className="form-column">
-                    <h4>English (EN)</h4>
-                    <div className="form-field">
-                      <label>Brand Name</label>
-                      <input 
-                        type="text" 
-                        value={editData.en?.brand || ''} 
-                        onChange={(e) => handleTextChange('en', 'brand', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Sub Branding Label</label>
-                      <input 
-                        type="text" 
-                        value={editData.en?.brand_sub || ''} 
-                        onChange={(e) => handleTextChange('en', 'brand_sub', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Hero Title (Use \n for breakline)</label>
-                      <textarea 
-                        rows="3"
-                        value={editData.en?.hero?.title || ''} 
-                        onChange={(e) => handleTextChange('en', 'hero.title', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Hero Subtitle</label>
-                      <textarea 
-                        rows="4"
-                        value={editData.en?.hero?.subtitle || ''} 
-                        onChange={(e) => handleTextChange('en', 'hero.subtitle', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <div className="divider"></div>
+                <h3>Hero Stats Badge Numbers & Labels</h3>
+                {renderField('Support Stat Value', 'hero.stats.support_num')}
+                {renderField('Support Stat Label', 'hero.stats.support_lbl')}
+                {renderField('Privacy Stat Value', 'hero.stats.privacy_num')}
+                {renderField('Privacy Stat Label', 'hero.stats.privacy_lbl')}
+                {renderField('Standard Stat Value', 'hero.stats.standard_num')}
+                {renderField('Standard Stat Label', 'hero.stats.standard_lbl')}
+              </div>
+            )}
+
+            {/* Tab: Navbar & Footer */}
+            {activeTab === 'nav_footer' && (
+              <div className="tab-section">
+                <h3>Navbar Menu Links</h3>
+                {renderField('Home link name', 'nav.home')}
+                {renderField('Values link name', 'nav.values')}
+                {renderField('Meet & Assist link name', 'nav.services')}
+                {renderField('Fleet link name', 'nav.fleet')}
+                {renderField('CAS Aviation link name', 'nav.cas')}
+                {renderField('FAQ link name', 'nav.faq')}
+                {renderField('Reserve link name', 'nav.reserve')}
+
+                <div className="divider"></div>
+                <h3>Footer Slogans & contact</h3>
+                {renderField('Footer Slogan Motto', 'footer.motto', true, 3)}
+                {renderField('Quick Links Header Title', 'footer.quick_links_title')}
+                {renderField('Contact Support Email Value', 'footer.email_val')}
+                {renderField('Contact Hotline Phone Value', 'footer.phone_val')}
+                {renderField('Copyright Notice Text', 'footer.copyright')}
               </div>
             )}
 
             {/* Tab: Premium Values */}
             {activeTab === 'values' && (
               <div className="tab-section">
-                <div className="form-row-2">
-                  <div className="form-column">
-                    <h4>Korean Header</h4>
-                    <div className="form-field">
-                      <label>Values Title</label>
-                      <input 
-                        type="text" 
-                        value={editData.ko?.values?.title || ''} 
-                        onChange={(e) => handleTextChange('ko', 'values.title', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Values Subtitle</label>
-                      <input 
-                        type="text" 
-                        value={editData.ko?.values?.subtitle || ''} 
-                        onChange={(e) => handleTextChange('ko', 'values.subtitle', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-column">
-                    <h4>English Header</h4>
-                    <div className="form-field">
-                      <label>Values Title</label>
-                      <input 
-                        type="text" 
-                        value={editData.en?.values?.title || ''} 
-                        onChange={(e) => handleTextChange('en', 'values.title', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Values Subtitle</label>
-                      <input 
-                        type="text" 
-                        value={editData.en?.values?.subtitle || ''} 
-                        onChange={(e) => handleTextChange('en', 'values.subtitle', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <h3>Premium Values Header</h3>
+                {renderField('Values Section Badge', 'values.badge')}
+                {renderField('Values Section Title', 'values.title')}
+                {renderField('Values Section Subtitle', 'values.subtitle')}
 
                 <div className="divider"></div>
-
-                <div className="array-items-grid">
-                  <h3>6 Premium Value Cards</h3>
-                  {(editData.ko?.values?.items || []).map((item, index) => (
-                    <div key={index} className="array-card glass-panel">
-                      <span className="array-index">Value Card {index + 1} ({item.badge})</span>
-                      <div className="form-row-2">
-                        <div className="form-field">
-                          <label>Title (KO)</label>
-                          <input 
-                            type="text" 
-                            value={item.title || ''} 
-                            onChange={(e) => handleArrayElementChange('ko', 'values.items', index, 'title', e.target.value)}
-                          />
-                          <label style={{ marginTop: '8px' }}>Description (KO)</label>
-                          <textarea 
-                            rows="2"
-                            value={item.desc || ''} 
-                            onChange={(e) => handleArrayElementChange('ko', 'values.items', index, 'desc', e.target.value)}
-                          />
-                        </div>
-                        <div className="form-field">
-                          <label>Title (EN)</label>
-                          <input 
-                            type="text" 
-                            value={editData.en?.values?.items?.[index]?.title || ''} 
-                            onChange={(e) => handleArrayElementChange('en', 'values.items', index, 'title', e.target.value)}
-                          />
-                          <label style={{ marginTop: '8px' }}>Description (EN)</label>
-                          <textarea 
-                            rows="2"
-                            value={editData.en?.values?.items?.[index]?.desc || ''} 
-                            onChange={(e) => handleArrayElementChange('en', 'values.items', index, 'desc', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <h3>Value Cards Configuration</h3>
+                {renderArrayCard('Value Card', 'values.items', 6, [
+                  { label: 'Card Badge Category', key: 'badge' },
+                  { label: 'Card Title', key: 'title' },
+                  { label: 'Card Description', key: 'desc', isTextArea: true, rows: 2 }
+                ])}
               </div>
             )}
 
-            {/* Tab: Meet & Assist Services */}
+            {/* Tab: Meet & Assist Header */}
             {activeTab === 'services' && (
               <div className="tab-section">
-                <div className="form-row-2">
-                  <div className="form-column">
-                    <h4>Korean Header</h4>
-                    <div className="form-field">
-                      <label>Services Main Title</label>
-                      <input 
-                        type="text" 
-                        value={editData.ko?.services?.title || ''} 
-                        onChange={(e) => handleTextChange('ko', 'services.title', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Services Main Subtitle</label>
-                      <input 
-                        type="text" 
-                        value={editData.ko?.services?.subtitle || ''} 
-                        onChange={(e) => handleTextChange('ko', 'services.subtitle', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-column">
-                    <h4>English Header</h4>
-                    <div className="form-field">
-                      <label>Services Main Title</label>
-                      <input 
-                        type="text" 
-                        value={editData.en?.services?.title || ''} 
-                        onChange={(e) => handleTextChange('en', 'services.title', e.target.value)}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Services Main Subtitle</label>
-                      <input 
-                        type="text" 
-                        value={editData.en?.services?.subtitle || ''} 
-                        onChange={(e) => handleTextChange('en', 'services.subtitle', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <h3>Meet & Assist Section Headings</h3>
+                {renderField('Services Section Badge', 'services.badge')}
+                {renderField('Services Section Title', 'services.title')}
+                {renderField('Services Section Subtitle', 'services.subtitle')}
 
                 <div className="divider"></div>
+                <h3>Base Price Tag & Pricing Info Banner</h3>
+                {renderField('Base Price Value tag', 'services.base_price')}
+                {renderField('Base Price Title info line', 'services.base_price_info')}
+                {renderField('Base Price description detail text', 'services.base_price_desc', true, 3)}
+                {renderField('Step timeline label prefix (e.g. Step)', 'services.step_label')}
 
-                <div className="array-items-grid">
-                  <h3>Edit Service Tab Details</h3>
-                  
-                  {/* Arrival Service Headers */}
-                  <div className="array-card glass-panel">
-                    <span className="array-index">Arrival Service Header Info</span>
-                    <div className="form-row-2">
-                      <div className="form-field">
-                        <label>Title (KO)</label>
-                        <input 
-                          type="text" 
-                          value={editData.ko?.services?.arrival?.title || ''} 
-                          onChange={(e) => handleTextChange('ko', 'services.arrival.title', e.target.value)}
-                        />
-                        <label style={{ marginTop: '8px' }}>Description (KO)</label>
-                        <input 
-                          type="text" 
-                          value={editData.ko?.services?.arrival?.desc || ''} 
-                          onChange={(e) => handleTextChange('ko', 'services.arrival.desc', e.target.value)}
-                        />
-                      </div>
-                      <div className="form-field">
-                        <label>Title (EN)</label>
-                        <input 
-                          type="text" 
-                          value={editData.en?.services?.arrival?.title || ''} 
-                          onChange={(e) => handleTextChange('en', 'services.arrival.title', e.target.value)}
-                        />
-                        <label style={{ marginTop: '8px' }}>Description (EN)</label>
-                        <input 
-                          type="text" 
-                          value={editData.en?.services?.arrival?.desc || ''} 
-                          onChange={(e) => handleTextChange('en', 'services.arrival.desc', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Departure Service Headers */}
-                  <div className="array-card glass-panel">
-                    <span className="array-index">Departure Service Header Info</span>
-                    <div className="form-row-2">
-                      <div className="form-field">
-                        <label>Title (KO)</label>
-                        <input 
-                          type="text" 
-                          value={editData.ko?.services?.departure?.title || ''} 
-                          onChange={(e) => handleTextChange('ko', 'services.departure.title', e.target.value)}
-                        />
-                        <label style={{ marginTop: '8px' }}>Description (KO)</label>
-                        <input 
-                          type="text" 
-                          value={editData.ko?.services?.departure?.desc || ''} 
-                          onChange={(e) => handleTextChange('ko', 'services.departure.desc', e.target.value)}
-                        />
-                      </div>
-                      <div className="form-field">
-                        <label>Title (EN)</label>
-                        <input 
-                          type="text" 
-                          value={editData.en?.services?.departure?.title || ''} 
-                          onChange={(e) => handleTextChange('en', 'services.departure.title', e.target.value)}
-                        />
-                        <label style={{ marginTop: '8px' }}>Description (EN)</label>
-                        <input 
-                          type="text" 
-                          value={editData.en?.services?.departure?.desc || ''} 
-                          onChange={(e) => handleTextChange('en', 'services.departure.desc', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <div className="divider"></div>
+                <h3>Meet & Assist Process Navigation Tab Labels</h3>
+                {renderField('Arrival tab title', 'services.tabs.arrival')}
+                {renderField('Departure tab title', 'services.tabs.departure')}
+                {renderField('Transfer tab title', 'services.tabs.transfer')}
               </div>
             )}
 
-            {/* Tab: FAQs */}
-            {activeTab === 'faqs' && (
+            {/* Tab: Meet & Assist Steps */}
+            {activeTab === 'service_flows' && (
               <div className="tab-section">
-                <div className="array-items-grid">
-                  <h3>Frequently Asked Questions Accordions</h3>
-                  {(editData.ko?.faq?.items || []).map((item, index) => (
-                    <div key={index} className="array-card glass-panel">
-                      <span className="array-index">Question {index + 1}</span>
-                      <div className="form-row-2">
-                        <div className="form-field">
-                          <label>Question Title (KO)</label>
-                          <input 
-                            type="text" 
-                            value={item.q || ''} 
-                            onChange={(e) => handleArrayElementChange('ko', 'faq.items', index, 'q', e.target.value)}
-                          />
-                          <label style={{ marginTop: '8px' }}>Answer Content (KO)</label>
-                          <textarea 
-                            rows="3"
-                            value={item.a || ''} 
-                            onChange={(e) => handleArrayElementChange('ko', 'faq.items', index, 'a', e.target.value)}
-                          />
-                        </div>
-                        <div className="form-field">
-                          <label>Question Title (EN)</label>
-                          <input 
-                            type="text" 
-                            value={editData.en?.faq?.items?.[index]?.q || ''} 
-                            onChange={(e) => handleArrayElementChange('en', 'faq.items', index, 'q', e.target.value)}
-                          />
-                          <label style={{ marginTop: '8px' }}>Answer Content (EN)</label>
-                          <textarea 
-                            rows="3"
-                            value={editData.en?.faq?.items?.[index]?.a || ''} 
-                            onChange={(e) => handleArrayElementChange('en', 'faq.items', index, 'a', e.target.value)}
-                          />
-                        </div>
-                      </div>
+                <h3>1. Arrival Meet & Assist Flow</h3>
+                {renderField('Arrival flow title text', 'services.arrival.title')}
+                {renderField('Arrival flow subtitle desc', 'services.arrival.desc')}
+                <h4 style={{ marginTop: '16px', color: 'var(--gold-primary)' }}>Arrival Steps Checklist (7 steps)</h4>
+                {renderArrayCard('Arrival Step', 'services.arrival.steps', 7, [
+                  { label: 'Step Title', key: 'title' },
+                  { label: 'Step Description', key: 'desc', isTextArea: true, rows: 2 }
+                ])}
+
+                <div className="divider"></div>
+                <h3>2. Departure Meet & Assist Flow</h3>
+                {renderField('Departure flow title text', 'services.departure.title')}
+                {renderField('Departure flow subtitle desc', 'services.departure.desc')}
+                <h4 style={{ marginTop: '16px', color: 'var(--gold-primary)' }}>Departure Steps Checklist (7 steps)</h4>
+                {renderArrayCard('Departure Step', 'services.departure.steps', 7, [
+                  { label: 'Step Title', key: 'title' },
+                  { label: 'Step Description', key: 'desc', isTextArea: true, rows: 2 }
+                ])}
+
+                <div className="divider"></div>
+                <h3>3. Transfer Meet & Assist Flow</h3>
+                {renderField('Transfer flow title text', 'services.transfer.title')}
+                {renderField('Transfer flow subtitle desc', 'services.transfer.desc')}
+                <h4 style={{ marginTop: '16px', color: 'var(--gold-primary)' }}>Transfer Steps Checklist (4 steps)</h4>
+                {renderArrayCard('Transfer Step', 'services.transfer.steps', 4, [
+                  { label: 'Step Title', key: 'title' },
+                  { label: 'Step Description', key: 'desc', isTextArea: true, rows: 2 }
+                ])}
+              </div>
+            )}
+
+            {/* Tab: Chauffeur Fleet Header */}
+            {activeTab === 'fleet_header' && (
+              <div className="tab-section">
+                <h3>Fleet Section Headings</h3>
+                {renderField('Fleet Section Badge', 'fleet.badge')}
+                {renderField('Fleet Section Title', 'fleet.title')}
+                {renderField('Fleet Section Subtitle', 'fleet.subtitle')}
+
+                <div className="divider"></div>
+                <h3>Fleet Banner Promo Slogans</h3>
+                {renderField('Fleet Promo Banner Title', 'fleet.hero_title')}
+                {renderField('Fleet Promo Banner Desc', 'fleet.hero_desc', true, 2)}
+
+                <div className="divider"></div>
+                <h3>Grid Labels & Select CTAs</h3>
+                {renderField('Starts from label text', 'fleet.starts_from')}
+                {renderField('Checked bags max limit label text', 'fleet.bags_max_label')}
+                {renderField('Select Chauffeur vehicle CTA text', 'fleet.btn_select')}
+
+                <div className="divider"></div>
+                <h3>Pricing basis & Booking Notice footnotes</h3>
+                {renderField('Tariff basis explanation', 'fleet.price_basis')}
+                {renderField('Lead-time reminder notice', 'fleet.booking_notice')}
+              </div>
+            )}
+
+            {/* Tab: Fleet Vehicles */}
+            {activeTab === 'fleet_vehicles' && (
+              <div className="tab-section">
+                <h3>1. Premium Minivan (Staria)</h3>
+                {renderField('Minivan Display Name', 'fleet.types.minivan.name')}
+                {renderField('Minivan Class Suffix', 'fleet.types.minivan.class')}
+                {renderField('Minivan Price Label', 'fleet.types.minivan.price')}
+                {renderField('Minivan Short Slogan', 'fleet.types.minivan.desc')}
+                {renderField('Minivan Pax Capacity Slogan', 'fleet.types.minivan.capacity')}
+
+                <div className="divider"></div>
+                <h3>2. Luxury Flagship Sedan (Genesis G90)</h3>
+                {renderField('Sedan Display Name', 'fleet.types.sedan.name')}
+                {renderField('Sedan Class Suffix', 'fleet.types.sedan.class')}
+                {renderField('Sedan Price Label', 'fleet.types.sedan.price')}
+                {renderField('Sedan Short Slogan', 'fleet.types.sedan.desc')}
+                {renderField('Sedan Pax Capacity Slogan', 'fleet.types.sedan.capacity')}
+
+                <div className="divider"></div>
+                <h3>3. VIP Limousine Large Van (Benz Sprinter)</h3>
+                {renderField('Heavy Van Display Name', 'fleet.types.large_van.name')}
+                {renderField('Heavy Van Class Suffix', 'fleet.types.large_van.class')}
+                {renderField('Heavy Van Price Label', 'fleet.types.large_van.price')}
+                {renderField('Heavy Van Short Slogan', 'fleet.types.large_van.desc')}
+                {renderField('Heavy Van Pax Capacity Slogan', 'fleet.types.large_van.capacity')}
+              </div>
+            )}
+
+            {/* Tab: CAS Aviation */}
+            {activeTab === 'cas' && (
+              <div className="tab-section">
+                <h3>CAS Aviation Section Headings</h3>
+                {renderField('CAS Section Badge', 'cas.badge')}
+                {renderField('CAS Section Title', 'cas.title')}
+                {renderField('CAS Section Subtitle', 'cas.subtitle')}
+                {renderField('CAS Portfolio upcoming badge', 'cas.upcoming')}
+
+                <div className="divider"></div>
+                <h3>CAS Portfolio services</h3>
+                {renderArrayCard('CAS Service Card', 'cas.services', 3, [
+                  { label: 'Service Slogan Name', key: 'title' },
+                  { label: 'Service Description Sub', key: 'desc', isTextArea: true, rows: 2 },
+                  { label: 'Process Checklists (One per line)', key: 'details', isTextArea: true, rows: 4, isStringArray: true }
+                ])}
+              </div>
+            )}
+
+            {/* Tab: Reservation Form */}
+            {activeTab === 'form' && (
+              <div className="tab-section">
+                <h3>Reservation Form Slogans</h3>
+                {renderField('Form Badge', 'form.badge')}
+                {renderField('Form Title', 'form.title')}
+                {renderField('Form Subtitle', 'form.subtitle')}
+
+                <div className="divider"></div>
+                <h3>Form Field Input Labels</h3>
+                {renderField('Client Name Label', 'form.name')}
+                {renderField('Client Email Label', 'form.email')}
+                {renderField('Client Phone Label', 'form.phone')}
+                {renderField('Service Type dropdown Label', 'form.service_type')}
+                {renderField('Chauffeur vehicle dropdown Label', 'form.vehicle_type')}
+                {renderField('Date time picker label', 'form.date')}
+                {renderField('Flight number label', 'form.flight')}
+                {renderField('Passengers count label', 'form.passengers')}
+                {renderField('Baggage count label', 'form.luggage')}
+                {renderField('Special Request label', 'form.msg')}
+
+                <div className="divider"></div>
+                <h3>Input Placeholders</h3>
+                {renderField('Name placeholder', 'form.placeholder_name')}
+                {renderField('Email placeholder', 'form.placeholder_email')}
+                {renderField('Phone placeholder', 'form.placeholder_phone')}
+                {renderField('Flight placeholder', 'form.placeholder_flight')}
+                {renderField('Special Requests placeholder', 'form.placeholder_msg', true, 3)}
+
+                <div className="divider"></div>
+                <h3>Chauffeur Dropdown options</h3>
+                {renderField('None vehicle selection option', 'form.none')}
+                {renderField('Staria option text', 'form.staria')}
+                {renderField('Genesis G90 option text', 'form.g90')}
+                {renderField('Benz Sprinter option text', 'form.sprinter')}
+
+                <div className="divider"></div>
+                <h3>Submit actions</h3>
+                {renderField('Submit Button action title', 'form.submit')}
+                {renderField('Submitting State loading title', 'form.submitting')}
+              </div>
+            )}
+
+            {/* Tab: Calculator & Ticket */}
+            {activeTab === 'form_calculator' && (
+              <div className="tab-section">
+                <h3>Reservation Estimator Calculator Panel</h3>
+                {renderField('Calculator title', 'form.calc_title')}
+                {renderField('Calculator base meet & assist fee row label', 'form.calc_base')}
+                {renderField('Calculator vehicle fee row label', 'form.calc_vehicle')}
+                {renderField('Calculator extra passengers surcharge row label', 'form.calc_extra_pass')}
+                {renderField('Calculator extra luggage surcharge row label', 'form.calc_extra_lug')}
+                {renderField('Calculator Estimated Total label', 'form.calc_total')}
+                {renderField('Calculator Base currency unit (e.g. USD)', 'form.currency_unit')}
+                {renderField('Calculator Approx prefix sign (e.g. ≈)', 'form.approx_label')}
+                {renderField('Calculator Local currency unit (e.g. KRW)', 'form.approx_currency')}
+                {renderField('Calculator encryption disclaimer footer text', 'form.calc_footer_text', true, 2)}
+
+                <div className="divider"></div>
+                <h3>Success Booking Confirmation Slogans</h3>
+                {renderField('Success Card Title', 'form.success_title')}
+                {renderField('Success Card Description', 'form.success_desc', true, 3)}
+                {renderField('Success Booking ID reference Label', 'form.success_id')}
+                {renderField('Success Close button text', 'form.close')}
+
+                <div className="divider"></div>
+                <h3>Success Booking Ticket Table labels</h3>
+                {renderField('Client ID label on ticket', 'form.ticket_lbl_client')}
+                {renderField('Service Type label on ticket', 'form.ticket_lbl_service')}
+                {renderField('Vehicle label on ticket', 'form.ticket_lbl_vehicle')}
+                {renderField('Date label on ticket', 'form.ticket_lbl_date')}
+                {renderField('Billing Amount label on ticket', 'form.ticket_lbl_amount')}
+              </div>
+            )}
+
+            {/* Tab: FAQs Accordion */}
+            {activeTab === 'faq' && (
+              <div className="tab-section">
+                <h3>FAQs Accordion Header</h3>
+                {renderField('FAQ Section Badge', 'faq.badge')}
+                {renderField('FAQ Section Title', 'faq.title')}
+                {renderField('FAQ Section Subtitle', 'faq.subtitle')}
+
+                <div className="divider"></div>
+                <h3>Frequently Asked Questions Accordions</h3>
+                {renderArrayCard('FAQ Item', 'faq.items', 6, [
+                  { label: 'Question Title', key: 'q' },
+                  { label: 'Answer Content', key: 'a', isTextArea: true, rows: 4 }
+                ])}
+              </div>
+            )}
+
+            {/* Tab: Policies & T&C */}
+            {activeTab === 'policies' && (
+              <div className="tab-section">
+                <h3>Terms Modal Heading</h3>
+                {renderField('Modal Header title', 'terms.title')}
+                {renderField('Modal Understand Close CTA', 'terms.btn_understand')}
+
+                <div className="divider"></div>
+                <h3>1. Cancellation & Refund policies</h3>
+                {renderField('Cancellation Card title', 'terms.cancellation_title')}
+                {renderField('Cancellation column 1 title (Time)', 'terms.col_time')}
+                {renderField('Cancellation column 2 title (Refund)', 'terms.col_refund')}
+                <h4 style={{ marginTop: '16px', color: 'var(--gold-primary)' }}>Cancellation Grid values</h4>
+                {renderField('48 Hours prior row label', 'terms.time_48h')}
+                {renderField('48 Hours refund policy text', 'terms.refund_100')}
+                {renderField('24 to 48 Hours prior row label', 'terms.time_24h')}
+                {renderField('24 to 48 Hours refund policy text', 'terms.refund_50')}
+                {renderField('Less than 24 Hours prior row label', 'terms.time_under24h')}
+                {renderField('Less than 24 Hours refund policy text', 'terms.refund_0')}
+
+                <div className="divider"></div>
+                <h3>2. Fast Track Regulation Info Notice</h3>
+                {renderField('Fast Track section header title', 'terms.fasttrack_title')}
+                {renderField('Fast Track legal warning notice', 'terms.fasttrack_text', true, 4)}
+
+                <div className="divider"></div>
+                <h3>3. No Show warning thresholds</h3>
+                {renderField('No Show Section header title', 'terms.noshow_title')}
+                {renderField('No Show Warning Notice details', 'terms.noshow_text', true, 3)}
+                {renderField('No Show Arrival ATA threshold rules', 'terms.noshow_arrival')}
+                {renderField('No Show Departure meeting threshold rules', 'terms.noshow_departure')}
+
+                <div className="divider"></div>
+                <h3>4. Full Terms & Conditions list (8 items)</h3>
+                {renderField('Full Terms Section header title', 'terms.full_terms_title')}
+                <div className="form-field-pair">
+                  <label className="field-main-label">Terms and conditions (One per line)</label>
+                  <div className="form-row-2">
+                    <div className="form-field">
+                      <span className="lang-indicator">KO</span>
+                      <textarea
+                        rows={10}
+                        value={getDirectArrayValue('ko', 'terms.full_terms')}
+                        onChange={(e) => handleDirectArrayChange('ko', 'terms.full_terms', e.target.value)}
+                      />
                     </div>
-                  ))}
+                    <div className="form-field">
+                      <span className="lang-indicator">EN</span>
+                      <textarea
+                        rows={10}
+                        value={getDirectArrayValue('en', 'terms.full_terms')}
+                        onChange={(e) => handleDirectArrayChange('en', 'terms.full_terms', e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Tab: Media & Images */}
-            {activeTab === 'images' && (
+            {/* Tab: Media & System */}
+            {activeTab === 'media_system' && (
               <div className="tab-section">
                 <h3>Website Background Images</h3>
                 <p>Modify URLs below to dynamically change the cover assets. Set to valid online image URLs or local assets.</p>
@@ -481,12 +656,8 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Tab: System Controls */}
-            {activeTab === 'system' && (
-              <div className="tab-section">
+                <div className="divider"></div>
                 <h3>System Preferences</h3>
                 <p>Manage persistence variables and system initialization defaults.</p>
                 
@@ -548,14 +719,41 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
           align-items: center;
           gap: 12px;
           border-bottom: 1px solid var(--border-subtle);
+          flex-shrink: 0;
+        }
+
+        .brand-logo-icon {
+          font-size: 1.8rem;
+          color: var(--gold-primary);
+        }
+
+        .brand-text-group {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .brand-name {
+          font-family: var(--font-serif);
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: #fff;
+        }
+
+        .brand-subname {
+          font-size: 0.6rem;
+          letter-spacing: 0.25em;
+          color: var(--gold-primary);
+          font-weight: 600;
+          margin-top: -2px;
         }
 
         .admin-nav {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          padding: 24px 16px;
+          gap: 4px;
+          padding: 16px 12px;
           flex: 1;
+          overflow-y: auto;
         }
 
         .admin-nav-btn {
@@ -565,12 +763,13 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
           background: transparent;
           border: none;
           color: var(--text-secondary);
-          padding: 12px 16px;
+          padding: 10px 14px;
           border-radius: 8px;
           cursor: pointer;
           font-weight: 500;
           text-align: left;
           transition: var(--transition-fast);
+          font-size: 0.85rem;
         }
 
         .admin-nav-btn:hover {
@@ -587,6 +786,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
         .sidebar-footer {
           padding: 24px;
           border-top: 1px solid var(--border-subtle);
+          flex-shrink: 0;
         }
 
         .preview-btn {
@@ -613,6 +813,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
           align-items: center;
           padding: 24px;
           border-bottom: 1px solid var(--border-subtle);
+          flex-shrink: 0;
         }
 
         .admin-content-header h2 {
@@ -628,8 +829,42 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
 
         .admin-scroll-body {
           flex: 1;
-          padding: 24px;
+          padding: 24px 32px;
           overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .tab-section {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .tab-section h3 {
+          font-size: 1.15rem;
+          color: var(--gold-primary);
+          font-weight: 600;
+          margin-bottom: 4px;
+        }
+
+        .form-field-pair {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          background: rgba(255, 255, 255, 0.01);
+          border: 1px solid rgba(255, 255, 255, 0.02);
+          padding: 16px;
+          border-radius: 10px;
+        }
+
+        .field-main-label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
         .form-row-2 {
@@ -644,27 +879,32 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
           gap: 16px;
         }
 
-        .form-column h4 {
-          font-size: 1rem;
-          color: var(--gold-primary);
-          border-bottom: 1px solid var(--border-subtle);
-          padding-bottom: 8px;
-        }
-
         .form-field {
+          position: relative;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 6px;
         }
 
-        .form-field label {
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: var(--text-secondary);
+        .lang-indicator {
+          position: absolute;
+          top: 8px;
+          right: 12px;
+          font-size: 0.65rem;
+          font-weight: 700;
+          color: var(--gold-primary);
+          background: rgba(197, 168, 128, 0.1);
+          border: 1px solid rgba(197, 168, 128, 0.2);
+          padding: 1px 5px;
+          border-radius: 3px;
+          pointer-events: none;
+          z-index: 10;
         }
 
         .form-field input, 
-        .form-field textarea {
+        .form-field textarea,
+        .form-field-nested input,
+        .form-field-nested textarea {
           background: rgba(4, 9, 20, 0.6);
           border: 1px solid var(--border-subtle);
           color: #fff;
@@ -673,30 +913,47 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
           font-size: 0.9rem;
           font-family: var(--font-sans);
           transition: var(--transition-fast);
+          width: 100%;
         }
 
         .form-field input:focus, 
-        .form-field textarea:focus {
+        .form-field textarea:focus,
+        .form-field-nested input:focus,
+        .form-field-nested textarea:focus {
           outline: none;
           border-color: var(--border-focus);
           box-shadow: 0 0 10px rgba(197, 168, 128, 0.1);
         }
 
+        .form-field-nested {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 12px;
+        }
+
+        .form-field-nested label {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
         .divider {
           height: 1px;
           background: var(--border-subtle);
-          margin: 30px 0;
+          margin: 15px 0;
         }
 
         .array-items-grid {
-          display: flex;
-          flex-direction: column;
+          display: grid;
+          grid-template-columns: 1fr;
           gap: 20px;
         }
 
         .array-card {
-          padding: 20px;
+          padding: 24px;
           position: relative;
+          border-radius: 12px;
+          border: 1px solid var(--border-subtle);
         }
 
         .array-index {
@@ -774,6 +1031,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
           background: rgba(13, 22, 42, 0.95);
           animation: slideInLeft 0.3s ease-out;
           z-index: 1600;
+          border-radius: 12px;
         }
 
         .toast-icon {

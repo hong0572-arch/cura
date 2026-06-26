@@ -97,7 +97,7 @@ export default function TermsModal({ isOpen, onClose, t }) {
         <div className="modal-footer">
           <button onClick={onClose} className="btn-premium primary btn-modal-close">
             <Check size={16} style={{ marginRight: '6px' }} />
-            <span>I Understand</span>
+            <span>{t.terms.btn_understand || 'I Understand'}</span>
           </button>
         </div>
       </div>

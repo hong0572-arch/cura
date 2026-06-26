@@ -16,7 +16,7 @@ export default function CoreValues({ t }) {
     <section id="values" className="values-section section-padding">
       <div className="container">
         <div className="section-header">
-          <span className="badge-gold">Value Proposition</span>
+          <span className="badge-gold">{t.values.badge || 'Value Proposition'}</span>
           <h2 className="font-serif text-gold">{t.values.title}</h2>
           <p>{t.values.subtitle}</p>
         </div>

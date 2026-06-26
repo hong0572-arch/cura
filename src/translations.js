@@ -15,9 +15,19 @@ export const translations = {
       title: "공항 게이트를 넘어선,\n완벽한 여정의 시작",
       subtitle: "Beyond the Gate는 고객님의 공항 입출국 및 환승 전 과정을 가장 편안하고 안전하게 책임지는 프리미엄 VIP 의전 및 차량 이동 서비스입니다.",
       cta_reserve: "실시간 요금 확인 & 예약",
-      cta_explore: "의전 서비스 알아보기"
+      cta_explore: "의전 서비스 알아보기",
+      stats: {
+        support_num: "24/7",
+        support_lbl: "고객 지원",
+        privacy_num: "100%",
+        privacy_lbl: "개인 정보 보호",
+        standard_num: "VIP",
+        standard_lbl: "스탠다드"
+      },
+      scroll_down_text: "SCROLL DOWN"
     },
     values: {
+      badge: "Value Proposition",
       title: "Beyond the Gate의 6가지 프리미엄 가치",
       subtitle: "오직 귀하만을 위해 준비된 품격 있는 서비스와 비교할 수 없는 편안함을 경험해 보세요.",
       items: [
@@ -54,9 +64,13 @@ export const translations = {
       ]
     },
     services: {
+      badge: "Meet & Assist",
       title: "공항 VIP 의전 서비스",
       subtitle: "입국부터 출국, 그리고 환승까지 숙련된 의전 요원이 모든 여정을 케어합니다.",
+      base_price: "$200",
       base_price_info: "기본 요금: $200 (최대 3시간, 승객 3명, 위탁 수하물 3개 포함)",
+      base_price_desc: "도착 항공기 게이트 앞에서 고객님을 직접 영접하는 [VIP 대면 영접], 전용 통로를 통해 빠르고 쾌적한 출입국을 돕는 [패스트트랙] (공항 규정 대상자에 한함) 등이 포함됩니다.",
+      step_label: "Step",
       tabs: {
         arrival: "입국 의전 서비스 (Arrival)",
         departure: "출국 의전 서비스 (Departure)",
@@ -80,7 +94,7 @@ export const translations = {
           },
           {
             title: "수하물 수취 지원",
-            desc: "지정된 수하물 수취대로 안내해 드리며, 위탁 수하물의 확인 및 수취를 돕고 포터(짐 운반) 서비스를 제공합니다."
+            desc: "지정된 수하물 수취대로 안내해 드리며, 위탁 수하물의 확인 및 수취을 돕고 포터(짐 운반) 서비스를 제공합니다."
           },
           {
             title: "세관 통과 안내",
@@ -154,10 +168,16 @@ export const translations = {
       }
     },
     fleet: {
+      badge: "Exclusive Chauffeur",
       title: "프리미엄 차량 Chauffeur 서비스",
       subtitle: "공항과 서울 시내를 잇는 안전하고 안락한 이동 서비스. 승객 수와 수하물 규모에 맞는 전용 차량을 예약하세요.",
       booking_notice: "차량 서비스는 원활한 제공을 위해 이용일 기준 최소 24시간 전 예약을 권장합니다.",
       price_basis: "요금 산정 방식: 상기 요금은 기본 요금이며, 최종 목적지 및 경유지에 따라 상이하게 적용됩니다.",
+      hero_title: "The Beyond Premium Standard",
+      hero_desc: "Every vehicle in our fleet is meticulously maintained and driven by professional, English-speaking VIP chauffeurs.",
+      starts_from: "Starts from",
+      bags_max_label: "Checked Bags Max",
+      btn_select: "Select & Get Quote",
       types: {
         minivan: {
           name: "스타리아 (Staria)",
@@ -183,6 +203,7 @@ export const translations = {
       }
     },
     cas: {
+      badge: "CAS Aviation Portfolio",
       title: "Cura Airport Service (CAS) 사업 영역",
       subtitle: "공항 지상 업무부터 항공기 지원까지 통합 에어포트 솔루션을 제공합니다. (하기 사업 영역은 추후 업데이트 예정)",
       upcoming: "추후 업데이트 예정",
@@ -219,6 +240,7 @@ export const translations = {
       ]
     },
     faq: {
+      badge: "Common Queries",
       title: "자주 묻는 질문 (FAQ)",
       subtitle: "의전 및 차량 서비스 이용에 관해 가장 자주 묻는 질문들을 모았습니다.",
       items: [
@@ -278,9 +300,11 @@ export const translations = {
         "고객의 책임: 정확하고 최신화된 항공편 정보(편명, 날짜, 착륙 예정 시간 등)를 제공할 책임은 고객에게 있습니다. 부정확한 정보 전달로 인해 발생한 서비스 불이행에 대해서는 당사가 책임지지 않습니다.",
         "항공기 지연 및 초과 시간: 항공기 지연 발생 시, 일정 변경을 지원하기 위해 최선을 다합니다. 단, 서비스 대기 및 총 수행 시간이 기본 제공 한도(3시간)를 초과할 경우, 초과 시간 비용(Overtime Charges)이 추가 부과됩니다.",
         "노쇼(No-Show) 규정: 사전 조율 없는 연락 두절은 노쇼로 간주되어 요금이 전액 소멸됩니다. (노쇼 기준 시간: 입국 착륙 후 90분, 출국 미팅 후 60분)"
-      ]
+      ],
+      btn_understand: "동의 및 확인"
     },
     form: {
+      badge: "Reservation Portal",
       title: "프리미엄 견적 및 예약 문의",
       subtitle: "단 몇 가지 입력만으로 예상 요금을 실시간으로 조회하고 공식 예약 요청을 진행할 수 있습니다.",
       name: "예약자 성함 (Name)",
@@ -294,6 +318,12 @@ export const translations = {
       luggage: "위탁 수하물 수 (Luggage count)",
       msg: "기타 요청사항 (Special Requests / Notes)",
       
+      placeholder_name: "예: 홍길동",
+      placeholder_email: "name@example.com",
+      placeholder_phone: "010-0000-0000",
+      placeholder_flight: "예: KE182",
+      placeholder_msg: "항공편 정보 및 특별 요청 사항을 입력해 주세요...",
+      
       none: "차량 미사용 (의전 서비스만 이용)",
       staria: "스타리아 미니밴 (Staria Minivan) (+140,000 KRW)",
       g90: "제네시스 G90 고급세단 (Genesis G90) (+240,000 KRW)",
@@ -305,12 +335,21 @@ export const translations = {
       calc_extra_pass: "인원 초과 요금 (3명 초과 시 인당 $50)",
       calc_extra_lug: "수하물 초과 요금 (3개 초과 시 개당 $20)",
       calc_total: "예상 합계 금액",
+      currency_unit: "USD",
+      approx_label: "≈",
+      approx_currency: "KRW",
+      calc_footer_text: "보안 결제 전송 및 최종 금액 확인 단계가 진행됩니다.",
       
       submit: "예약 요청하기 (Submit Order)",
       submitting: "예약 주문 생성 중...",
       success_title: "예약 요청이 성공적으로 접수되었습니다!",
       success_desc: "입력하신 이메일로 서비스 상세 주문서(Service Order)와 보안 결제 링크를 곧 발송해 드리겠습니다.",
       success_id: "임시 예약 주문번호",
+      ticket_lbl_client: "Client:",
+      ticket_lbl_service: "Service:",
+      ticket_lbl_vehicle: "Vehicle:",
+      ticket_lbl_date: "Date:",
+      ticket_lbl_amount: "Amount:",
       close: "닫기"
     },
     contact: {
@@ -318,6 +357,13 @@ export const translations = {
       desc: "서비스 예약 접수, 긴급 일정 변경 등 24시간 열려 있는 창구를 통해 신속히 지원합니다.",
       email_lbl: "공식 이메일 문의",
       phone_lbl: "24/7 고객센터 전화"
+    },
+    footer: {
+      motto: "공항 VIP 에스코트 및 하이엔드 수송 서비스의 새로운 기준을 제시합니다.",
+      quick_links_title: "빠른 링크",
+      email_val: "support@beyondthegate.vip",
+      phone_val: "+82 (0)2-1234-5678",
+      copyright: "모든 권리 보유. CAS Aviation 포트폴리오 산하."
     }
   },
   en: {
@@ -336,9 +382,19 @@ export const translations = {
       title: "Beyond the Gate,\nThe Perfect Journey Begins",
       subtitle: "Beyond the Gate is a premier VIP Airport Meet-and-Assist and Private Chauffeur Service, ensuring absolute comfort and safety for your arrivals, departures, and transfers.",
       cta_reserve: "Get Live Quote & Book",
-      cta_explore: "Explore Our Services"
+      cta_explore: "Explore Our Services",
+      stats: {
+        support_num: "24/7",
+        support_lbl: "Support",
+        privacy_num: "100%",
+        privacy_lbl: "Privacy",
+        standard_num: "VIP",
+        standard_lbl: "Standard"
+      },
+      scroll_down_text: "SCROLL DOWN"
     },
     values: {
+      badge: "Value Proposition",
       title: "6 Premium Values of Beyond the Gate",
       subtitle: "Experience distinguished service and incomparable comfort tailored exclusively for you.",
       items: [
@@ -375,9 +431,13 @@ export const translations = {
       ]
     },
     services: {
+      badge: "Meet & Assist",
       title: "VIP Meet & Assist Services",
       subtitle: "From arrivals and departures to complex transfers, our specialists care for your entire journey.",
+      base_price: "$200",
       base_price_info: "Base Fee: $200 (Up to 3 hours, includes 3 passengers and 3 checked bags)",
+      base_price_desc: "Includes [VIP Gate Greeting] right outside the plane's door; [Fast Track] assistance through immigration (subject to airport regulatory eligibility) etc.",
+      step_label: "Step",
       tabs: {
         arrival: "Arrival Service",
         departure: "Departure Service",
@@ -475,10 +535,16 @@ export const translations = {
       }
     },
     fleet: {
+      badge: "Exclusive Chauffeur",
       title: "Premium Chauffeur Services",
       subtitle: "Comfortable and safe private transport between airports and metropolitan Seoul. Choose a vehicle class suited to your party size and luggage.",
       booking_notice: "Chauffeur services should be booked at least 24 hours prior to use to ensure availability.",
       price_basis: "Pricing Policy: Listed rates are baseline estimates. Final pricing varies by destination, itinerary, and stopovers.",
+      hero_title: "The Beyond Premium Standard",
+      hero_desc: "Every vehicle in our fleet is meticulously maintained and driven by professional, English-speaking VIP chauffeurs.",
+      starts_from: "Starts from",
+      bags_max_label: "Checked Bags Max",
+      btn_select: "Select & Get Quote",
       types: {
         minivan: {
           name: "Staria",
@@ -504,6 +570,7 @@ export const translations = {
       }
     },
     cas: {
+      badge: "CAS Aviation Portfolio",
       title: "Cura Airport Service (CAS) Aviation Portfolio",
       subtitle: "Comprehensive aviation ground support solutions. (The following sectors are scheduled for future deployment)",
       upcoming: "Coming Soon",
@@ -540,6 +607,7 @@ export const translations = {
       ]
     },
     faq: {
+      badge: "Common Queries",
       title: "Frequently Asked Questions (FAQ)",
       subtitle: "Got questions? Find clear answers regarding our meet-and-assist and chauffeur offerings here.",
       items: [
@@ -599,9 +667,11 @@ export const translations = {
         "Client Responsibility: It is the client's sole responsibility to provide accurate, up-to-date flight numbers and arrival/departure times. Service failures due to incorrect details are not refundable.",
         "Delays & Overtime: In the event of flight delays, we will make reasonable efforts to reschedule. However, if total service time exceeds the base 3-hour limit, overtime charges will apply.",
         "No-Show Policies: Failure to meet the greeter within specified time thresholds (90 mins for arrival, 60 mins for departure) will result in a 100% charge."
-      ]
+      ],
+      btn_understand: "I Understand"
     },
     form: {
+      badge: "Reservation Portal",
       title: "Premium Estimator & Booking Form",
       subtitle: "Input your requirements to receive a real-time price estimate and submit an official reservation inquiry.",
       name: "Your Name",
@@ -615,6 +685,12 @@ export const translations = {
       luggage: "Checked Baggage Count",
       msg: "Special Requests / Notes",
       
+      placeholder_name: "e.g. John Doe",
+      placeholder_email: "name@example.com",
+      placeholder_phone: "+82 10-0000-0000",
+      placeholder_flight: "e.g. KE182",
+      placeholder_msg: "Provide airline details, special dietary, or child seats requested...",
+      
       none: "No vehicle (Meet & Assist service only)",
       staria: "Staria Minivan (+140,000 KRW)",
       g90: "Genesis G90 Sedan (+240,000 KRW)",
@@ -626,12 +702,21 @@ export const translations = {
       calc_extra_pass: "Extra Passenger Surcharge ($50/pax over 3)",
       calc_extra_lug: "Extra Checked Bag Surcharge ($20/bag over 3)",
       calc_total: "Estimated Total Cost",
+      currency_unit: "USD",
+      approx_label: "≈",
+      approx_currency: "KRW",
+      calc_footer_text: "Secure 256-bit SSL encrypted booking portal. Final rates verified before billing email.",
       
       submit: "Submit Booking Request",
       submitting: "Creating booking request...",
       success_title: "Booking Request Submitted!",
       success_desc: "We will email you a formal Service Order detailing your booking and a secure link to finalize payment shortly.",
       success_id: "Reference Ticket ID",
+      ticket_lbl_client: "Client:",
+      ticket_lbl_service: "Service:",
+      ticket_lbl_vehicle: "Vehicle:",
+      ticket_lbl_date: "Date:",
+      ticket_lbl_amount: "Amount:",
       close: "Close"
     },
     contact: {
@@ -639,6 +724,13 @@ export const translations = {
       desc: "For inquiries, immediate updates, or urgent support, our support channels are open 24/7.",
       email_lbl: "Email Support",
       phone_lbl: "24/7 Center Hotline"
+    },
+    footer: {
+      motto: "Elevating the luxury standard of global airport hospitality and premium transport.",
+      quick_links_title: "Quick Links",
+      email_val: "support@beyondthegate.vip",
+      phone_val: "+82 (0)2-1234-5678",
+      copyright: "All rights reserved. Under CAS Aviation Portfolio."
     }
   }
 };

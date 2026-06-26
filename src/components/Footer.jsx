@@ -36,13 +36,13 @@ export default function Footer({ t, onOpenTerms }) {
               <img src="/logo.png" alt="Beyond the Gate Logo" className="footer-logo-img" />
             </div>
             <p className="brand-motto">
-              Elevating the luxury standard of global airport hospitality and premium transport.
+              {t.footer?.motto || 'Elevating the luxury standard of global airport hospitality and premium transport.'}
             </p>
           </div>
 
           {/* Quick Links Col */}
           <div className="footer-links-col">
-            <h4>Quick Links</h4>
+            <h4>{t.footer?.quick_links_title || 'Quick Links'}</h4>
             <ul className="footer-links-list">
               <li><button onClick={() => handleLinkClick('hero')}>{t.nav.home}</button></li>
               <li><button onClick={() => handleLinkClick('values')}>{t.nav.values}</button></li>
@@ -62,8 +62,8 @@ export default function Footer({ t, onOpenTerms }) {
                 <Mail size={16} className="contact-icon" />
                 <div className="contact-text-wrap">
                   <span className="contact-label">{t.form.email}</span>
-                  <a href="mailto:support@beyondthegate.vip" className="contact-link">
-                    support@beyondthegate.vip
+                  <a href={`mailto:${t.footer?.email_val || 'support@beyondthegate.vip'}`} className="contact-link">
+                    {t.footer?.email_val || 'support@beyondthegate.vip'}
                   </a>
                 </div>
               </div>
@@ -71,8 +71,8 @@ export default function Footer({ t, onOpenTerms }) {
                 <Phone size={16} className="contact-icon" />
                 <div className="contact-text-wrap">
                   <span className="contact-label">{t.contact.phone_lbl}</span>
-                  <a href="tel:+82212345678" className="contact-link">
-                    +82 (0)2-1234-5678
+                  <a href={`tel:${(t.footer?.phone_val || '+82212345678').replace(/[^+\d]/g, '')}`} className="contact-link">
+                    {t.footer?.phone_val || '+82 (0)2-1234-5678'}
                   </a>
                 </div>
               </div>
@@ -86,7 +86,7 @@ export default function Footer({ t, onOpenTerms }) {
         {/* Bottom row */}
         <div className="footer-bottom-row">
           <div className="copyright-box">
-            <span>© 2026 {t.brand}. All rights reserved. Under CAS Aviation Portfolio.</span>
+            <span>© 2026 {t.brand}. {t.footer?.copyright || 'All rights reserved. Under CAS Aviation Portfolio.'}</span>
           </div>
 
           <div className="legal-links-box">
