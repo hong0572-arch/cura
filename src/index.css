@@ -305,6 +305,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Responsive Breakpoints */
 @media (max-width: 1024px) {
+  .container {
+    padding: 0 20px;
+  }
   .grid-3 {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -314,6 +317,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
   .grid-3, .grid-2 {
     grid-template-columns: 1fr;
   }
@@ -322,6 +328,9 @@ h1, h2, h3, h4, h5, h6 {
   }
   .section-header h2 {
     font-size: 2rem;
+  }
+  .section-header p {
+    max-width: 100%;
   }
   .timeline-container {
     padding-left: 20px;

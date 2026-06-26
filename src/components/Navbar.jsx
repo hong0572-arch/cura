@@ -351,11 +351,20 @@ export default function Navbar({ lang, setLang, t }) {
         }
 
         @media (max-width: 1024px) {
+          .navbar-container {
+            padding: 0 20px;
+          }
           .nav-links-desktop, .nav-actions-desktop {
             display: none;
           }
           .nav-actions-mobile {
             display: flex;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .navbar-container {
+            padding: 0 16px;
           }
         }
       `}</style>
