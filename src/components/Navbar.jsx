@@ -139,24 +139,25 @@ export default function Navbar({ lang, setLang, t }) {
         }
 
         .navbar-container {
+          width: 100% !important;
           max-width: 1240px;
           height: 100%;
           margin: 0 auto;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 16px;
+          padding: 0 16px !important;
         }
 
         @media (min-width: 768px) {
           .navbar-container {
-            padding: 0 20px;
+            padding: 0 20px !important;
           }
         }
 
         @media (min-width: 1024px) {
           .navbar-container {
-            padding: 0 24px;
+            padding: 0 24px !important;
           }
         }
 

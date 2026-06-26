@@ -148,21 +148,21 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Layout Utilities */
 .container {
-  width: 100%;
+  width: 100% !important;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 16px !important;
 }
 
 @media (min-width: 768px) {
   .container {
-    padding: 0 20px;
+    padding: 0 20px !important;
   }
 }
 
 @media (min-width: 1024px) {
   .container {
-    padding: 0 24px;
+    padding: 0 24px !important;
   }
 }
 
