@@ -832,7 +832,7 @@ Beyond the Gate Automated System`;
           animation: bounce-slow 3s infinite;
         }
 
-        @media (max-width: 992px) {
+        @media (max-width: 1024px) {
           .reserve-grid {
             grid-template-columns: 1fr;
           }
