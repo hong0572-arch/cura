@@ -35,6 +35,24 @@ function App() {
     };
   });
 
+  const defaultSettings = {
+    companyEmail: 'support@beyondthegate.vip',
+    basePriceUsd: 200,
+    extraPassengerFeeUsd: 50,
+    extraLuggageFeeUsd: 20,
+    exchangeRate: 1350,
+    vehiclePricesKrw: {
+      staria: 140000,
+      g90: 240000,
+      sprinter: 240000
+    }
+  };
+
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('custom_btg_settings');
+    return saved ? JSON.parse(saved) : defaultSettings;
+  });
+
   // --- Admin Routing States ---
   const [view, setView] = useState('user'); // user | admin
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -69,22 +87,29 @@ function App() {
     window.location.hash = ''; // Back to main
   };
 
-  const handleSaveAdminData = (newContent, newImages) => {
+  const handleSaveAdminData = (newContent, newImages, newSettings) => {
     setContent(newContent);
     setImages(newImages);
     localStorage.setItem('custom_btg_translations', JSON.stringify(newContent));
     localStorage.setItem('custom_btg_images', JSON.stringify(newImages));
+    if (newSettings) {
+      setSettings(newSettings);
+      localStorage.setItem('custom_btg_settings', JSON.stringify(newSettings));
+    }
   };
 
   const handleResetDefaults = () => {
     if (window.confirm('Are you sure you want to reset all modifications to default configurations?')) {
       localStorage.removeItem('custom_btg_translations');
       localStorage.removeItem('custom_btg_images');
+      localStorage.removeItem('custom_btg_settings');
+      localStorage.removeItem('btg_reservations');
       setContent(defaultTranslations);
       setImages({
         heroBg: '/luxury_airport_vip.png',
         fleetBg: '/luxury_fleet.png'
       });
+      setSettings(defaultSettings);
       window.location.hash = '';
       alert('Reset completed successfully!');
     }
@@ -107,6 +132,7 @@ function App() {
       <AdminDashboard 
         data={content} 
         images={images} 
+        settings={settings}
         onSave={handleSaveAdminData} 
         onReset={handleResetDefaults} 
         onPreview={() => { window.location.hash = ''; }}
@@ -137,8 +163,10 @@ function App() {
         
         <ReservationForm 
           t={t} 
+          lang={lang}
           selectedVehicle={selectedVehicle} 
           setSelectedVehicle={setSelectedVehicle} 
+          settings={settings}
         />
         
         <Faq t={t} />

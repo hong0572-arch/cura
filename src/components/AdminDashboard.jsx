@@ -6,13 +6,39 @@ import {
   Award, Lock, Activity, Navigation, FileSpreadsheet
 } from 'lucide-react';
 
-export default function AdminDashboard({ data, images, onSave, onReset, onPreview }) {
+export default function AdminDashboard({ data, images, settings, onSave, onReset, onPreview }) {
   const [activeTab, setActiveTab] = useState('hero');
   const [editData, setEditData] = useState(JSON.parse(JSON.stringify(data)));
   const [editImages, setEditImages] = useState({ ...images });
+  const [editSettings, setEditSettings] = useState(JSON.parse(JSON.stringify(settings)));
   const [saveStatus, setSaveStatus] = useState(false);
+  const [reservations, setReservations] = useState(() => {
+    const saved = localStorage.getItem('btg_reservations');
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  // Helper to handle text updates
+  const handleClearReservations = () => {
+    if (window.confirm('Are you sure you want to clear all reservation history?')) {
+      localStorage.removeItem('btg_reservations');
+      setReservations([]);
+    }
+  };
+
+  const handleSettingChange = (field, value, nestedField = null) => {
+    setEditSettings(prev => {
+      const copy = { ...prev };
+      if (nestedField) {
+        copy[field] = {
+          ...copy[field],
+          [nestedField]: value
+        };
+      } else {
+        copy[field] = value;
+      }
+      return copy;
+    });
+  };
+
   const handleTextChange = (lang, path, value) => {
     setEditData(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
@@ -27,7 +53,6 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
     });
   };
 
-  // Helper to handle array element updates (e.g., Values list, FAQ list)
   const handleArrayElementChange = (lang, arrayName, index, field, value) => {
     setEditData(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
@@ -52,7 +77,7 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
 
   const handleSaveChanges = (e) => {
     e.preventDefault();
-    onSave(editData, editImages);
+    onSave(editData, editImages, editSettings);
     setSaveStatus(true);
     setTimeout(() => setSaveStatus(false), 3000);
   };
@@ -216,6 +241,8 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
     { id: 'cas', label: 'CAS Aviation', icon: <Plane size={18} /> },
     { id: 'form', label: 'Reservation Form', icon: <Calendar size={18} /> },
     { id: 'form_calculator', label: 'Calculator & Ticket', icon: <Calculator size={18} /> },
+    { id: 'pricing_settings', label: 'Pricing & Email Settings', icon: <Calculator size={18} /> },
+    { id: 'reservations', label: 'Customer Reservations', icon: <FileSpreadsheet size={18} /> },
     { id: 'faq', label: 'FAQs Accordion', icon: <HelpCircle size={18} /> },
     { id: 'policies', label: 'Policies & T&C', icon: <ShieldAlert size={18} /> },
     { id: 'media_system', label: 'Media & System', icon: <Settings size={18} /> }
@@ -675,6 +702,210 @@ export default function AdminDashboard({ data, images, onSave, onReset, onPrevie
                     Reset to Factory Defaults
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Tab: Pricing & Email Settings */}
+            {activeTab === 'pricing_settings' && (
+              <div className="tab-section">
+                <h3>Company Contact Settings</h3>
+                <div className="form-field-pair">
+                  <label className="field-main-label">Company Email Address</label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    Reservations will be sent to this email address.
+                  </p>
+                  <div className="form-field">
+                    <input 
+                      type="email" 
+                      value={editSettings.companyEmail || ''} 
+                      onChange={(e) => handleSettingChange('companyEmail', e.target.value)}
+                      placeholder="e.g. company@beyondthegate.vip"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="divider"></div>
+                <h3>Standard Pricing Settings (USD)</h3>
+                <div className="form-row-2">
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Base Meet & Assist Fee (USD)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.basePriceUsd || 0} 
+                        onChange={(e) => handleSettingChange('basePriceUsd', parseInt(e.target.value) || 0)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Exchange Rate (1 USD to KRW)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.exchangeRate || 0} 
+                        onChange={(e) => handleSettingChange('exchangeRate', parseInt(e.target.value) || 0)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-row-2" style={{ marginTop: '10px' }}>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Extra Passenger Surcharge (USD)</label>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per passenger beyond 3 passengers</p>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.extraPassengerFeeUsd || 0} 
+                        onChange={(e) => handleSettingChange('extraPassengerFeeUsd', parseInt(e.target.value) || 0)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Extra Luggage Surcharge (USD)</label>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per checked bag beyond 3 bags</p>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.extraLuggageFeeUsd || 0} 
+                        onChange={(e) => handleSettingChange('extraLuggageFeeUsd', parseInt(e.target.value) || 0)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="divider"></div>
+                <h3>Chauffeur Vehicle Pricing (KRW)</h3>
+                <div className="form-row-2">
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Staria Minivan price (KRW)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.vehiclePricesKrw?.staria || 0} 
+                        onChange={(e) => handleSettingChange('vehiclePricesKrw', parseInt(e.target.value) || 0, 'staria')}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Genesis G90 Sedan price (KRW)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.vehiclePricesKrw?.g90 || 0} 
+                        onChange={(e) => handleSettingChange('vehiclePricesKrw', parseInt(e.target.value) || 0, 'g90')}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-row-2" style={{ marginTop: '10px' }}>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Benz Sprinter Large Van price (KRW)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.vehiclePricesKrw?.sprinter || 0} 
+                        onChange={(e) => handleSettingChange('vehiclePricesKrw', parseInt(e.target.value) || 0, 'sprinter')}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div style={{ visibility: 'hidden' }}></div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Customer Reservations */}
+            {activeTab === 'reservations' && (
+              <div className="tab-section">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <h3>Submitted Reservations</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      Below is the history of customer reservations submitted from the booking portal.
+                    </p>
+                  </div>
+                  {reservations.length > 0 && (
+                    <button 
+                      type="button" 
+                      onClick={handleClearReservations} 
+                      className="btn-premium secondary"
+                      style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                    >
+                      Clear All History
+                    </button>
+                  )}
+                </div>
+
+                {reservations.length === 0 ? (
+                  <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    No reservations found in the logs yet.
+                  </div>
+                ) : (
+                  <div className="reservations-list glass-panel" style={{ overflowX: 'auto', borderRadius: '12px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)' }}>
+                          <th style={{ padding: '16px', minWidth: '120px' }}>ID / Date</th>
+                          <th style={{ padding: '16px', minWidth: '150px' }}>Client</th>
+                          <th style={{ padding: '16px', minWidth: '150px' }}>Service / Flight</th>
+                          <th style={{ padding: '16px', minWidth: '100px' }}>Vehicle</th>
+                          <th style={{ padding: '16px', minWidth: '80px' }}>Pax/Bags</th>
+                          <th style={{ padding: '16px', textAlign: 'right', minWidth: '100px' }}>Total Cost</th>
+                          <th style={{ padding: '16px', minWidth: '200px' }}>Message / Note</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reservations.map(res => (
+                          <tr key={res.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', verticalAlign: 'top' }}>
+                            <td style={{ padding: '16px' }}>
+                              <strong style={{ color: 'var(--gold-primary)', display: 'block', fontSize: '0.9rem' }}>{res.id}</strong>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{res.dateSubmitted}</span>
+                            </td>
+                            <td style={{ padding: '16px' }}>
+                              <strong>{res.name}</strong>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{res.email}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{res.phone}</div>
+                            </td>
+                            <td style={{ padding: '16px' }}>
+                              <span className="badge-gold" style={{ display: 'inline-block', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                {res.serviceType}
+                              </span>
+                              <div style={{ fontSize: '0.8rem' }}>Date: {res.date.replace('T', ' ')}</div>
+                              {res.flight && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Flight: {res.flight}</div>}
+                            </td>
+                            <td style={{ padding: '16px' }}>
+                              {res.vehicleType !== 'none' ? (
+                                <strong style={{ textTransform: 'uppercase', color: '#fff' }}>{res.vehicleType}</strong>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)' }}>None</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '16px' }}>
+                              <div>Pax: {res.passengers}</div>
+                              <div>Bags: {res.luggage}</div>
+                            </td>
+                            <td style={{ padding: '16px', textAlign: 'right' }}>
+                              <strong style={{ color: 'var(--gold-primary)', display: 'block', fontSize: '0.95rem' }}>${res.totalUsd}</strong>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>≈ {res.totalKrw?.toLocaleString()} KRW</span>
+                            </td>
+                            <td style={{ padding: '16px', wordBreak: 'break-word', color: 'var(--text-secondary)' }}>
+                              {res.msg || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No special requests</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

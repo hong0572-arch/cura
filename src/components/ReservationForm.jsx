@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, CheckCircle2, ShieldCheck, CreditCard, Loader2 } from 'lucide-react';
 
-export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle }) {
+export default function ReservationForm({ t, lang, selectedVehicle, setSelectedVehicle, settings }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,19 +15,20 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
   });
 
   const [prices, setPrices] = useState({
-    base: 200,
+    base: settings?.basePriceUsd || 200,
     vehicle: 0,
     extraPass: 0,
     extraLug: 0,
-    totalUsd: 200,
-    totalKrw: 270000
+    totalUsd: settings?.basePriceUsd || 200,
+    totalKrw: (settings?.basePriceUsd || 200) * (settings?.exchangeRate || 1350)
   });
 
   const [status, setStatus] = useState('idle'); // idle | submitting | success
   const [bookingId, setBookingId] = useState('');
+  const [mailtoUrl, setMailtoUrl] = useState('');
 
-  // Exchange rate constant: 1 USD = 1,350 KRW
-  const EX_RATE = 1350;
+  // Exchange rate constant
+  const EX_RATE = settings?.exchangeRate || 1350;
 
   // Handle vehicle type prop updates from Fleet component selection
   useEffect(() => {
@@ -52,26 +53,27 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
 
   // Recalculate prices in real-time
   useEffect(() => {
-    const baseFee = 200; // Base $200 USD
+    const baseFee = settings?.basePriceUsd || 200;
+    const currentExRate = settings?.exchangeRate || 1350;
     
     // Vehicle pricing in KRW
     let vehicleKrw = 0;
-    if (vehicleType === 'staria') vehicleKrw = 140000;
-    else if (vehicleType === 'g90') vehicleKrw = 240000;
-    else if (vehicleType === 'sprinter') vehicleKrw = 240000;
+    if (vehicleType === 'staria') vehicleKrw = settings?.vehiclePricesKrw?.staria || 140000;
+    else if (vehicleType === 'g90') vehicleKrw = settings?.vehiclePricesKrw?.g90 || 240000;
+    else if (vehicleType === 'sprinter') vehicleKrw = settings?.vehiclePricesKrw?.sprinter || 240000;
 
-    const vehicleUsd = Math.round(vehicleKrw / EX_RATE);
+    const vehicleUsd = Math.round(vehicleKrw / currentExRate);
 
     // Extra passenger charges ($50 USD per person beyond 3)
     const extraPassCount = Math.max(0, formData.passengers - 3);
-    const extraPassUsd = extraPassCount * 50;
+    const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 50);
 
     // Extra luggage charges ($20 USD per bag beyond 3)
     const extraLugCount = Math.max(0, formData.luggage - 3);
-    const extraLugUsd = extraLugCount * 20;
+    const extraLugUsd = extraLugCount * (settings?.extraLuggageFeeUsd || 20);
 
     const totalUsd = baseFee + vehicleUsd + extraPassUsd + extraLugUsd;
-    const totalKrw = (baseFee + extraPassUsd + extraLugUsd) * EX_RATE + vehicleKrw;
+    const totalKrw = (baseFee + extraPassUsd + extraLugUsd) * currentExRate + vehicleKrw;
 
     setPrices({
       base: baseFee,
@@ -81,7 +83,7 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
       totalUsd,
       totalKrw
     });
-  }, [formData.passengers, formData.luggage, vehicleType]);
+  }, [formData.passengers, formData.luggage, vehicleType, settings]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,10 +103,76 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
 
     setStatus('submitting');
 
-    // Simulate API request and payment link creation
     setTimeout(() => {
       const randNum = Math.floor(100000 + Math.random() * 900000);
-      setBookingId(`BTG-2026-${randNum}`);
+      const newBookingId = `BTG-2026-${randNum}`;
+      setBookingId(newBookingId);
+
+      // Save to localStorage
+      const dateSubmitted = new Date().toLocaleString();
+      const newReservation = {
+        id: newBookingId,
+        dateSubmitted,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        serviceType: formData.serviceType,
+        date: formData.date,
+        flight: formData.flight,
+        vehicleType,
+        passengers: formData.passengers,
+        luggage: formData.luggage,
+        msg: formData.msg,
+        totalUsd: prices.totalUsd,
+        totalKrw: prices.totalKrw
+      };
+
+      const existingRes = localStorage.getItem('btg_reservations');
+      const resList = existingRes ? JSON.parse(existingRes) : [];
+      resList.unshift(newReservation);
+      localStorage.setItem('btg_reservations', JSON.stringify(resList));
+
+      // Construct email content
+      const targetEmail = settings?.companyEmail || 'support@beyondthegate.vip';
+      const emailSubject = `[Beyond the Gate] New Reservation Request - ${newBookingId}`;
+      const emailBody = `Dear Beyond the Gate Team,
+
+A new reservation request has been submitted with the details below:
+
+[Reservation Details]
+- Reference Ticket ID: ${newBookingId}
+- Service Date & Time: ${formData.date.replace('T', ' ')}
+- Service Type: ${formData.serviceType.toUpperCase()}
+- Flight Number: ${formData.flight || 'N/A'}
+
+[Client Info]
+- Name: ${formData.name}
+- Email: ${formData.email}
+- Phone: ${formData.phone}
+
+[Service Configuration]
+- Selected Chauffeur Vehicle: ${vehicleType.toUpperCase()}
+- Passengers Count: ${formData.passengers}
+- Checked Luggage Count: ${formData.luggage}
+
+[Pricing Breakdown]
+- Base Assist Fee: $${prices.base}
+- Chauffeur Vehicle Fee: $${prices.vehicle}
+- Extra Passenger Surcharge: $${prices.extraPass}
+- Extra Baggage Surcharge: $${prices.extraLug}
+--------------------------------------------------
+- Estimated Total Cost: $${prices.totalUsd} (≈ ${prices.totalKrw.toLocaleString()} KRW)
+
+[Client Message / Special Requests]
+${formData.msg || 'No special requests.'}
+
+Sincerely,
+Beyond the Gate Automated System`;
+
+      const mailtoUrl = `mailto:${targetEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      setMailtoUrl(mailtoUrl);
+      window.location.href = mailtoUrl;
+
       setStatus('success');
     }, 2000);
   };
@@ -123,6 +191,7 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
     });
     setLocalVehicleType('none');
     setSelectedVehicle('none');
+    setMailtoUrl('');
     setStatus('idle');
   };
 
@@ -370,6 +439,42 @@ export default function ReservationForm({ t, selectedVehicle, setSelectedVehicle
                   </div>
                 </div>
               </div>
+
+              {mailtoUrl && (
+                <div style={{
+                  width: '100%',
+                  background: 'rgba(197, 168, 128, 0.04)',
+                  border: '1px solid rgba(197, 168, 128, 0.15)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '24px',
+                  textAlign: 'center',
+                  fontSize: '0.85rem'
+                }}>
+                  <p style={{ color: '#fff', marginBottom: '8px', fontWeight: '600' }}>
+                    {lang === 'ko' ? '회사 이메일로 예약 요청 발송' : 'Email Reservation to Company'}
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: '1.4', marginBottom: '14px' }}>
+                    {lang === 'ko' 
+                      ? `회사 이메일(${settings?.companyEmail || 'support@beyondthegate.vip'})로 예약 요청 메일 작성 창이 실행되었습니다. 메일 앱이 열리지 않았거나 수동 전송이 필요하면 아래 버튼을 클릭하세요.` 
+                      : `A reservation email has been prepared to send to ${settings?.companyEmail || 'support@beyondthegate.vip'}. If it did not open automatically, please click below.`}
+                  </p>
+                  <a 
+                    href={mailtoUrl}
+                    className="btn-premium secondary"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      textDecoration: 'none',
+                      padding: '10px 20px',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    <span>{lang === 'ko' ? '회사로 예약 메일 직접 전송' : 'Send Reservation Email Now'}</span>
+                  </a>
+                </div>
+              )}
 
               <button onClick={resetForm} className="btn-premium primary btn-success-close">
                 {t.form.close}
