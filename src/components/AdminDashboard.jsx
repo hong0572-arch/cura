@@ -28,16 +28,19 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     setEditSettings(prev => {
       const copy = { ...prev };
       if (deepNestedField && nestedField) {
+        const parentObj = copy[field] || {};
+        const childObj = parentObj[nestedField] || {};
         copy[field] = {
-          ...copy[field],
+          ...parentObj,
           [nestedField]: {
-            ...copy[field][nestedField],
+            ...childObj,
             [deepNestedField]: value
           }
         };
       } else if (nestedField) {
+        const parentObj = copy[field] || {};
         copy[field] = {
-          ...copy[field],
+          ...parentObj,
           [nestedField]: value
         };
       } else {
