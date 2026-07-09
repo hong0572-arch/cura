@@ -15,12 +15,13 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
   });
 
   const [prices, setPrices] = useState({
-    base: settings?.basePriceUsd || 200,
+    base: settings?.servicePrices?.arrival?.usd || 250,
+    baseKrw: settings?.servicePrices?.arrival?.krw || 310000,
     vehicle: 0,
     extraPass: 0,
     extraLug: 0,
-    totalUsd: settings?.basePriceUsd || 200,
-    totalKrw: (settings?.basePriceUsd || 200) * (settings?.exchangeRate || 1350)
+    totalUsd: settings?.servicePrices?.arrival?.usd || 250,
+    totalKrw: settings?.servicePrices?.arrival?.krw || 310000
   });
 
   const [status, setStatus] = useState('idle'); // idle | submitting | success
@@ -53,7 +54,9 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
 
   // Recalculate prices in real-time
   useEffect(() => {
-    const baseFee = settings?.basePriceUsd || 200;
+    const serviceType = formData.serviceType || 'arrival';
+    const baseFeeUsd = settings?.servicePrices?.[serviceType]?.usd ?? 250;
+    const baseFeeKrw = settings?.servicePrices?.[serviceType]?.krw ?? 310000;
     const currentExRate = settings?.exchangeRate || 1350;
     
     // Vehicle pricing in KRW
@@ -64,26 +67,27 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
 
     const vehicleUsd = Math.round(vehicleKrw / currentExRate);
 
-    // Extra passenger charges ($50 USD per person beyond 3)
-    const extraPassCount = Math.max(0, formData.passengers - 3);
+    // Extra passenger charges ($50 USD per person beyond 4)
+    const extraPassCount = Math.max(0, formData.passengers - 4);
     const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 50);
 
-    // Extra luggage charges ($20 USD per bag beyond 3)
-    const extraLugCount = Math.max(0, formData.luggage - 3);
+    // Extra luggage charges ($20 USD per bag beyond 4)
+    const extraLugCount = Math.max(0, formData.luggage - 4);
     const extraLugUsd = extraLugCount * (settings?.extraLuggageFeeUsd || 20);
 
-    const totalUsd = baseFee + vehicleUsd + extraPassUsd + extraLugUsd;
-    const totalKrw = (baseFee + extraPassUsd + extraLugUsd) * currentExRate + vehicleKrw;
+    const totalUsd = baseFeeUsd + vehicleUsd + extraPassUsd + extraLugUsd;
+    const totalKrw = baseFeeKrw + vehicleKrw + Math.round((extraPassUsd + extraLugUsd) * currentExRate);
 
     setPrices({
-      base: baseFee,
+      base: baseFeeUsd,
+      baseKrw: baseFeeKrw,
       vehicle: vehicleUsd,
       extraPass: extraPassUsd,
       extraLug: extraLugUsd,
       totalUsd,
       totalKrw
     });
-  }, [formData.passengers, formData.luggage, vehicleType, settings]);
+  }, [formData.passengers, formData.luggage, formData.serviceType, vehicleType, settings]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -274,6 +278,7 @@ Beyond the Gate Automated System`;
                       <option value="arrival">{t.services.tabs.arrival}</option>
                       <option value="departure">{t.services.tabs.departure}</option>
                       <option value="transfer">{t.services.tabs.transfer}</option>
+                      <option value="picketing">{t.services.tabs.picketing || '입국장 피케팅 (Welcome Picketing)'}</option>
                     </select>
                   </div>
                   <div className="form-item">
@@ -363,7 +368,7 @@ Beyond the Gate Automated System`;
 
                 <div className="calc-breakdown">
                   <div className="calc-row">
-                    <span className="calc-row-lbl">{t.form.calc_base}</span>
+                    <span className="calc-row-lbl">{t.form.calc_base ? t.form.calc_base.split(' (')[0] : ''}</span>
                     <span className="calc-row-val">${prices.base}</span>
                   </div>
                   
@@ -376,16 +381,20 @@ Beyond the Gate Automated System`;
                     </div>
                   )}
 
-                  {formData.passengers > 3 && (
+                  {formData.passengers > 4 && (
                     <div className="calc-row surcharge">
-                      <span className="calc-row-lbl">{t.form.calc_extra_pass}</span>
+                      <span className="calc-row-lbl">
+                        {t.form.calc_extra_pass ? `${t.form.calc_extra_pass.split(' (')[0]} ($${settings?.extraPassengerFeeUsd || 50}/pax over 4)` : ''}
+                      </span>
                       <span className="calc-row-val">+${prices.extraPass}</span>
                     </div>
                   )}
 
-                  {formData.luggage > 3 && (
+                  {formData.luggage > 4 && (
                     <div className="calc-row surcharge">
-                      <span className="calc-row-lbl">{t.form.calc_extra_lug}</span>
+                      <span className="calc-row-lbl">
+                        {t.form.calc_extra_lug ? `${t.form.calc_extra_lug.split(' (')[0]} ($${settings?.extraLuggageFeeUsd || 20}/bag over 4)` : ''}
+                      </span>
                       <span className="calc-row-val">+${prices.extraLug}</span>
                     </div>
                   )}

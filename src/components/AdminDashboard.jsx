@@ -24,10 +24,18 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     }
   };
 
-  const handleSettingChange = (field, value, nestedField = null) => {
+  const handleSettingChange = (field, value, nestedField = null, deepNestedField = null) => {
     setEditSettings(prev => {
       const copy = { ...prev };
-      if (nestedField) {
+      if (deepNestedField && nestedField) {
+        copy[field] = {
+          ...copy[field],
+          [nestedField]: {
+            ...copy[field][nestedField],
+            [deepNestedField]: value
+          }
+        };
+      } else if (nestedField) {
         copy[field] = {
           ...copy[field],
           [nestedField]: value
@@ -726,36 +734,133 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 </div>
 
                 <div className="divider"></div>
-                <h3>Standard Pricing Settings (USD)</h3>
+                <h3>Standard Pricing Settings</h3>
+                <div className="form-field-pair">
+                  <label className="field-main-label">Exchange Rate (1 USD to KRW)</label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    Used for converting USD values to KRW.
+                  </p>
+                  <div className="form-field">
+                    <input 
+                      type="number" 
+                      value={editSettings.exchangeRate || 0} 
+                      onChange={(e) => handleSettingChange('exchangeRate', parseInt(e.target.value) || 0)}
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="divider"></div>
+                <h3>Meet & Assist Service Base Fees</h3>
+                
+                {/* Arrival & Departure Escort */}
                 <div className="form-row-2">
                   <div className="form-field-pair">
-                    <label className="field-main-label">Base Meet & Assist Fee (USD)</label>
-                    <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.basePriceUsd || 0} 
-                        onChange={(e) => handleSettingChange('basePriceUsd', parseInt(e.target.value) || 0)}
-                        min="0"
-                      />
+                    <label className="field-main-label">Arrival Escort Fee</label>
+                    <div className="form-row-2" style={{ marginTop: '8px' }}>
+                      <div className="form-field">
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>USD Price</label>
+                        <input 
+                          type="number" 
+                          value={editSettings.servicePrices?.arrival?.usd || 0} 
+                          onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'arrival', 'usd')}
+                          min="0"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>KRW Price</label>
+                        <input 
+                          type="number" 
+                          value={editSettings.servicePrices?.arrival?.krw || 0} 
+                          onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'arrival', 'krw')}
+                          min="0"
+                        />
+                      </div>
                     </div>
                   </div>
+
                   <div className="form-field-pair">
-                    <label className="field-main-label">Exchange Rate (1 USD to KRW)</label>
-                    <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.exchangeRate || 0} 
-                        onChange={(e) => handleSettingChange('exchangeRate', parseInt(e.target.value) || 0)}
-                        min="0"
-                      />
+                    <label className="field-main-label">Departure Escort Fee</label>
+                    <div className="form-row-2" style={{ marginTop: '8px' }}>
+                      <div className="form-field">
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>USD Price</label>
+                        <input 
+                          type="number" 
+                          value={editSettings.servicePrices?.departure?.usd || 0} 
+                          onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'departure', 'usd')}
+                          min="0"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>KRW Price</label>
+                        <input 
+                          type="number" 
+                          value={editSettings.servicePrices?.departure?.krw || 0} 
+                          onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'departure', 'krw')}
+                          min="0"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="form-row-2" style={{ marginTop: '10px' }}>
+                {/* Transfer & Welcome Picketing */}
+                <div className="form-row-2" style={{ marginTop: '16px' }}>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Transfer Escort Fee</label>
+                    <div className="form-row-2" style={{ marginTop: '8px' }}>
+                      <div className="form-field">
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>USD Price</label>
+                        <input 
+                          type="number" 
+                          value={editSettings.servicePrices?.transfer?.usd || 0} 
+                          onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'transfer', 'usd')}
+                          min="0"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>KRW Price</label>
+                        <input 
+                          type="number" 
+                          value={editSettings.servicePrices?.transfer?.krw || 0} 
+                          onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'transfer', 'krw')}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Welcome Picketing Fee</label>
+                    <div className="form-row-2" style={{ marginTop: '8px' }}>
+                      <div className="form-field">
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>USD Price</label>
+                        <input 
+                          type="number" 
+                          value={editSettings.servicePrices?.picketing?.usd || 0} 
+                          onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'picketing', 'usd')}
+                          min="0"
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>KRW Price</label>
+                        <input 
+                          type="number" 
+                          value={editSettings.servicePrices?.picketing?.krw || 0} 
+                          onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'picketing', 'krw')}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="divider"></div>
+                <h3>Surcharges (USD)</h3>
+                <div className="form-row-2">
                   <div className="form-field-pair">
                     <label className="field-main-label">Extra Passenger Surcharge (USD)</label>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per passenger beyond 3 passengers</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per passenger beyond 4 passengers</p>
                     <div className="form-field">
                       <input 
                         type="number" 
@@ -767,7 +872,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   </div>
                   <div className="form-field-pair">
                     <label className="field-main-label">Extra Luggage Surcharge (USD)</label>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per checked bag beyond 3 bags</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per checked bag beyond 4 bags</p>
                     <div className="form-field">
                       <input 
                         type="number" 

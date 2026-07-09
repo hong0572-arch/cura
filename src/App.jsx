@@ -37,10 +37,15 @@ function App() {
 
   const defaultSettings = {
     companyEmail: 'support@beyondthegate.vip',
-    basePriceUsd: 200,
     extraPassengerFeeUsd: 50,
     extraLuggageFeeUsd: 20,
     exchangeRate: 1350,
+    servicePrices: {
+      arrival: { usd: 250, krw: 310000 },
+      departure: { usd: 270, krw: 330000 },
+      transfer: { usd: 340, krw: 420000 },
+      picketing: { usd: 140, krw: 150000 }
+    },
     vehiclePricesKrw: {
       staria: 140000,
       g90: 240000,

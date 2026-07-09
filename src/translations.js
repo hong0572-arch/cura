@@ -74,7 +74,8 @@ export const translations = {
       tabs: {
         arrival: "입국 의전 서비스 (Arrival)",
         departure: "출국 의전 서비스 (Departure)",
-        transfer: "환승 의전 서비스 (Transfer)"
+        transfer: "환승 의전 서비스 (Transfer)",
+        picketing: "입국장 피케팅 (Welcome Picketing)"
       },
       arrival: {
         title: "입국 의전 서비스 프로세스",
@@ -441,7 +442,8 @@ export const translations = {
       tabs: {
         arrival: "Arrival Service",
         departure: "Departure Service",
-        transfer: "Transfer Service"
+        transfer: "Transfer Service",
+        picketing: "Welcome Picketing"
       },
       arrival: {
         title: "Arrival Meet & Assist Flow",
