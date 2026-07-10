@@ -503,6 +503,12 @@ Beyond the Gate Automated System`;
           margin-top: 40px;
         }
 
+        .reserve-grid {
+          display: grid;
+          grid-template-columns: 1.25fr 0.75fr;
+          gap: 30px;
+        }
+
         .reserve-form-panel {
           padding: 40px;
           display: flex;
