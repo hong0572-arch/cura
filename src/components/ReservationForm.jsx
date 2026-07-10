@@ -850,7 +850,6 @@ Beyond the Gate Automated System`;
         @media (max-width: 1024px) {
           .reserve-grid {
             grid-template-columns: 1fr;
-            padding: 0 20px;
           }
           .tariff-calculator-panel {
             border-left: none;
@@ -860,9 +859,6 @@ Beyond the Gate Automated System`;
         }
 
         @media (max-width: 768px) {
-          .reserve-grid {
-            padding: 0 16px;
-          }
           .form-group-row {
             grid-template-columns: 1fr;
             gap: 16px;
