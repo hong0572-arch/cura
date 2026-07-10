@@ -325,10 +325,12 @@ export default function Hero({ t, customImage }) {
 
         @media (max-width: 768px) {
           .hero-title {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
+            word-break: keep-all;
           }
           .hero-subtitle {
             font-size: 1rem;
+            word-break: keep-all;
           }
           .hero-buttons {
             flex-direction: column;
@@ -336,13 +338,28 @@ export default function Hero({ t, customImage }) {
             max-width: 320px;
           }
           .hero-stats-panel {
-            padding: 15px 10px;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 100%;
+          }
+          .stat-divider {
+            width: 60%;
+            height: 1px;
+            background: var(--border-subtle);
           }
           .stat-number {
-            font-size: 1.4rem;
+            font-size: 1.6rem;
           }
           .scroll-indicator-wrap {
             display: none;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hero-title {
+            font-size: 1.7rem;
           }
         }
       `}</style>

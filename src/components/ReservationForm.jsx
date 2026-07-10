@@ -868,6 +868,16 @@ Beyond the Gate Automated System`;
             padding: 24px;
           }
         }
+
+        @media (max-width: 480px) {
+          .form-item-counters {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .reserve-form-panel, .tariff-calculator-panel {
+            padding: 16px;
+          }
+        }
       `}</style>
     </section>
   );
