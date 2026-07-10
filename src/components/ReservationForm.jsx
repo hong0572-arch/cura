@@ -548,6 +548,9 @@ Beyond the Gate Automated System`;
         .form-item input, 
         .form-item select, 
         .form-item textarea {
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
           background: rgba(4, 9, 20, 0.5);
           border: 1px solid var(--border-subtle);
           color: #fff;
@@ -626,6 +629,8 @@ Beyond the Gate Automated System`;
           margin-top: 10px;
           padding: 15px;
           font-size: 1rem;
+          white-space: normal;
+          word-break: keep-all;
         }
 
         /* Tariff details panel */
@@ -873,6 +878,10 @@ Beyond the Gate Automated System`;
           .reserve-form-panel, .tariff-calculator-panel {
             padding: 24px;
           }
+          .btn-submit-reserve {
+            font-size: 0.9rem;
+            padding: 12px 16px;
+          }
         }
 
         @media (max-width: 480px) {
@@ -882,6 +891,10 @@ Beyond the Gate Automated System`;
           }
           .reserve-form-panel, .tariff-calculator-panel {
             padding: 16px;
+          }
+          .btn-submit-reserve {
+            font-size: 0.85rem;
+            padding: 12px 12px;
           }
         }
       `}</style>
