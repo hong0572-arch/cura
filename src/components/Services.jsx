@@ -169,7 +169,7 @@ export default function Services({ t }) {
         }
 
         .price-tag {
-          font-family: var(--font-serif);
+          font-family: var(--font-sans);
           font-size: 2.5rem;
           font-weight: 700;
           color: var(--gold-primary);

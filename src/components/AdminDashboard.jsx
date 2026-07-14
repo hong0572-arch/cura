@@ -1093,7 +1093,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
         }
 
         .brand-name {
-          font-family: var(--font-serif);
+          font-family: var(--font-sans);
           font-size: 1.3rem;
           font-weight: 700;
           color: #fff;

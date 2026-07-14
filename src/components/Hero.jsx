@@ -27,7 +27,7 @@ export default function Hero({ t, customImage }) {
             <span className="gold-star">✦</span> {t.brand_sub}
           </div>
           
-          <h1 className="hero-title font-serif">
+          <h1 className="hero-title font-sans">
             {(t?.hero?.title || '').split('\n').map((line, idx) => (
               <span key={idx} className="title-line">
                 {line}
@@ -225,7 +225,7 @@ export default function Hero({ t, customImage }) {
           font-size: 1.8rem;
           font-weight: 700;
           color: var(--gold-primary);
-          font-family: var(--font-serif);
+          font-family: var(--font-sans);
         }
 
         .stat-label {

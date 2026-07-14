@@ -22,7 +22,6 @@ export default function Navbar({ lang, setLang, t }) {
   };
 
   const navItems = [
-    { id: 'hero', label: t.nav.home },
     { id: 'values', label: t.nav.values },
     { id: 'services', label: t.nav.services },
     { id: 'fleet', label: t.nav.fleet },
@@ -193,7 +192,7 @@ export default function Navbar({ lang, setLang, t }) {
         }
 
         .brand-name {
-          font-family: var(--font-serif);
+          font-family: var(--font-sans);
           font-size: 1.3rem;
           font-weight: 700;
           letter-spacing: 0.02em;

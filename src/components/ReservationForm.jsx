@@ -714,7 +714,7 @@ Beyond the Gate Automated System`;
           font-size: 2.4rem;
           font-weight: 700;
           color: var(--gold-primary);
-          font-family: var(--font-serif);
+          font-family: var(--font-sans);
           line-height: 1.1;
         }
 
@@ -799,7 +799,7 @@ Beyond the Gate Automated System`;
         }
 
         .ticket-id {
-          font-family: var(--font-serif);
+          font-family: var(--font-sans);
           font-size: 1.5rem;
           font-weight: 700;
           color: #fff;

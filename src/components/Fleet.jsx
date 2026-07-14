@@ -222,7 +222,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
           font-size: 1.6rem;
           font-weight: 700;
           color: var(--gold-primary);
-          font-family: var(--font-serif);
+          font-family: var(--font-sans);
         }
 
         .fleet-desc {
