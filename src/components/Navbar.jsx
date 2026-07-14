@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, Globe } from 'lucide-react';
 
 export default function Navbar({ lang, setLang, t }) {
@@ -27,6 +27,7 @@ export default function Navbar({ lang, setLang, t }) {
     { id: 'services', label: t.nav.services },
     { id: 'fleet', label: t.nav.fleet },
     { id: 'cas', label: t.nav.cas },
+    { id: 'team', label: t.nav.team },
     { id: 'faq', label: t.nav.faq },
     { id: 'reserve', label: t.nav.reserve }
   ];

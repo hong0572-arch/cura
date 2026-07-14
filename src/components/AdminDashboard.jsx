@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Save, Eye, RotateCcw, Layout, FileText, 
   HelpCircle, Image, Settings, Sparkles, Check,
   Car, Plane, Calendar, Calculator, ShieldAlert, 
-  Award, Lock, Activity, Navigation, FileSpreadsheet
+  Award, Lock, Activity, Navigation, FileSpreadsheet,
+  Users
 } from 'lucide-react';
 
 export default function AdminDashboard({ data, images, settings, onSave, onReset, onPreview }) {
@@ -250,6 +251,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     { id: 'fleet_header', label: 'Chauffeur Fleet Header', icon: <Car size={18} /> },
     { id: 'fleet_vehicles', label: 'Fleet Vehicles', icon: <Navigation size={18} /> },
     { id: 'cas', label: 'CAS Aviation', icon: <Plane size={18} /> },
+    { id: 'team', label: 'Our Team', icon: <Users size={18} /> },
     { id: 'form', label: 'Reservation Form', icon: <Calendar size={18} /> },
     { id: 'form_calculator', label: 'Calculator & Ticket', icon: <Calculator size={18} /> },
     { id: 'pricing_settings', label: 'Pricing & Email Settings', icon: <Calculator size={18} /> },
@@ -345,6 +347,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 {renderField('Meet & Assist link name', 'nav.services')}
                 {renderField('Fleet link name', 'nav.fleet')}
                 {renderField('CAS Aviation link name', 'nav.cas')}
+                {renderField('Team link name', 'nav.team')}
                 {renderField('FAQ link name', 'nav.faq')}
                 {renderField('Reserve link name', 'nav.reserve')}
 
@@ -502,6 +505,24 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   { label: 'Service Slogan Name', key: 'title' },
                   { label: 'Service Description Sub', key: 'desc', isTextArea: true, rows: 2 },
                   { label: 'Process Checklists (One per line)', key: 'details', isTextArea: true, rows: 4, isStringArray: true }
+                ])}
+              </div>
+            )}
+
+            {/* Tab: Our Team */}
+            {activeTab === 'team' && (
+              <div className="tab-section">
+                <h3>Our Team Section Headings</h3>
+                {renderField('Team Section Badge', 'team.badge')}
+                {renderField('Team Section Title', 'team.title')}
+                {renderField('Team Section Subtitle', 'team.subtitle')}
+
+                <div className="divider"></div>
+                <h3>Team Members</h3>
+                {renderArrayCard('Team Member Card', 'team.members', 4, [
+                  { label: 'Member Name', key: 'name' },
+                  { label: 'Member Role / Title', key: 'role' },
+                  { label: 'Member Bio Description', key: 'bio', isTextArea: true, rows: 3 }
                 ])}
               </div>
             )}

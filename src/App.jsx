@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import CoreValues from './components/CoreValues';
 import Services from './components/Services';
 import Fleet from './components/Fleet';
 import CasRoadmap from './components/CasRoadmap';
+import Team from './components/Team';
 import ReservationForm from './components/ReservationForm';
 import Faq from './components/Faq';
 import TermsModal from './components/TermsModal';
@@ -24,7 +25,23 @@ function App() {
   // --- Dynamic Content State from localStorage ---
   const [content, setContent] = useState(() => {
     const saved = localStorage.getItem('custom_btg_translations');
-    return saved ? JSON.parse(saved) : defaultTranslations;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Deep merge parsed with defaultTranslations so new keys (like team) are preserved
+      const merge = (target, source) => {
+        for (const key in source) {
+          if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+            if (!target[key]) target[key] = {};
+            merge(target[key], source[key]);
+          } else if (target[key] === undefined) {
+            target[key] = source[key];
+          }
+        }
+        return target;
+      };
+      return merge(parsed, defaultTranslations);
+    }
+    return defaultTranslations;
   });
 
   const [images, setImages] = useState(() => {
@@ -165,6 +182,8 @@ function App() {
         />
         
         <CasRoadmap t={t} />
+        
+        <Team t={t} />
         
         <ReservationForm 
           t={t} 

@@ -8,6 +8,7 @@ export const translations = {
       services: "의전 서비스",
       fleet: "차량 서비스",
       cas: "항공 사업(CAS)",
+      team: "팀원 소개",
       faq: "자주 묻는 질문",
       reserve: "예약/견적 문의"
     },
@@ -353,6 +354,33 @@ export const translations = {
       ticket_lbl_amount: "Amount:",
       close: "닫기"
     },
+    team: {
+      badge: "EXECUTIVE BOARD",
+      title: "신뢰를 더하는 Beyond the Gate 핵심 팀원",
+      subtitle: "풍부한 경험과 전문성을 갖춘 공동 창립자들이 고객님의 여정을 격조 있게 책임집니다.",
+      members: [
+        {
+          name: "홍준기",
+          role: "CEO & Founder",
+          bio: "Beyond the Gate의 창립자이자 대표이사로서, 프리미엄 항공 의전 및 VIP 서비스 분야의 비전과 전략적 성장을 이끌고 있습니다."
+        },
+        {
+          name: "김철훈",
+          role: "COO & Co-Founder",
+          bio: "운영 총괄자이자 공동 창립자로서, 현장 운영의 효율성을 제고하고 항공 및 수송 서비스의 글로벌 품질 기준을 관리합니다."
+        },
+        {
+          name: "김성경",
+          role: "CSO & Co-Founder",
+          bio: "최고전략책임자이자 공동 창립자로서, 신규 비즈니스 모델 개발 및 글로벌 파트너십 구축을 주도하고 있습니다."
+        },
+        {
+          name: "이건우",
+          role: "General Manager & Co-Founder",
+          bio: "제너럴 매니저이자 공동 창립자로서, 다국어 의전 서비스의 실행을 관리하고 VIP 고객 경험(CX)을 총괄 설계합니다."
+        }
+      ]
+    },
     contact: {
       title: "고객 지원 및 연락처",
       desc: "서비스 예약 접수, 긴급 일정 변경 등 24시간 열려 있는 창구를 통해 신속히 지원합니다.",
@@ -376,6 +404,7 @@ export const translations = {
       services: "Meet & Assist",
       fleet: "Fleet",
       cas: "Aviation (CAS)",
+      team: "Our Team",
       faq: "FAQ",
       reserve: "Book & Quote"
     },
@@ -720,6 +749,33 @@ export const translations = {
       ticket_lbl_date: "Date:",
       ticket_lbl_amount: "Amount:",
       close: "Close"
+    },
+    team: {
+      badge: "EXECUTIVE BOARD",
+      title: "Key Members Behind Beyond the Gate",
+      subtitle: "Our highly experienced co-founders are dedicated to ensuring a distinguished journey for every VIP guest.",
+      members: [
+        {
+          name: "Jun-ki Hong",
+          role: "CEO & Founder",
+          bio: "Founder and CEO of Beyond the Gate, leading the vision and strategic growth in the premium aviation protocol and VIP services sector."
+        },
+        {
+          name: "Chul-hoon Kim",
+          role: "COO & Co-Founder",
+          bio: "Chief Operating Officer and Co-Founder, optimizing operational efficiency and managing global quality standards for aviation and transportation services."
+        },
+        {
+          name: "Sung-kyung Kim",
+          role: "CSO & Co-Founder",
+          bio: "Chief Strategy Officer and Co-Founder, leading new business model development and building global strategic partnerships."
+        },
+        {
+          name: "Gun-woo Lee",
+          role: "General Manager & Co-Founder",
+          bio: "General Manager and Co-Founder, overseeing multilingual protocol execution and designing premium VIP customer experience (CX) journeys."
+        }
+      ]
     },
     contact: {
       title: "Contact & Assistance",
