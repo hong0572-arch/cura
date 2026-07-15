@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, CheckCircle2, ShieldCheck, CreditCard, Loader2 } from 'lucide-react';
+import { Calculator, CheckCircle2, ShieldCheck, CreditCard, Loader2, Check } from 'lucide-react';
 
 export default function ReservationForm({ t, lang, selectedVehicle, setSelectedVehicle, settings }) {
+  const [activeTab, setActiveTab] = useState('arrival');
+  const [bookingStarted, setBookingStarted] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -51,6 +54,10 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
     setLocalVehicleType(val);
     setSelectedVehicle(val);
   };
+  
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, serviceType: activeTab }));
+  }, [activeTab]);
 
   // Recalculate prices in real-time
   useEffect(() => {
@@ -197,7 +204,24 @@ Beyond the Gate Automated System`;
     setSelectedVehicle('none');
     setMailtoUrl('');
     setStatus('idle');
+    setBookingStarted(false);
   };
+
+  const startBooking = () => {
+    setBookingStarted(true);
+    // Scroll to form smoothly
+    setTimeout(() => {
+      document.getElementById('detailed-booking-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const featuresList = activeTab === 'arrival' 
+    ? (t.form.features_arrival || [])
+    : (t.form.features_departure || []);
+    
+  const imageUrl = activeTab === 'arrival' 
+    ? '/arrival_service_sunset.png' 
+    : '/departure_service_wing.png';
 
   return (
     <section id="reserve" className="reserve-section section-padding">
@@ -210,211 +234,220 @@ Beyond the Gate Automated System`;
 
         <div className="reserve-wrapper">
           {status !== 'success' ? (
-            <div className="reserve-grid grid-2">
-              {/* Left Side: Form */}
-              <form onSubmit={handleSubmit} className="reserve-form-panel glass-panel">
-                <div className="form-group-row">
-                  <div className="form-item">
-                    <label htmlFor="name" className="required">{t.form.name}</label>
-                    <input 
-                      type="text" 
-                      id="name"
-                      name="name" 
-                      value={formData.name} 
-                      onChange={handleChange}
-                      placeholder={t.form.placeholder_name || 'e.g. John Doe'}
-                      required
-                    />
-                  </div>
-                  <div className="form-item">
-                    <label htmlFor="email" className="required">{t.form.email}</label>
-                    <input 
-                      type="email" 
-                      id="email"
-                      name="email" 
-                      value={formData.email} 
-                      onChange={handleChange}
-                      placeholder={t.form.placeholder_email || 'name@example.com'}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group-row">
-                  <div className="form-item">
-                    <label htmlFor="phone" className="required">{t.form.phone}</label>
-                    <input 
-                      type="tel" 
-                      id="phone"
-                      name="phone" 
-                      value={formData.phone} 
-                      onChange={handleChange}
-                      placeholder={t.form.placeholder_phone || '+82 10-0000-0000'}
-                      required
-                    />
-                  </div>
-                  <div className="form-item">
-                    <label htmlFor="date" className="required">{t.form.date}</label>
-                    <input 
-                      type="datetime-local" 
-                      id="date"
-                      name="date" 
-                      value={formData.date} 
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group-row">
-                  <div className="form-item">
-                    <label htmlFor="serviceType">{t.form.service_type}</label>
-                    <select 
-                      id="serviceType"
-                      name="serviceType" 
-                      value={formData.serviceType} 
-                      onChange={handleChange}
-                    >
-                      <option value="arrival">{t.services.tabs.arrival}</option>
-                      <option value="departure">{t.services.tabs.departure}</option>
-                      <option value="transfer">{t.services.tabs.transfer}</option>
-                      <option value="picketing">{t.services.tabs.picketing || '입국장 피케팅 (Welcome Picketing)'}</option>
-                    </select>
-                  </div>
-                  <div className="form-item">
-                    <label htmlFor="vehicleType">{t.form.vehicle_type}</label>
-                    <select 
-                      id="vehicleType"
-                      value={vehicleType} 
-                      onChange={(e) => handleVehicleChange(e.target.value)}
-                    >
-                      <option value="none">{t.form.none}</option>
-                      <option value="staria">{t.form.staria}</option>
-                      <option value="g90">{t.form.g90}</option>
-                      <option value="sprinter">{t.form.sprinter}</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group-row">
-                  <div className="form-item">
-                    <label htmlFor="flight">{t.form.flight}</label>
-                    <input 
-                      type="text" 
-                      id="flight"
-                      name="flight" 
-                      value={formData.flight} 
-                      onChange={handleChange}
-                      placeholder={t.form.placeholder_flight || 'e.g. KE182'}
-                    />
-                  </div>
-                  <div className="form-item-counters">
-                    <div className="counter-box">
-                      <label>{t.form.passengers}</label>
-                      <div className="counter-controls">
-                        <button type="button" onClick={() => handleNumChange('passengers', formData.passengers - 1)}>-</button>
-                        <span>{formData.passengers}</span>
-                        <button type="button" onClick={() => handleNumChange('passengers', formData.passengers + 1)}>+</button>
-                      </div>
-                    </div>
-                    <div className="counter-box">
-                      <label>{t.form.luggage}</label>
-                      <div className="counter-controls">
-                        <button type="button" onClick={() => handleNumChange('luggage', formData.luggage - 1)}>-</button>
-                        <span>{formData.luggage}</span>
-                        <button type="button" onClick={() => handleNumChange('luggage', formData.luggage + 1)}>+</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-item full-width">
-                  <label htmlFor="msg">{t.form.msg}</label>
-                  <textarea 
-                    id="msg"
-                    name="msg" 
-                    value={formData.msg} 
-                    onChange={handleChange}
-                    rows="3"
-                    placeholder={t.form.placeholder_msg || 'Provide airline details, special dietary, or child seats requested...'}
-                  ></textarea>
-                </div>
-
+            <div className="reserve-main-content">
+              {/* Tabs */}
+              <div className="service-tabs">
                 <button 
-                  type="submit" 
-                  className="btn-premium primary btn-submit-reserve" 
-                  disabled={status === 'submitting'}
+                  className={`service-tab ${activeTab === 'arrival' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('arrival'); setBookingStarted(false); }}
                 >
-                  {status === 'submitting' ? (
-                    <>
-                      <Loader2 size={18} className="spinner-icon animate-spin" />
-                      <span>{t.form.submitting}</span>
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard size={18} style={{ marginRight: '8px' }} />
-                      <span>{t.form.submit}</span>
-                    </>
-                  )}
+                  {t.form.tabs?.arrival || 'ICN Arrival Services'}
                 </button>
-              </form>
+                <button 
+                  className={`service-tab ${activeTab === 'departure' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('departure'); setBookingStarted(false); }}
+                >
+                  {t.form.tabs?.departure || 'ICN Departure Services'}
+                </button>
+              </div>
 
-              {/* Right Side: Tariff Details */}
-              <div className="tariff-calculator-panel glass-panel">
-                <div className="calc-header">
-                  <Calculator size={24} className="calc-header-icon" />
-                  <h3 className="font-serif">{t.form.calc_title}</h3>
+              {/* 3-Column Layout */}
+              <div className="reserve-grid-new">
+                {/* Column 1: Image */}
+                <div className="res-col res-image-col">
+                  <div className="res-image-wrapper">
+                    <img src={imageUrl} alt={activeTab} className="res-image" />
+                    <div className="res-image-overlay">
+                      <h3>{activeTab === 'arrival' ? 'Arrival Services' : 'Departure Services'}</h3>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="calc-breakdown">
-                  <div className="calc-row">
-                    <span className="calc-row-lbl">{t.form.calc_base ? t.form.calc_base.split(' (')[0] : ''}</span>
-                    <span className="calc-row-val">${prices.base}</span>
+                {/* Column 2: Features */}
+                <div className="res-col res-features-col glass-panel">
+                  <h3 className="features-title font-serif">{t.form.features_title || 'Features:'}</h3>
+                  <ul className="features-list">
+                    {featuresList.map((feat, idx) => (
+                      <li key={idx} className="feature-item">
+                        <Check className="feature-icon" size={18} />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {t.form.features_footnote && (
+                    <p className="features-footnote">{t.form.features_footnote}</p>
+                  )}
+                </div>
+
+                {/* Column 3: Price & Actions */}
+                <div className="res-col res-price-col glass-panel">
+                  <div className="price-top">
+                    <span className="price-label">{t.form.price_lbl || 'Price:'}</span>
+                    <div className="base-price">
+                      <span className="usd-val">${prices.base}</span>
+                      <span className="krw-val">≈ {prices.baseKrw.toLocaleString()} {t.form.approx_currency || 'KRW'}</span>
+                    </div>
                   </div>
                   
-                  {vehicleType !== 'none' && (
-                    <div className="calc-row">
-                      <span className="calc-row-lbl">
-                        {t.form.calc_vehicle} ({vehicleType.toUpperCase()})
-                      </span>
-                      <span className="calc-row-val">${prices.vehicle}</span>
-                    </div>
-                  )}
+                  <div className="calc-divider"></div>
 
-                  {formData.passengers > 4 && (
-                    <div className="calc-row surcharge">
-                      <span className="calc-row-lbl">
-                        {t.form.calc_extra_pass ? `${t.form.calc_extra_pass.split(' (')[0]} ($${settings?.extraPassengerFeeUsd || 50}/pax over 4)` : ''}
-                      </span>
-                      <span className="calc-row-val">+${prices.extraPass}</span>
+                  <div className="pax-selector">
+                    <label>{t.form.select_pax_lbl || 'Select number of people:'}</label>
+                    <div className="counter-controls">
+                      <button type="button" onClick={() => handleNumChange('passengers', formData.passengers - 1)}>-</button>
+                      <span>{formData.passengers}</span>
+                      <button type="button" onClick={() => handleNumChange('passengers', formData.passengers + 1)}>+</button>
                     </div>
-                  )}
-
-                  {formData.luggage > 4 && (
-                    <div className="calc-row surcharge">
-                      <span className="calc-row-lbl">
-                        {t.form.calc_extra_lug ? `${t.form.calc_extra_lug.split(' (')[0]} ($${settings?.extraLuggageFeeUsd || 20}/bag over 4)` : ''}
-                      </span>
-                      <span className="calc-row-val">+${prices.extraLug}</span>
-                    </div>
-                  )}
+                  </div>
 
                   <div className="calc-divider"></div>
 
-                  <div className="calc-total-box">
-                    <span className="total-title">{t.form.calc_total}</span>
+                  <div className="total-display">
+                    <span className="total-label">{t.form.total_lbl || 'Total:'}</span>
                     <div className="total-price-group">
-                      <span className="total-price-usd">${prices.totalUsd} <span className="currency-unit">{t.form.currency_unit || 'USD'}</span></span>
-                      <span className="total-price-krw">{t.form.approx_label || '≈'} {prices.totalKrw.toLocaleString()} {t.form.approx_currency || 'KRW'}</span>
+                      <span className="total-price-usd">${prices.totalUsd}</span>
+                      <span className="total-price-krw">≈ {prices.totalKrw.toLocaleString()} {t.form.approx_currency || 'KRW'}</span>
                     </div>
                   </div>
-                </div>
 
-                <div className="calc-footer">
-                  <ShieldCheck size={18} className="shield-icon" />
-                  <span>{t.form.calc_footer_text || 'Secure 256-bit SSL encrypted booking portal. Final rates verified before billing email.'}</span>
+                  {!bookingStarted && (
+                    <button onClick={startBooking} className="btn-premium primary btn-add-booking mt-auto">
+                      {t.form.add_to_booking || 'Add to Booking'}
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {/* Detailed Form (Revealed upon 'Add to Booking') */}
+              {bookingStarted && (
+                <div id="detailed-booking-form" className="detailed-form-wrapper glass-panel mt-40">
+                  <h3 className="font-serif text-gold mb-24">Complete Your Reservation</h3>
+                  <form onSubmit={handleSubmit} className="reserve-form-panel">
+                    <div className="form-group-row">
+                      <div className="form-item">
+                        <label htmlFor="name" className="required">{t.form.name}</label>
+                        <input 
+                          type="text" 
+                          id="name"
+                          name="name" 
+                          value={formData.name} 
+                          onChange={handleChange}
+                          placeholder={t.form.placeholder_name || 'e.g. John Doe'}
+                          required
+                        />
+                      </div>
+                      <div className="form-item">
+                        <label htmlFor="email" className="required">{t.form.email}</label>
+                        <input 
+                          type="email" 
+                          id="email"
+                          name="email" 
+                          value={formData.email} 
+                          onChange={handleChange}
+                          placeholder={t.form.placeholder_email || 'name@example.com'}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group-row">
+                      <div className="form-item">
+                        <label htmlFor="phone" className="required">{t.form.phone}</label>
+                        <input 
+                          type="tel" 
+                          id="phone"
+                          name="phone" 
+                          value={formData.phone} 
+                          onChange={handleChange}
+                          placeholder={t.form.placeholder_phone || '+82 10-0000-0000'}
+                          required
+                        />
+                      </div>
+                      <div className="form-item">
+                        <label htmlFor="date" className="required">{t.form.date}</label>
+                        <input 
+                          type="datetime-local" 
+                          id="date"
+                          name="date" 
+                          value={formData.date} 
+                          onChange={handleChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group-row">
+                      <div className="form-item">
+                        <label htmlFor="vehicleType">{t.form.vehicle_type}</label>
+                        <select 
+                          id="vehicleType"
+                          value={vehicleType} 
+                          onChange={(e) => handleVehicleChange(e.target.value)}
+                        >
+                          <option value="none">{t.form.none}</option>
+                          <option value="staria">{t.form.staria}</option>
+                          <option value="g90">{t.form.g90}</option>
+                          <option value="sprinter">{t.form.sprinter}</option>
+                        </select>
+                      </div>
+                      <div className="form-item">
+                        <label htmlFor="flight">{t.form.flight}</label>
+                        <input 
+                          type="text" 
+                          id="flight"
+                          name="flight" 
+                          value={formData.flight} 
+                          onChange={handleChange}
+                          placeholder={t.form.placeholder_flight || 'e.g. KE182'}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group-row">
+                      <div className="form-item-counters">
+                        <div className="counter-box">
+                          <label>{t.form.luggage}</label>
+                          <div className="counter-controls">
+                            <button type="button" onClick={() => handleNumChange('luggage', formData.luggage - 1)}>-</button>
+                            <span>{formData.luggage}</span>
+                            <button type="button" onClick={() => handleNumChange('luggage', formData.luggage + 1)}>+</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="form-item full-width mt-16">
+                      <label htmlFor="msg">{t.form.msg}</label>
+                      <textarea 
+                        id="msg"
+                        name="msg" 
+                        value={formData.msg} 
+                        onChange={handleChange}
+                        rows="3"
+                        placeholder={t.form.placeholder_msg || 'Provide airline details, special dietary, or child seats requested...'}
+                      ></textarea>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="btn-premium primary btn-submit-reserve mt-24" 
+                      disabled={status === 'submitting'}
+                    >
+                      {status === 'submitting' ? (
+                        <>
+                          <Loader2 size={18} className="spinner-icon animate-spin" />
+                          <span>{t.form.submitting}</span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard size={18} style={{ marginRight: '8px' }} />
+                          <span>{t.form.submit}</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           ) : (
             /* Success confirmation card */
@@ -502,15 +535,232 @@ Beyond the Gate Automated System`;
         .reserve-wrapper {
           margin-top: 40px;
         }
+        
+        .mt-40 { margin-top: 40px; }
+        .mt-24 { margin-top: 24px; }
+        .mt-16 { margin-top: 16px; }
+        .mt-auto { margin-top: auto; }
+        .mb-24 { margin-bottom: 24px; }
 
-        .reserve-grid {
+        .service-tabs {
+          display: flex;
+          justify-content: center;
+          gap: 16px;
+          margin-bottom: 30px;
+        }
+
+        .service-tab {
+          padding: 12px 32px;
+          background: rgba(4, 9, 20, 0.5);
+          border: 1px solid var(--border-subtle);
+          color: var(--text-secondary);
+          font-family: var(--font-serif);
+          font-size: 1.1rem;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: var(--transition-fast);
+        }
+
+        .service-tab:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+        }
+
+        .service-tab.active {
+          background: rgba(197, 168, 128, 0.1);
+          border-color: var(--gold-primary);
+          color: var(--gold-primary);
+          box-shadow: 0 4px 15px rgba(197, 168, 128, 0.15);
+        }
+
+        .reserve-grid-new {
           display: grid;
-          grid-template-columns: 1.25fr 0.75fr;
-          gap: 30px;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 24px;
+        }
+
+        .res-col {
+          display: flex;
+          flex-direction: column;
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        .res-image-col {
+          position: relative;
+          background: #000;
+        }
+
+        .res-image-wrapper {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          min-height: 350px;
+        }
+
+        .res-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          opacity: 0.85;
+          transition: transform 0.5s ease;
+        }
+        
+        .res-image-wrapper:hover .res-image {
+          transform: scale(1.05);
+        }
+
+        .res-image-overlay {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          padding: 40px 24px 24px;
+          background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+        }
+
+        .res-image-overlay h3 {
+          font-family: var(--font-serif);
+          font-size: 1.5rem;
+          color: #fff;
+          margin: 0;
+        }
+
+        .res-features-col {
+          padding: 32px 24px;
+        }
+
+        .features-title {
+          font-size: 1.3rem;
+          color: var(--gold-primary);
+          margin-bottom: 20px;
+        }
+
+        .features-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .feature-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          font-size: 0.95rem;
+          color: #fff;
+          line-height: 1.4;
+        }
+
+        .feature-icon {
+          color: var(--gold-primary);
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+        
+        .features-footnote {
+          margin-top: 24px;
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          font-style: italic;
+        }
+
+        .res-price-col {
+          padding: 32px 24px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .price-top {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 20px;
+        }
+        
+        .price-label, .total-label {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .base-price {
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .usd-val {
+          font-size: 2rem;
+          font-family: var(--font-sans);
+          font-weight: 700;
+          color: #fff;
+          line-height: 1;
+        }
+        
+        .krw-val {
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+          margin-top: 4px;
+        }
+
+        .pax-selector {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin: 20px 0;
+        }
+        
+        .pax-selector label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          text-transform: uppercase;
+        }
+
+        .total-display {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 20px;
+          margin-bottom: 30px;
+        }
+
+        .total-price-usd {
+          font-size: 2.2rem;
+          font-family: var(--font-sans);
+          font-weight: 700;
+          color: var(--gold-primary);
+          line-height: 1.1;
+        }
+        
+        .total-price-krw {
+          font-size: 0.95rem;
+          color: var(--text-secondary);
+          margin-top: 4px;
+        }
+
+        .btn-add-booking {
+          width: 100%;
+          padding: 16px;
+          font-size: 1.05rem;
+          display: flex;
+          justify-content: center;
+        }
+
+        .detailed-form-wrapper {
+          padding: 40px;
+          animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         .reserve-form-panel {
-          padding: 40px;
           display: flex;
           flex-direction: column;
           gap: 24px;
@@ -571,8 +821,7 @@ Beyond the Gate Automated System`;
 
         /* Number counters */
         .form-item-counters {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          display: flex;
           gap: 16px;
           align-items: flex-end;
         }
@@ -581,6 +830,7 @@ Beyond the Gate Automated System`;
           display: flex;
           flex-direction: column;
           gap: 8px;
+          width: 100%;
         }
 
         .counter-box label {
@@ -626,121 +876,17 @@ Beyond the Gate Automated System`;
         .btn-submit-reserve {
           width: 100%;
           border: none;
-          margin-top: 10px;
           padding: 15px;
           font-size: 1rem;
-          white-space: normal;
-          word-break: keep-all;
-        }
-
-        /* Tariff details panel */
-        .tariff-calculator-panel {
-          padding: 40px;
           display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          height: 100%;
-          border-left: 2px solid var(--gold-primary);
-        }
-
-        .calc-header {
-          display: flex;
+          justify-content: center;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 30px;
-        }
-
-        .calc-header-icon {
-          color: var(--gold-primary);
-        }
-
-        .calc-header h3 {
-          font-size: 1.6rem;
-          color: #fff;
-        }
-
-        .calc-breakdown {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 40px;
-        }
-
-        .calc-row {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.95rem;
-          color: var(--text-secondary);
-        }
-
-        .calc-row.surcharge {
-          color: var(--gold-primary);
-        }
-
-        .calc-row-val {
-          font-weight: 600;
-          color: #fff;
-        }
-
-        .calc-row.surcharge .calc-row-val {
-          color: var(--gold-primary);
         }
 
         .calc-divider {
           height: 1px;
           background: var(--border-subtle);
           margin: 10px 0;
-        }
-
-        .calc-total-box {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .total-title {
-          font-size: 0.85rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .total-price-group {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .total-price-usd {
-          font-size: 2.4rem;
-          font-weight: 700;
-          color: var(--gold-primary);
-          font-family: var(--font-sans);
-          line-height: 1.1;
-        }
-
-        .currency-unit {
-          font-size: 1rem;
-          font-weight: 500;
-          color: var(--text-secondary);
-        }
-
-        .total-price-krw {
-          font-size: 0.95rem;
-          color: var(--text-secondary);
-          margin-top: 4px;
-        }
-
-        .calc-footer {
-          display: flex;
-          gap: 10px;
-          color: var(--text-muted);
-          font-size: 0.75rem;
-          line-height: 1.4;
-        }
-
-        .shield-icon {
-          color: var(--gold-primary);
-          flex-shrink: 0;
         }
 
         /* Success card styling */
@@ -853,13 +999,11 @@ Beyond the Gate Automated System`;
         }
 
         @media (max-width: 1024px) {
-          .reserve-grid {
+          .reserve-grid-new {
             grid-template-columns: 1fr;
           }
-          .tariff-calculator-panel {
-            border-left: none;
-            border-top: 2px solid var(--gold-primary);
-            margin-top: 24px;
+          .res-image-wrapper {
+            min-height: 250px;
           }
         }
 
@@ -871,30 +1015,12 @@ Beyond the Gate Automated System`;
           .form-item.full-width {
             grid-column: span 1;
           }
-          .form-item-counters {
-            grid-template-columns: 1fr 1fr;
-            align-items: flex-end;
+          .service-tabs {
+            flex-direction: column;
+            gap: 10px;
           }
-          .reserve-form-panel, .tariff-calculator-panel {
+          .detailed-form-wrapper {
             padding: 24px;
-          }
-          .btn-submit-reserve {
-            font-size: 0.9rem;
-            padding: 12px 16px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .form-item-counters {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
-          .reserve-form-panel, .tariff-calculator-panel {
-            padding: 16px;
-          }
-          .btn-submit-reserve {
-            font-size: 0.85rem;
-            padding: 12px 12px;
           }
         }
       `}</style>

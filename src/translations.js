@@ -308,6 +308,33 @@ export const translations = {
       badge: "Reservation Portal",
       title: "프리미엄 견적 및 예약 문의",
       subtitle: "단 몇 가지 입력만으로 예상 요금을 실시간으로 조회하고 공식 예약 요청을 진행할 수 있습니다.",
+      tabs: {
+        arrival: "ICN Arrival Services",
+        departure: "ICN Departure Services"
+      },
+      features_title: "Features:",
+      features_arrival: [
+        "게이트 마중 영접 서비스 (Concierge meets you at your arrival gate)",
+        "공항 내 전담 에스코트 (Concierge assists and escorts you in airport)",
+        "패스트트랙 입국 심사 (Fast track through immigration)",
+        "수하물 수취 지원 (Luggage assistance)",
+        "차량 및 기사 인도 에스코트 (Escort to your driver)",
+        "전동 카트 (Buggy)*"
+      ],
+      features_departure: [
+        "차량 하차장 마중 영접 (Concierge meets you curbside)",
+        "공항 내 전담 에스코트 (Concierge assists and escorts you in airport)",
+        "신속한 체크인 지원 (Expedited check-in)",
+        "패스트트랙 보안 검색 (Fast track through security)",
+        "패스트트랙 출국 심사 (Fast track through immigration)",
+        "수하물 수속 지원 (Luggage assistance)",
+        "탑승구 이동 전동 카트 (Buggy To Gate)*"
+      ],
+      features_footnote: "*추가 요금이 발생할 수 있습니다 (*Available at additional cost)",
+      price_lbl: "Price:",
+      select_pax_lbl: "Select number of people:",
+      total_lbl: "Total:",
+      add_to_booking: "예약 진행하기 (Add to Booking)",
       name: "예약자 성함 (Name)",
       email: "이메일 주소 (Email)",
       phone: "연락처 (Phone)",
@@ -703,6 +730,33 @@ export const translations = {
       badge: "Reservation Portal",
       title: "Premium Estimator & Booking Form",
       subtitle: "Input your requirements to receive a real-time price estimate and submit an official reservation inquiry.",
+      tabs: {
+        arrival: "ICN Arrival Services",
+        departure: "ICN Departure Services"
+      },
+      features_title: "Features:",
+      features_arrival: [
+        "Concierge meets you at your arrival gate",
+        "Concierge assists and escorts you in airport",
+        "Fast track through immigration",
+        "Luggage assistance",
+        "Escort to your driver (or other transport)",
+        "Buggy*"
+      ],
+      features_departure: [
+        "Concierge meets you curbside",
+        "Concierge assists and escorts you in airport",
+        "Expedited check-in",
+        "Fast track through security",
+        "Fast track through immigration",
+        "Luggage assistance",
+        "Buggy To Gate*"
+      ],
+      features_footnote: "*Available at additional cost",
+      price_lbl: "Price:",
+      select_pax_lbl: "Select number of people:",
+      total_lbl: "Total:",
+      add_to_booking: "Add to Booking",
       name: "Your Name",
       email: "Email Address",
       phone: "Phone Number",
