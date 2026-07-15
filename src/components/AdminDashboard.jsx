@@ -185,6 +185,33 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     );
   };
 
+  // Reusable helper to render direct string arrays
+  const renderDirectArrayField = (label, path, rows = 4) => {
+    return (
+      <div className="form-field-pair">
+        <label className="field-main-label">{label}</label>
+        <div className="form-row-2">
+          <div className="form-field">
+            <span className="lang-indicator">KO</span>
+            <textarea
+              rows={rows}
+              value={getDirectArrayValue('ko', path)}
+              onChange={(e) => handleDirectArrayChange('ko', path, e.target.value)}
+            />
+          </div>
+          <div className="form-field">
+            <span className="lang-indicator">EN</span>
+            <textarea
+              rows={rows}
+              value={getDirectArrayValue('en', path)}
+              onChange={(e) => handleDirectArrayChange('en', path, e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Reusable helper to render array items
   const renderArrayCard = (titlePrefix, arrayName, size, fields) => {
     const items = [];
@@ -536,7 +563,20 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 {renderField('Form Subtitle', 'form.subtitle')}
 
                 <div className="divider"></div>
-                <h3>Form Field Input Labels</h3>
+                <h3>Premium 3-Column Layout Texts</h3>
+                {renderField('Arrival Tab Label', 'form.tabs.arrival')}
+                {renderField('Departure Tab Label', 'form.tabs.departure')}
+                {renderField('Features Title', 'form.features_title')}
+                {renderDirectArrayField('Arrival Features (One per line)', 'form.features_arrival')}
+                {renderDirectArrayField('Departure Features (One per line)', 'form.features_departure')}
+                {renderField('Features Footnote', 'form.features_footnote')}
+                {renderField('Price Label', 'form.price_lbl')}
+                {renderField('Select Pax Label', 'form.select_pax_lbl')}
+                {renderField('Total Label', 'form.total_lbl')}
+                {renderField('Add to Booking CTA', 'form.add_to_booking')}
+
+                <div className="divider"></div>
+                <h3>Detailed Form Input Labels</h3>
                 {renderField('Client Name Label', 'form.name')}
                 {renderField('Client Email Label', 'form.email')}
                 {renderField('Client Phone Label', 'form.phone')}
