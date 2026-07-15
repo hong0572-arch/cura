@@ -22,7 +22,6 @@ export default function Navbar({ lang, setLang, t }) {
   };
 
   const navItems = [
-    { id: 'values', label: t.nav.values },
     { id: 'services', label: t.nav.services },
     { id: 'fleet', label: t.nav.fleet },
     { id: 'cas', label: t.nav.cas },

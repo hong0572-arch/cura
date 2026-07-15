@@ -4,7 +4,6 @@ export const translations = {
     brand_sub: "CURA AIRPORT SERVICE",
     nav: {
       home: "홈",
-      values: "프리미엄 가치",
       services: "의전 서비스",
       fleet: "차량 서비스",
       cas: "항공 사업(CAS)",
@@ -400,7 +399,6 @@ export const translations = {
     brand_sub: "CURA AIRPORT SERVICE",
     nav: {
       home: "Home",
-      values: "Values",
       services: "Meet & Assist",
       fleet: "Fleet",
       cas: "Aviation (CAS)",
