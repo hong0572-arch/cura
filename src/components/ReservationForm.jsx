@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, CheckCircle2, ShieldCheck, CreditCard, Loader2, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function ReservationForm({ t, lang, selectedVehicle, setSelectedVehicle, settings }) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('arrival');
   const [bookingStarted, setBookingStarted] = useState(false);
   
@@ -29,7 +31,6 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
 
   const [status, setStatus] = useState('idle'); // idle | submitting | success
   const [bookingId, setBookingId] = useState('');
-  const [mailtoUrl, setMailtoUrl] = useState('');
 
   // Exchange rate constant
   const EX_RATE = settings?.exchangeRate || 1350;
@@ -145,10 +146,8 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
 
       // Construct email content
       const targetEmail = settings?.companyEmail || 'support@beyondthegate.vip';
-      const emailSubject = `[Beyond the Gate] New Reservation Request - ${newBookingId}`;
-      const emailBody = `Dear Beyond the Gate Team,
-
-A new reservation request has been submitted with the details below:
+      const emailSubject = `New Reservation Request - ${newBookingId}`;
+      const emailBody = `A new reservation request has been submitted with the details below:
 
 [Reservation Details]
 - Reference Ticket ID: ${newBookingId}
@@ -180,9 +179,17 @@ ${formData.msg || 'No special requests.'}
 Sincerely,
 Beyond the Gate Automated System`;
 
-      const mailtoUrl = `mailto:${targetEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      setMailtoUrl(mailtoUrl);
-      window.location.href = mailtoUrl;
+      // 백엔드 이메일 API 호출
+      fetch('http://localhost:4242/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminEmail: targetEmail,
+          customerEmail: formData.email,
+          subject: emailSubject,
+          text: emailBody
+        })
+      }).catch(err => console.error("Email send error:", err));
 
       setStatus('success');
     }, 2000);
@@ -202,7 +209,6 @@ Beyond the Gate Automated System`;
     });
     setLocalVehicleType('none');
     setSelectedVehicle('none');
-    setMailtoUrl('');
     setStatus('idle');
     setBookingStarted(false);
   };
@@ -482,45 +488,54 @@ Beyond the Gate Automated System`;
                 </div>
               </div>
 
-              {mailtoUrl && (
-                <div style={{
-                  width: '100%',
-                  background: 'rgba(197, 168, 128, 0.04)',
-                  border: '1px solid rgba(197, 168, 128, 0.15)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  marginBottom: '24px',
-                  textAlign: 'center',
-                  fontSize: '0.85rem'
-                }}>
-                  <p style={{ color: '#fff', marginBottom: '8px', fontWeight: '600' }}>
-                    {lang === 'ko' ? '회사 이메일로 예약 요청 발송' : 'Email Reservation to Company'}
-                  </p>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: '1.4', marginBottom: '14px' }}>
-                    {lang === 'ko' 
-                      ? `회사 이메일(${settings?.companyEmail || 'support@beyondthegate.vip'})로 예약 요청 메일 작성 창이 실행되었습니다. 메일 앱이 열리지 않았거나 수동 전송이 필요하면 아래 버튼을 클릭하세요.` 
-                      : `A reservation email has been prepared to send to ${settings?.companyEmail || 'support@beyondthegate.vip'}. If it did not open automatically, please click below.`}
-                  </p>
-                  <a 
-                    href={mailtoUrl}
-                    className="btn-premium secondary"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      textDecoration: 'none',
-                      padding: '10px 20px',
-                      fontSize: '0.8rem'
-                    }}
-                  >
-                    <span>{lang === 'ko' ? '회사로 예약 메일 직접 전송' : 'Send Reservation Email Now'}</span>
-                  </a>
-                </div>
-              )}
+              <div style={{
+                width: '100%',
+                background: 'rgba(197, 168, 128, 0.04)',
+                border: '1px solid rgba(197, 168, 128, 0.15)',
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '24px',
+                textAlign: 'center',
+                fontSize: '0.85rem'
+              }}>
+                <p style={{ color: '#fff', marginBottom: '8px', fontWeight: '600' }}>
+                  {lang === 'ko' ? '예약 내역 이메일 발송 완료' : 'Reservation Email Sent'}
+                </p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                  {lang === 'ko' 
+                    ? `입력하신 이메일(${formData.email})과 관리자에게 예약 내역이 성공적으로 발송되었습니다.` 
+                    : `Reservation details have been successfully sent to your email (${formData.email}) and our support team.`}
+                </p>
+              </div>
 
-              <button onClick={resetForm} className="btn-premium primary btn-success-close">
-                {t.form.close}
-              </button>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                <button 
+                  onClick={() => {
+                    alert('추후 서비스 예정입니다.');
+                    // 임시 주석 처리: 결제 키 발급 후 활성화
+                    /*
+                    navigate('/payment', { 
+                      state: {
+                        orderId: bookingId,
+                        orderName: `BTG ${formData.serviceType.toUpperCase()} Service`,
+                        amount: prices.totalKrw,
+                        customerName: formData.name,
+                        customerEmail: formData.email,
+                        customerMobilePhone: formData.phone
+                      }
+                    });
+                    */
+                  }} 
+                  className="btn-premium primary"
+                  style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                >
+                  <CreditCard size={18} />
+                  <span>{lang === 'ko' ? '지금 결제하기' : 'Pay Now'}</span>
+                </button>
+                <button onClick={resetForm} className="btn-premium secondary btn-success-close" style={{ flex: 1 }}>
+                  {t.form.close}
+                </button>
+              </div>
             </div>
           )}
         </div>
