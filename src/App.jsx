@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import CoreValues from './components/CoreValues';
@@ -22,35 +24,10 @@ function App() {
   const [selectedVehicle, setSelectedVehicle] = useState('none');
   const [termsOpen, setTermsOpen] = useState(false);
 
-  // --- Dynamic Content State from localStorage ---
-  const [content, setContent] = useState(() => {
-    const saved = localStorage.getItem('custom_btg_translations');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Deep merge parsed with defaultTranslations so new keys (like team) are preserved
-      const merge = (target, source) => {
-        for (const key in source) {
-          if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-            if (!target[key]) target[key] = {};
-            merge(target[key], source[key]);
-          } else if (target[key] === undefined) {
-            target[key] = source[key];
-          }
-        }
-        return target;
-      };
-      return merge(parsed, defaultTranslations);
-    }
-    return defaultTranslations;
-  });
-
-  const [images, setImages] = useState(() => {
-    const saved = localStorage.getItem('custom_btg_images');
-    return saved ? JSON.parse(saved) : {
-      heroBg: '/luxury_airport_vip.png',
-      fleetBg: '/luxury_fleet.png'
-    };
-  });
+  const defaultImages = {
+    heroBg: '/luxury_airport_vip.png',
+    fleetBg: '/luxury_fleet.png'
+  };
 
   const defaultSettings = {
     companyEmail: 'support@beyondthegate.vip',
@@ -70,10 +47,44 @@ function App() {
     }
   };
 
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('custom_btg_settings');
-    return saved ? JSON.parse(saved) : defaultSettings;
-  });
+  // --- Dynamic Content State from Firestore ---
+  const [content, setContent] = useState(defaultTranslations);
+  const [images, setImages] = useState(defaultImages);
+  const [settings, setSettings] = useState(defaultSettings);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const docRef = doc(db, 'siteData', 'main');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.content) {
+            const merge = (target, source) => {
+              for (const key in source) {
+                if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                  if (!target[key]) target[key] = {};
+                  merge(target[key], source[key]);
+                } else if (target[key] === undefined) {
+                  target[key] = source[key];
+                }
+              }
+              return target;
+            };
+            setContent(merge(data.content, defaultTranslations));
+          }
+          if (data.images) setImages(data.images);
+          if (data.settings) setSettings(data.settings);
+        }
+      } catch (error) {
+        console.error('Error fetching data from Firestore:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // --- Admin Routing States ---
   const [view, setView] = useState('user'); // user | admin
@@ -109,36 +120,52 @@ function App() {
     window.location.hash = ''; // Back to main
   };
 
-  const handleSaveAdminData = (newContent, newImages, newSettings) => {
+  const handleSaveAdminData = async (newContent, newImages, newSettings) => {
     setContent(newContent);
     setImages(newImages);
-    localStorage.setItem('custom_btg_translations', JSON.stringify(newContent));
-    localStorage.setItem('custom_btg_images', JSON.stringify(newImages));
     if (newSettings) {
       setSettings(newSettings);
-      localStorage.setItem('custom_btg_settings', JSON.stringify(newSettings));
+    }
+
+    try {
+      await setDoc(doc(db, 'siteData', 'main'), {
+        content: newContent,
+        images: newImages,
+        settings: newSettings || settings
+      }, { merge: true });
+      // Only log or show non-intrusive alert since AdminDashboard has its own feedback
+    } catch (error) {
+      console.error('Error saving to Firestore:', error);
+      alert('데이터 저장 중 오류가 발생했습니다.');
     }
   };
 
-  const handleResetDefaults = () => {
-    if (window.confirm('Are you sure you want to reset all modifications to default configurations?')) {
-      localStorage.removeItem('custom_btg_translations');
-      localStorage.removeItem('custom_btg_images');
-      localStorage.removeItem('custom_btg_settings');
-      localStorage.removeItem('btg_reservations');
+  const handleResetDefaults = async () => {
+    if (window.confirm('모든 수정한 내용을 기본값으로 초기화하시겠습니까? (Are you sure you want to reset all modifications to default configurations?)')) {
       setContent(defaultTranslations);
-      setImages({
-        heroBg: '/luxury_airport_vip.png',
-        fleetBg: '/luxury_fleet.png'
-      });
+      setImages(defaultImages);
       setSettings(defaultSettings);
-      window.location.hash = '';
-      alert('Reset completed successfully!');
+      
+      try {
+        await setDoc(doc(db, 'siteData', 'main'), {
+          content: defaultTranslations,
+          images: defaultImages,
+          settings: defaultSettings
+        });
+        window.location.hash = '';
+        alert('Reset completed successfully!');
+      } catch (error) {
+        console.error('Error resetting Firestore:', error);
+      }
     }
   };
 
   // Map translations to selected language
   const t = content[lang] || defaultTranslations[lang];
+
+  if (loading) {
+    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff' }}>Loading...</div>;
+  }
 
   // Render Admin Screen if active
   if (view === 'admin') {
