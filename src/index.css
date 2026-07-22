@@ -355,3 +355,6 @@ h1, h2, h3, h4, h5, h6 {
     top: 8px;
   }
 }
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+
