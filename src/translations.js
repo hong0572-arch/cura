@@ -396,13 +396,21 @@ export const translations = {
       title: "고객 지원 및 연락처",
       desc: "서비스 예약 접수, 긴급 일정 변경 등 24시간 열려 있는 창구를 통해 신속히 지원합니다.",
       email_lbl: "공식 이메일 문의",
-      phone_lbl: "24/7 고객센터 전화"
+      phone_lbl: "24/7 고객센터 전화",
+      address_lbl: "사무실 주소"
     },
     footer: {
       motto: "공항 VIP 에스코트 및 하이엔드 수송 서비스의 새로운 기준을 제시합니다.",
       quick_links_title: "빠른 링크",
       email_val: "support@beyondthegate.vip",
       phone_val: "+82 (0)2-1234-5678",
+      address_val: "인천광역시 중구 공항로 271, 인천국제공항",
+      offices: [
+        {
+          name: "인천공항 본사",
+          address: "인천광역시 중구 공항로 271, 인천국제공항"
+        }
+      ],
       copyright: "모든 권리 보유. CAS Aviation 포트폴리오 산하."
     }
   },
@@ -803,13 +811,21 @@ export const translations = {
       title: "Contact & Assistance",
       desc: "For inquiries, immediate updates, or urgent support, our support channels are open 24/7.",
       email_lbl: "Email Support",
-      phone_lbl: "24/7 Center Hotline"
+      phone_lbl: "24/7 Center Hotline",
+      address_lbl: "Office Address"
     },
     footer: {
       motto: "Elevating the luxury standard of global airport hospitality and premium transport.",
       quick_links_title: "Quick Links",
       email_val: "support@beyondthegate.vip",
       phone_val: "+82 (0)2-1234-5678",
+      address_val: "271, Gonghang-ro, Jung-gu, Incheon (Incheon International Airport)",
+      offices: [
+        {
+          name: "Incheon Airport HQ",
+          address: "271, Gonghang-ro, Jung-gu, Incheon (Incheon International Airport)"
+        }
+      ],
       copyright: "All rights reserved. Under CAS Aviation Portfolio."
     }
   }

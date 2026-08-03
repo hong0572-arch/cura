@@ -29,22 +29,41 @@
 
     <!-- Structured Data (JSON-LD) for SEO & GEO -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Service",
-      "serviceType": "Airport VIP Meet and Assist & Chauffeur Service",
-      "provider": {
-        "@type": "Organization",
-        "name": "Cura Airport Service (CAS)",
-        "alternateName": "Beyond the Gate"
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "serviceType": "Airport VIP Meet and Assist & Chauffeur Service",
+        "provider": {
+          "@id": "https://beyondthegate.kr/#organization"
+        },
+        "areaServed": {
+          "@type": "Place",
+          "name": "Incheon International Airport"
+        },
+        "description": "Premium VIP Airport Meet-and-Assist and Chauffeur Services at Incheon International Airport. Luxury Genesis G90 chauffeur services and personalized escort.",
+        "url": "https://beyondthegate.kr/"
       },
-      "areaServed": {
-        "@type": "Place",
-        "name": "Incheon International Airport"
-      },
-      "description": "Premium VIP Airport Meet-and-Assist and Chauffeur Services at Incheon International Airport. Luxury Genesis G90 chauffeur services and personalized escort.",
-      "url": "https://beyondthegate.kr/"
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "@id": "https://beyondthegate.kr/#organization",
+        "name": "Beyond the Gate",
+        "alternateName": "Cura Airport Service (CAS)",
+        "description": "Premium VIP Airport Meet-and-Assist and Chauffeur Services.",
+        "url": "https://beyondthegate.kr/",
+        "telephone": "+82-2-1234-5678",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Incheon",
+          "addressRegion": "Incheon",
+          "addressCountry": "KR",
+          "streetAddress": "Incheon International Airport"
+        },
+        "areaServed": "Incheon Airport, Seoul, Korea",
+        "openingHours": "Mo,Tu,We,Th,Fr,Sa,Su 00:00-23:59"
+      }
+    ]
     </script>
   </head>
   <body>

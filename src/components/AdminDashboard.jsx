@@ -80,6 +80,26 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     });
   };
 
+  const handleAddOffice = () => {
+    setEditData(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      if (!copy.ko.footer.offices) copy.ko.footer.offices = [];
+      if (!copy.en.footer.offices) copy.en.footer.offices = [];
+      copy.ko.footer.offices.push({ name: '신규 사무실', address: '인천광역시 중구...' });
+      copy.en.footer.offices.push({ name: 'New Office Branch', address: 'Address details...' });
+      return copy;
+    });
+  };
+
+  const handleRemoveOffice = (index) => {
+    setEditData(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      if (copy.ko.footer.offices) copy.ko.footer.offices.splice(index, 1);
+      if (copy.en.footer.offices) copy.en.footer.offices.splice(index, 1);
+      return copy;
+    });
+  };
+
   const handleImageChange = (key, value) => {
     setEditImages(prev => ({
       ...prev,
@@ -385,6 +405,83 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 {renderField('Contact Support Email Value', 'footer.email_val')}
                 {renderField('Contact Hotline Phone Value', 'footer.phone_val')}
                 {renderField('Copyright Notice Text', 'footer.copyright')}
+
+                <div className="divider"></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0 }}>Office Locations (사무실 주소 및 추가 사무실 관리)</h3>
+                  <button 
+                    type="button" 
+                    onClick={handleAddOffice} 
+                    className="btn-premium secondary"
+                    style={{ padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    + 사무실 추가 (Add Office)
+                  </button>
+                </div>
+                {((editData.ko?.footer?.offices) || []).map((_, i) => (
+                  <div key={i} className="array-card glass-panel" style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span className="array-index">Office Location #{i + 1}</span>
+                      {((editData.ko?.footer?.offices) || []).length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveOffice(i)}
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#ef4444',
+                            borderRadius: '4px',
+                            padding: '4px 10px',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          삭제 (Delete)
+                        </button>
+                      )}
+                    </div>
+                    <div className="form-row-2">
+                      <div className="form-column">
+                        <span className="lang-indicator">KO</span>
+                        <div className="form-field-nested">
+                          <label>사무실명 (예: 본사, 인천공항 지사)</label>
+                          <input
+                            type="text"
+                            value={getArrayValue('ko', 'footer.offices', i, 'name')}
+                            onChange={(e) => handleValChange('ko', 'footer.offices', i, 'name', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-field-nested">
+                          <label>상세 주소</label>
+                          <input
+                            type="text"
+                            value={getArrayValue('ko', 'footer.offices', i, 'address')}
+                            onChange={(e) => handleValChange('ko', 'footer.offices', i, 'address', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="form-column">
+                        <span className="lang-indicator">EN</span>
+                        <div className="form-field-nested">
+                          <label>Office Name (e.g. Incheon HQ)</label>
+                          <input
+                            type="text"
+                            value={getArrayValue('en', 'footer.offices', i, 'name')}
+                            onChange={(e) => handleValChange('en', 'footer.offices', i, 'name', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-field-nested">
+                          <label>Full Address</label>
+                          <input
+                            type="text"
+                            value={getArrayValue('en', 'footer.offices', i, 'address')}
+                            onChange={(e) => handleValChange('en', 'footer.offices', i, 'address', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 

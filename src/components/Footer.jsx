@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, ArrowUp, ExternalLink, Lock } from 'lucide-react';
+import { Mail, Phone, MapPin, ArrowUp, ExternalLink, Lock } from 'lucide-react';
 
 export default function Footer({ t, onOpenTerms }) {
   
@@ -76,6 +76,29 @@ export default function Footer({ t, onOpenTerms }) {
                   </a>
                 </div>
               </div>
+              {t.footer?.offices && t.footer.offices.length > 0 ? (
+                t.footer.offices.map((office, idx) => (
+                  <div key={idx} className="contact-item">
+                    <MapPin size={16} className="contact-icon" />
+                    <div className="contact-text-wrap">
+                      <span className="contact-label">{office.name || t.contact.address_lbl || 'Address'}</span>
+                      <span className="contact-link" style={{ cursor: 'default' }}>
+                        {office.address}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="contact-item">
+                  <MapPin size={16} className="contact-icon" />
+                  <div className="contact-text-wrap">
+                    <span className="contact-label">{t.contact.address_lbl || 'Address'}</span>
+                    <span className="contact-link" style={{ cursor: 'default' }}>
+                      {t.footer?.address_val || '인천국제공항'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
