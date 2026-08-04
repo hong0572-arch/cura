@@ -91,6 +91,88 @@ app.post('/confirm/toss', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Payment server running on http://localhost:${port}`);
+// --- PayPal Integration ---
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET } = process.env;
+const PAYPAL_BASE_URL = process.env.PAYPAL_BASE_URL || "https://api-m.sandbox.paypal.com"; // Use sandbox by default
+
+async function generatePaypalAccessToken() {
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+    throw new Error("Missing PayPal Client ID or Secret in .env");
+  }
+  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+  const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+    method: "POST",
+    body: "grant_type=client_credentials",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`PayPal Auth Error: ${data.error_description || response.statusText}`);
+  }
+  return data.access_token;
+}
+
+app.post('/api/orders', async (req, res) => {
+  try {
+    const { orderId, amount, orderName } = req.body;
+    const accessToken = await generatePaypalAccessToken();
+    const url = `${PAYPAL_BASE_URL}/v2/checkout/orders`;
+    const payload = {
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          reference_id: orderId,
+          description: orderName,
+          amount: {
+            currency_code: "USD",
+            value: amount,
+          },
+        },
+      ],
+    };
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error("Failed to create order:", error);
+    res.status(500).json({ error: error.message || "Failed to create order" });
+  }
 });
+
+app.post('/api/orders/:orderID/capture', async (req, res) => {
+  try {
+    const { orderID } = req.params;
+    const accessToken = await generatePaypalAccessToken();
+    const url = `${PAYPAL_BASE_URL}/v2/checkout/orders/${orderID}/capture`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error("Failed to capture order:", error);
+    res.status(500).json({ error: error.message || "Failed to capture order" });
+  }
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Payment server running on http://localhost:${port}`);
+  });
+}
+
+export default app;

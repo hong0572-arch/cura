@@ -6,6 +6,7 @@ import App from './App.jsx'
 import TossPayment from './components/TossPayment.jsx'
 import Success from './pages/Success.jsx'
 import Fail from './pages/Fail.jsx'
+import PaypalPayment from './components/PaypalPayment.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -13,6 +14,7 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/payment" element={<TossPayment />} />
+        <Route path="/payment/paypal" element={<PaypalPayment />} />
         <Route path="/success" element={<Success />} />
         <Route path="/fail" element={<Fail />} />
       </Routes>

@@ -180,7 +180,7 @@ Sincerely,
 Beyond the Gate Automated System`;
 
       // 백엔드 이메일 API 호출
-      fetch('http://localhost:4242/api/send-email', {
+      fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -511,26 +511,22 @@ Beyond the Gate Automated System`;
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                 <button 
                   onClick={() => {
-                    alert('추후 서비스 예정입니다.');
-                    // 임시 주석 처리: 결제 키 발급 후 활성화
-                    /*
-                    navigate('/payment', { 
+                    navigate('/payment/paypal', { 
                       state: {
                         orderId: bookingId,
                         orderName: `BTG ${formData.serviceType.toUpperCase()} Service`,
-                        amount: prices.totalKrw,
+                        amount: prices.totalUsd,
                         customerName: formData.name,
                         customerEmail: formData.email,
                         customerMobilePhone: formData.phone
                       }
                     });
-                    */
                   }} 
                   className="btn-premium primary"
                   style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                 >
                   <CreditCard size={18} />
-                  <span>{lang === 'ko' ? '지금 결제하기' : 'Pay Now'}</span>
+                  <span>{lang === 'ko' ? 'PayPal로 결제하기' : 'Pay with PayPal'}</span>
                 </button>
                 <button onClick={resetForm} className="btn-premium secondary btn-success-close" style={{ flex: 1 }}>
                   {t.form.close}

@@ -5,6 +5,7 @@ export default function Success() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState('processing');
+  const gateway = searchParams.get('gateway');
   
   useEffect(() => {
     const confirmPayment = async () => {
@@ -12,13 +13,19 @@ export default function Success() {
       const orderId = searchParams.get('orderId');
       const amount = searchParams.get('amount');
 
+      if (gateway === 'paypal') {
+        // PayPal is already captured in PaypalPayment.jsx
+        setStatus('success');
+        return;
+      }
+
       if (!paymentKey || !orderId || !amount) {
         setStatus('error');
         return;
       }
 
       try {
-        const response = await fetch('http://localhost:4242/confirm/toss', {
+        const response = await fetch('/confirm/toss', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -47,7 +54,7 @@ export default function Success() {
         <>
           <h2>🎉 결제가 성공적으로 완료되었습니다!</h2>
           <p>주문번호: {searchParams.get('orderId')}</p>
-          <p>결제금액: {Number(searchParams.get('amount')).toLocaleString()}원</p>
+          <p>결제금액: {gateway === 'paypal' ? '$' : ''}{Number(searchParams.get('amount')).toLocaleString()}{gateway === 'paypal' ? ' USD' : '원'}</p>
           <button 
             onClick={() => navigate('/')}
             style={{ padding: '10px 20px', marginTop: '20px', cursor: 'pointer' }}
