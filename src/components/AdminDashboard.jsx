@@ -100,6 +100,44 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     });
   };
 
+  const handleAddFaq = () => {
+    setEditData(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      if (!copy.ko.faq.items) copy.ko.faq.items = [];
+      if (!copy.en.faq.items) copy.en.faq.items = [];
+      copy.ko.faq.items.push({ q: '새로운 질문', a: '새로운 답변' });
+      copy.en.faq.items.push({ q: 'New Question', a: 'New Answer' });
+      return copy;
+    });
+  };
+
+  const handleRemoveFaq = (index) => {
+    setEditData(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      if (copy.ko.faq.items) copy.ko.faq.items.splice(index, 1);
+      if (copy.en.faq.items) copy.en.faq.items.splice(index, 1);
+      return copy;
+    });
+  };
+
+  const handleMoveFaq = (index, direction) => {
+    setEditData(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      
+      if (newIndex >= 0 && newIndex < copy.ko.faq.items.length) {
+        const tempKo = copy.ko.faq.items[index];
+        copy.ko.faq.items[index] = copy.ko.faq.items[newIndex];
+        copy.ko.faq.items[newIndex] = tempKo;
+        
+        const tempEn = copy.en.faq.items[index];
+        copy.en.faq.items[index] = copy.en.faq.items[newIndex];
+        copy.en.faq.items[newIndex] = tempEn;
+      }
+      return copy;
+    });
+  };
+
   const handleImageChange = (key, value) => {
     setEditImages(prev => ({
       ...prev,
@@ -748,11 +786,115 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 {renderField('FAQ Section Subtitle', 'faq.subtitle')}
 
                 <div className="divider"></div>
-                <h3>Frequently Asked Questions Accordions</h3>
-                {renderArrayCard('FAQ Item', 'faq.items', 6, [
-                  { label: 'Question Title', key: 'q' },
-                  { label: 'Answer Content', key: 'a', isTextArea: true, rows: 4 }
-                ])}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0 }}>Frequently Asked Questions Accordions</h3>
+                  <button 
+                    type="button" 
+                    onClick={handleAddFaq} 
+                    className="btn-premium secondary"
+                    style={{ padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    + 항목 추가 (Add FAQ)
+                  </button>
+                </div>
+                {((editData.ko?.faq?.items) || []).map((_, i) => (
+                  <div key={i} className="array-card glass-panel" style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span className="array-index">FAQ Item #{i + 1}</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveFaq(i, 'up')}
+                          disabled={i === 0}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            color: 'var(--text-light)',
+                            borderRadius: '4px',
+                            padding: '4px 10px',
+                            fontSize: '0.75rem',
+                            cursor: i === 0 ? 'not-allowed' : 'pointer',
+                            opacity: i === 0 ? 0.5 : 1
+                          }}
+                        >
+                          위로 (Up)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveFaq(i, 'down')}
+                          disabled={i === ((editData.ko?.faq?.items) || []).length - 1}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            color: 'var(--text-light)',
+                            borderRadius: '4px',
+                            padding: '4px 10px',
+                            fontSize: '0.75rem',
+                            cursor: i === ((editData.ko?.faq?.items) || []).length - 1 ? 'not-allowed' : 'pointer',
+                            opacity: i === ((editData.ko?.faq?.items) || []).length - 1 ? 0.5 : 1
+                          }}
+                        >
+                          아래로 (Down)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFaq(i)}
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#ef4444',
+                            borderRadius: '4px',
+                            padding: '4px 10px',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          삭제 (Delete)
+                        </button>
+                      </div>
+                    </div>
+                    <div className="form-row-2">
+                      <div className="form-column">
+                        <span className="lang-indicator">KO</span>
+                        <div className="form-field-nested">
+                          <label>Question Title</label>
+                          <input
+                            type="text"
+                            value={getArrayValue('ko', 'faq.items', i, 'q')}
+                            onChange={(e) => handleValChange('ko', 'faq.items', i, 'q', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-field-nested">
+                          <label>Answer Content</label>
+                          <textarea
+                            rows={4}
+                            value={getArrayValue('ko', 'faq.items', i, 'a')}
+                            onChange={(e) => handleValChange('ko', 'faq.items', i, 'a', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="form-column">
+                        <span className="lang-indicator">EN</span>
+                        <div className="form-field-nested">
+                          <label>Question Title</label>
+                          <input
+                            type="text"
+                            value={getArrayValue('en', 'faq.items', i, 'q')}
+                            onChange={(e) => handleValChange('en', 'faq.items', i, 'q', e.target.value)}
+                          />
+                        </div>
+                        <div className="form-field-nested">
+                          <label>Answer Content</label>
+                          <textarea
+                            rows={4}
+                            value={getArrayValue('en', 'faq.items', i, 'a')}
+                            onChange={(e) => handleValChange('en', 'faq.items', i, 'a', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
