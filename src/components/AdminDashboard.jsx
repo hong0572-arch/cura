@@ -6,6 +6,8 @@ import {
   Award, Lock, Activity, Navigation, FileSpreadsheet,
   Users
 } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase';
 
 export default function AdminDashboard({ data, images, settings, onSave, onReset, onPreview }) {
   const [activeTab, setActiveTab] = useState('hero');
@@ -17,6 +19,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     const saved = localStorage.getItem('btg_reservations');
     return saved ? JSON.parse(saved) : [];
   });
+  const [uploading, setUploading] = useState({ heroBg: false, fleetBg: false });
 
   const handleClearReservations = () => {
     if (window.confirm('Are you sure you want to clear all reservation history?')) {
@@ -136,6 +139,101 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
       }
       return copy;
     });
+  };
+
+  const handleAddAirport = () => {
+    setEditSettings(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      if (!copy.airports) copy.airports = [];
+      copy.airports.push({
+        code: 'NEW',
+        city: 'New City',
+        name: 'New Airport',
+        services: {
+          arrival: { usd: 0, krw: 0 },
+          departure: { usd: 0, krw: 0 },
+          transfer: { usd: 0, krw: 0 },
+          picketing: { usd: 0, krw: 0 }
+        },
+        vehicles: []
+      });
+      return copy;
+    });
+  };
+
+  const handleRemoveAirport = (index) => {
+    if (window.confirm('Are you sure you want to delete this airport?')) {
+      setEditSettings(prev => {
+        const copy = JSON.parse(JSON.stringify(prev));
+        if (copy.airports) copy.airports.splice(index, 1);
+        return copy;
+      });
+    }
+  };
+
+  const handleAirportChange = (index, field, value, subfield1 = null, subfield2 = null) => {
+    setEditSettings(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      if (subfield1 && subfield2) {
+        if (!copy.airports[index][field]) copy.airports[index][field] = {};
+        if (!copy.airports[index][field][subfield1]) copy.airports[index][field][subfield1] = {};
+        copy.airports[index][field][subfield1][subfield2] = Number(value) || 0;
+      } else {
+        copy.airports[index][field] = value;
+      }
+      return copy;
+    });
+  };
+
+  const handleAddVehicle = (airportIndex) => {
+    setEditSettings(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      if (!copy.airports[airportIndex].vehicles) copy.airports[airportIndex].vehicles = [];
+      copy.airports[airportIndex].vehicles.push({
+        id: `v_${Math.random().toString(36).substr(2, 5)}`,
+        name: 'New Vehicle',
+        priceUsd: 0,
+        priceKrw: 0
+      });
+      return copy;
+    });
+  };
+
+  const handleRemoveVehicle = (airportIndex, vehicleIndex) => {
+    if (window.confirm('Delete this vehicle?')) {
+      setEditSettings(prev => {
+        const copy = JSON.parse(JSON.stringify(prev));
+        copy.airports[airportIndex].vehicles.splice(vehicleIndex, 1);
+        return copy;
+      });
+    }
+  };
+
+  const handleVehicleChange = (airportIndex, vehicleIndex, field, value) => {
+    setEditSettings(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      copy.airports[airportIndex].vehicles[vehicleIndex][field] = (field === 'priceUsd' || field === 'priceKrw') ? (Number(value) || 0) : value;
+      return copy;
+    });
+  };
+
+  const handleImageUpload = async (e, key) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(prev => ({ ...prev, [key]: true }));
+    try {
+      const storageRef = ref(storage, `images/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      handleImageChange(key, url);
+      alert('Image uploaded successfully!');
+    } catch (error) {
+      console.error("Upload failed", error);
+      alert('Upload failed: ' + error.message);
+    } finally {
+      setUploading(prev => ({ ...prev, [key]: false }));
+    }
   };
 
   const handleImageChange = (key, value) => {
@@ -338,12 +436,15 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     { id: 'cas', label: 'CAS Aviation', icon: <Plane size={18} /> },
     { id: 'team', label: 'Our Team', icon: <Users size={18} /> },
     { id: 'form', label: 'Reservation Form', icon: <Calendar size={18} /> },
+    { id: 'wizard', label: 'Booking Wizard UI', icon: <FileText size={18} /> },
     { id: 'form_calculator', label: 'Calculator & Ticket', icon: <Calculator size={18} /> },
+    { id: 'airports', label: 'Airports & Pricing', icon: <Plane size={18} /> },
     { id: 'pricing_settings', label: 'Pricing & Email Settings', icon: <Calculator size={18} /> },
     { id: 'reservations', label: 'Customer Reservations', icon: <FileSpreadsheet size={18} /> },
     { id: 'faq', label: 'FAQs Accordion', icon: <HelpCircle size={18} /> },
     { id: 'policies', label: 'Policies & T&C', icon: <ShieldAlert size={18} /> },
-    { id: 'media_system', label: 'Media & System', icon: <Settings size={18} /> }
+    { id: 'media_system', label: 'Media & System', icon: <Settings size={18} /> },
+    { id: 'chatbot', label: 'Chatbot & AI', icon: <Sparkles size={18} /> }
   ];
 
   return (
@@ -745,6 +846,82 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
               </div>
             )}
 
+            {/* Tab: Booking Wizard UI */}
+            {activeTab === 'wizard' && (
+              <div className="tab-section">
+                <h3>Wizard Common Text</h3>
+                {renderField('Cancel Button', 'wizard.cancel')}
+                {renderField('Back Button', 'wizard.back')}
+                {renderField('Continue Button', 'wizard.continue')}
+                {renderField('Flight Details Summary', 'wizard.flightDetails')}
+
+                <div className="divider"></div>
+                <h3>Step 1: Welcome</h3>
+                {renderField('Step 1 Badge', 'wizard.step1.badge')}
+                {renderField('Step 1 Title', 'wizard.step1.title')}
+                {renderField('Step 1 Subtitle', 'wizard.step1.subtitle')}
+                {renderField('Type Arrival', 'wizard.step1.typeArrival')}
+                {renderField('Type Departure', 'wizard.step1.typeDeparture')}
+                {renderField('Type Transfer', 'wizard.step1.typeTransfer')}
+
+                <div className="divider"></div>
+                <h3>Step 2: Service & Date</h3>
+                {renderField('Step 2 Badge', 'wizard.step2.badge')}
+                {renderField('Step 2 Title', 'wizard.step2.title')}
+                {renderField('Date Title', 'wizard.step2.dateTitle')}
+                {renderField('Flight Terminal label', 'wizard.step2.flightTerm')}
+                {renderField('Time Input label', 'wizard.step2.time')}
+                {renderField('Pax & Luggage label', 'wizard.step2.paxTitle')}
+                {renderField('Passengers', 'wizard.step2.pax')}
+                {renderField('Luggage', 'wizard.step2.luggage')}
+
+                <div className="divider"></div>
+                <h3>Step 3: Flight</h3>
+                {renderField('Step 3 Badge', 'wizard.step3.badge')}
+                {renderField('Step 3 Title', 'wizard.step3.title')}
+                {renderField('Departure label', 'wizard.step3.departure')}
+                {renderField('Arrival label', 'wizard.step3.arrival')}
+                {renderField('Flight # label', 'wizard.step3.flightNumber')}
+                {renderField('Airline label', 'wizard.step3.airline')}
+
+                <div className="divider"></div>
+                <h3>Step 4: Passenger Info</h3>
+                {renderField('Step 4 Title', 'wizard.step4.title')}
+                {renderField('Passenger List Title', 'wizard.step4.listTitle')}
+                {renderField('Add Passenger Button', 'wizard.step4.addBtn')}
+                {renderField('First Name', 'wizard.step4.firstName')}
+                {renderField('Last Name', 'wizard.step4.lastName')}
+                {renderField('Birth Date', 'wizard.step4.birthDate')}
+                {renderField('Phone (+ Code)', 'wizard.step4.phone')}
+
+                <div className="divider"></div>
+                <h3>Step 5: Contact Info</h3>
+                {renderField('Step 5 Title', 'wizard.step5.title')}
+                {renderField('Contact Subtitle', 'wizard.step5.subtitle')}
+                {renderField('Email', 'wizard.step5.email')}
+                {renderField('Emergency Phone', 'wizard.step5.emergencyPhone')}
+
+                <div className="divider"></div>
+                <h3>Step 6: Payment (Nicepay vs PayPal)</h3>
+                {renderField('Step 6 Badge', 'wizard.step6.badge')}
+                {renderField('Step 6 Title', 'wizard.step6.title')}
+                {renderField('Domestic Payment', 'wizard.step6.domestic')}
+                {renderField('Overseas Payment (PayPal)', 'wizard.step6.overseas')}
+                {renderField('Payment Note', 'wizard.step6.paymentNote')}
+                {renderField('Unpaid Status', 'wizard.step6.unpaid')}
+                {renderField('Total Amount Label', 'wizard.step6.total')}
+
+                <div className="divider"></div>
+                <h3>Sidebar Information</h3>
+                {renderField('Coupon Text', 'wizard.sidebar.coupon')}
+                {renderField('Questions Title', 'wizard.sidebar.questionsTitle')}
+                {renderField('Questions Subtitle', 'wizard.sidebar.questionsSub', true, 2)}
+                {renderField('WhatsApp Button', 'wizard.sidebar.whatsappBtn')}
+                {renderField('Subtotal Label', 'wizard.sidebar.subtotal')}
+                {renderField('Transaction Fee Note', 'wizard.sidebar.feeNote')}
+              </div>
+            )}
+
             {/* Tab: Calculator & Ticket */}
             {activeTab === 'form_calculator' && (
               <div className="tab-section">
@@ -961,17 +1138,30 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
             {activeTab === 'media_system' && (
               <div className="tab-section">
                 <h3>Website Background Images</h3>
-                <p>Modify URLs below to dynamically change the cover assets. Set to valid online image URLs or local assets.</p>
+                <p>Upload a new image directly from your computer, or paste a valid image URL.</p>
                 
                 <div className="array-card glass-panel" style={{ marginTop: '20px' }}>
                   <div className="form-field">
-                    <label>Hero Section Background Image URL</label>
-                    <input 
-                      type="text" 
-                      value={editImages.heroBg || ''} 
-                      onChange={(e) => handleImageChange('heroBg', e.target.value)}
-                      placeholder="/luxury_airport_vip.png"
-                    />
+                    <label>Hero Section Background Image</label>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                      <input 
+                        type="text" 
+                        value={editImages.heroBg || ''} 
+                        onChange={(e) => handleImageChange('heroBg', e.target.value)}
+                        placeholder="/hero-bg.jpg"
+                        style={{ flex: 1 }}
+                      />
+                      <label className="btn-premium secondary" style={{ cursor: 'pointer', padding: '10px 16px', margin: 0, display: 'flex', alignItems: 'center' }}>
+                        {uploading.heroBg ? 'Uploading...' : 'Upload File'}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          style={{ display: 'none' }} 
+                          onChange={(e) => handleImageUpload(e, 'heroBg')}
+                          disabled={uploading.heroBg}
+                        />
+                      </label>
+                    </div>
                     <div className="image-preview-admin">
                       <span>Live Preview:</span>
                       <img src={editImages.heroBg || ''} alt="Hero BG Preview" onError={(e) => e.target.src = 'https://placehold.co/600x400?text=Invalid+Image+Url'} />
@@ -981,24 +1171,35 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
 
                 <div className="array-card glass-panel" style={{ marginTop: '20px' }}>
                   <div className="form-field">
-                    <label>Chauffeur Showcase Image URL</label>
-                    <input 
-                      type="text" 
-                      value={editImages.fleetBg || ''} 
-                      onChange={(e) => handleImageChange('fleetBg', e.target.value)}
-                      placeholder="/luxury_fleet.png"
-                    />
+                    <label>Chauffeur Showcase Image</label>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                      <input 
+                        type="text" 
+                        value={editImages.fleetBg || ''} 
+                        onChange={(e) => handleImageChange('fleetBg', e.target.value)}
+                        placeholder="/luxury_fleet.png"
+                        style={{ flex: 1 }}
+                      />
+                      <label className="btn-premium secondary" style={{ cursor: 'pointer', padding: '10px 16px', margin: 0, display: 'flex', alignItems: 'center' }}>
+                        {uploading.fleetBg ? 'Uploading...' : 'Upload File'}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          style={{ display: 'none' }} 
+                          onChange={(e) => handleImageUpload(e, 'fleetBg')}
+                          disabled={uploading.fleetBg}
+                        />
+                      </label>
+                    </div>
                     <div className="image-preview-admin">
                       <span>Live Preview:</span>
                       <img src={editImages.fleetBg || ''} alt="Fleet BG Preview" onError={(e) => e.target.src = 'https://placehold.co/600x400?text=Invalid+Image+Url'} />
                     </div>
                   </div>
                 </div>
-
                 <div className="divider"></div>
                 <h3>System Preferences</h3>
                 <p>Manage persistence variables and system initialization defaults.</p>
-                
                 <div className="array-card glass-panel reset-card" style={{ marginTop: '20px' }}>
                   <div className="reset-info">
                     <h4>Reset Website to Original Config</h4>
@@ -1016,7 +1217,172 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
               </div>
             )}
 
+            {/* Tab: Chatbot & AI */}
+            {activeTab === 'chatbot' && (
+              <div className="tab-section">
+                <h3>Chatbot & AI Configuration</h3>
+                <p>Configure the Gemini-powered AI chatbot. The chatbot will automatically answer customer inquiries based on the Knowledge Base you provide.</p>
+
+                <div className="form-field" style={{ marginTop: '20px' }}>
+                  <label>Google Gemini API Key</label>
+                  <input 
+                    type="password" 
+                    value={editSettings?.chatbot?.apiKey || ''} 
+                    onChange={e => handleSettingsChange('chatbot', e.target.value, 'apiKey')}
+                    placeholder="AIzaSy..."
+                  />
+                  <small style={{ color: 'var(--text-muted)' }}>Get your API key from Google AI Studio. Note: As this is a frontend app, the key will be exposed to the client. Use with caution.</small>
+                </div>
+
+                <div className="form-field">
+                  <label>System Prompt (Bot Persona)</label>
+                  <textarea 
+                    value={editSettings?.chatbot?.systemPrompt || ''} 
+                    onChange={e => handleSettingsChange('chatbot', e.target.value, 'systemPrompt')}
+                    rows={4}
+                  />
+                  <small style={{ color: 'var(--text-muted)' }}>Instructions on how the AI should behave (e.g. "You are a VIP concierge...").</small>
+                </div>
+
+                <div className="form-field">
+                  <label>Knowledge Base (지식 데이터베이스)</label>
+                  <textarea 
+                    value={editSettings?.chatbot?.knowledgeBase || ''} 
+                    onChange={e => handleSettingsChange('chatbot', e.target.value, 'knowledgeBase')}
+                    rows={12}
+                    placeholder="Paste FAQs, pricing, refund policies here..."
+                  />
+                  <small style={{ color: 'var(--text-muted)' }}>The AI will use this text as its "brain" to accurately answer user questions.</small>
+                </div>
+
+                <div className="form-field">
+                  <label>Fallback Message</label>
+                  <input 
+                    type="text" 
+                    value={editSettings?.chatbot?.fallbackMessage || ''} 
+                    onChange={e => handleSettingsChange('chatbot', e.target.value, 'fallbackMessage')}
+                  />
+                  <small style={{ color: 'var(--text-muted)' }}>The message shown if the AI encounters an error or cannot answer.</small>
+                </div>
+              </div>
+            )}
+
+
             {/* Tab: Pricing & Email Settings */}
+            {activeTab === 'airports' && (
+              <div className="tab-section">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0 }}>Airports & Base Pricing</h3>
+                  <button type="button" onClick={handleAddAirport} className="btn-premium secondary">
+                    + Add Airport
+                  </button>
+                </div>
+                
+                {(editSettings.airports || []).map((airport, aIndex) => (
+                  <div key={aIndex} className="array-card glass-panel" style={{ marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <h4 style={{ margin: 0, color: 'var(--gold-primary)' }}>Airport #{aIndex + 1}</h4>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAirport(aIndex)}
+                        style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', borderRadius: '4px', padding: '4px 10px', fontSize: '0.85rem', cursor: 'pointer' }}
+                      >
+                        Delete Airport
+                      </button>
+                    </div>
+
+                    <div className="form-row-2">
+                      <div className="form-field-nested">
+                        <label>City Name (e.g., Seoul)</label>
+                        <input type="text" value={airport.city || ''} onChange={e => handleAirportChange(aIndex, 'city', e.target.value)} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Airport Full Name (e.g., Incheon Intl)</label>
+                        <input type="text" value={airport.name || ''} onChange={e => handleAirportChange(aIndex, 'name', e.target.value)} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Airport Code (e.g., ICN)</label>
+                        <input type="text" value={airport.code || ''} onChange={e => handleAirportChange(aIndex, 'code', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div className="divider"></div>
+                    <h5>Base Service Prices</h5>
+                    <div className="form-row-2">
+                      <div className="form-field-nested">
+                        <label>Arrival Base USD</label>
+                        <input type="number" value={airport.services?.arrival?.usd || 0} onChange={e => handleAirportChange(aIndex, 'services', e.target.value, 'arrival', 'usd')} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Arrival Base KRW</label>
+                        <input type="number" value={airport.services?.arrival?.krw || 0} onChange={e => handleAirportChange(aIndex, 'services', e.target.value, 'arrival', 'krw')} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Departure Base USD</label>
+                        <input type="number" value={airport.services?.departure?.usd || 0} onChange={e => handleAirportChange(aIndex, 'services', e.target.value, 'departure', 'usd')} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Departure Base KRW</label>
+                        <input type="number" value={airport.services?.departure?.krw || 0} onChange={e => handleAirportChange(aIndex, 'services', e.target.value, 'departure', 'krw')} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Transfer Base USD</label>
+                        <input type="number" value={airport.services?.transfer?.usd || 0} onChange={e => handleAirportChange(aIndex, 'services', e.target.value, 'transfer', 'usd')} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Transfer Base KRW</label>
+                        <input type="number" value={airport.services?.transfer?.krw || 0} onChange={e => handleAirportChange(aIndex, 'services', e.target.value, 'transfer', 'krw')} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Picketing (Welcome Sign) USD</label>
+                        <input type="number" value={airport.services?.picketing?.usd || 0} onChange={e => handleAirportChange(aIndex, 'services', e.target.value, 'picketing', 'usd')} />
+                      </div>
+                      <div className="form-field-nested">
+                        <label>Picketing (Welcome Sign) KRW</label>
+                        <input type="number" value={airport.services?.picketing?.krw || 0} onChange={e => handleAirportChange(aIndex, 'services', e.target.value, 'picketing', 'krw')} />
+                      </div>
+                    </div>
+
+                    <div className="divider"></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <h5 style={{ margin: 0 }}>Available Vehicles</h5>
+                      <button type="button" onClick={() => handleAddVehicle(aIndex)} className="btn-premium secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
+                        + Add Vehicle
+                      </button>
+                    </div>
+
+                    {(airport.vehicles || []).map((vehicle, vIndex) => (
+                      <div key={vIndex} style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '0.9rem', color: '#ccc' }}>Vehicle #{vIndex + 1}</span>
+                          <button type="button" onClick={() => handleRemoveVehicle(aIndex, vIndex)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}>Remove</button>
+                        </div>
+                        <div className="form-row-2">
+                          <div className="form-field-nested">
+                            <label>Vehicle Name (e.g. Genesis G90)</label>
+                            <input type="text" value={vehicle.name || ''} onChange={e => handleVehicleChange(aIndex, vIndex, 'name', e.target.value)} />
+                          </div>
+                          <div className="form-field-nested">
+                            <label>Vehicle ID (e.g. g90)</label>
+                            <input type="text" value={vehicle.id || ''} onChange={e => handleVehicleChange(aIndex, vIndex, 'id', e.target.value)} />
+                          </div>
+                          <div className="form-field-nested">
+                            <label>Price USD</label>
+                            <input type="number" value={vehicle.priceUsd || 0} onChange={e => handleVehicleChange(aIndex, vIndex, 'priceUsd', e.target.value)} />
+                          </div>
+                          <div className="form-field-nested">
+                            <label>Price KRW</label>
+                            <input type="number" value={vehicle.priceKrw || 0} onChange={e => handleVehicleChange(aIndex, vIndex, 'priceKrw', e.target.value)} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                  </div>
+                ))}
+              </div>
+            )}
+
             {activeTab === 'pricing_settings' && (
               <div className="tab-section">
                 <h3>Company Contact Settings</h3>

@@ -508,7 +508,26 @@ Beyond the Gate Automated System`;
                 </p>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '16px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => {
+                    navigate('/payment', { 
+                      state: {
+                        orderId: bookingId,
+                        orderName: `BTG ${formData.serviceType.toUpperCase()} Service`,
+                        amount: prices.totalKrw,
+                        customerName: formData.name,
+                        customerEmail: formData.email,
+                        customerMobilePhone: formData.phone
+                      }
+                    });
+                  }} 
+                  className="btn-premium primary"
+                  style={{ flex: '1 1 45%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                >
+                  <CreditCard size={18} />
+                  <span>{lang === 'ko' ? '국내 결제 (나이스페이)' : 'Domestic Card'}</span>
+                </button>
                 <button 
                   onClick={() => {
                     navigate('/payment/paypal', { 
@@ -523,12 +542,12 @@ Beyond the Gate Automated System`;
                     });
                   }} 
                   className="btn-premium primary"
-                  style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                  style={{ flex: '1 1 45%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                 >
                   <CreditCard size={18} />
-                  <span>{lang === 'ko' ? 'PayPal로 결제하기' : 'Pay with PayPal'}</span>
+                  <span>{lang === 'ko' ? '해외 결제 (PayPal)' : 'Pay with PayPal'}</span>
                 </button>
-                <button onClick={resetForm} className="btn-premium secondary btn-success-close" style={{ flex: 1 }}>
+                <button onClick={resetForm} className="btn-premium secondary btn-success-close" style={{ flex: '1 1 100%' }}>
                   {t.form.close}
                 </button>
               </div>

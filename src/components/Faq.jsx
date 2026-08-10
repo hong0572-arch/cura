@@ -98,7 +98,7 @@ export default function Faq({ t }) {
         .faq-question {
           font-size: 1.05rem;
           font-weight: 600;
-          color: #fff;
+          color: var(--text-primary);
           line-height: 1.5;
           margin: 0;
         }

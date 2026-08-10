@@ -412,6 +412,101 @@ export const translations = {
         }
       ],
       copyright: "모든 권리 보유. CAS Aviation 포트폴리오 산하."
+    },
+    wizard: {
+      steps: {
+        step1: "서비스 선택",
+        step2: "추가 서비스",
+        step3: "항공편 정보",
+        step4: "승객 정보",
+        step5: "연락처 정보",
+        step6: "결제 상세 정보"
+      },
+      common: {
+        back: "뒤로",
+        completed: "완료됨",
+        inProgress: "진행 중",
+        notCompleted: "미완료",
+        selectBook: "선택 및 예약하기",
+        continue: "다음 단계",
+        proceedPay: "결제하기",
+        termsNote: "다음을 클릭함으로써 SkyVip 약관 및 개인정보 처리방침에 동의하는 것으로 간주됩니다.",
+        requiredField: "* 필수 입력",
+        optionalField: "선택 사항"
+      },
+      step1: {
+        meetGreetTitle: "VIP Meet & Greet",
+        meetGreetDesc: "공항 전역에 걸친 퍼스널 어시스턴스.",
+        servicePrice: "서비스 요금",
+        perPassenger: "/ 1명당",
+        includedTitle: "패키지 포함 내역:",
+        noticeText: "제공된 차량 환승 요금은 도심 이동(MPV) 기준입니다. 다른 목적지나 차량 업그레이드가 필요하시면 언제든 문의해 주시기 바랍니다."
+      },
+      step2: {
+        title: "추가 서비스",
+        subtitle: "여행에 대해 더 자세히 알려주시고, 저희가 처리해 드릴 항목을 선택해 주세요.",
+        luggageTitle: "수하물 지원",
+        luggageSub: "고객님의 수하물을 전담하여 운반해 드립니다",
+        bagsLabel: "수하물 개수",
+        vehicleTitle: "프리미엄 차량",
+        vehicleSub: "도심 내 목적지까지의 프라이빗 이동",
+        vehicleNone: "사용 안 함 (차량 없음)"
+      },
+      step3: {
+        title: "항공편 정보",
+        subtitle: "아래에 항공편 정보를 추가해 주세요.",
+        arrivalTitle: "도착 항공편",
+        departureTitle: "출발 항공편",
+        connectionTitle: "환승 항공편",
+        airlineLabel: "항공사 *",
+        flightLabel: "항공편명 *",
+        flightNote: "항공편명은 티켓에서 확인하실 수 있으며, 숫자만 기입해 주세요.",
+        uploadTitle: "항공권 업로드",
+        uploadSub: "지금 티켓을 업로드하시거나, 나중에 저희 팀이 연락드릴 수 있습니다.",
+        dropzone: "파일을 끌어다 놓거나 여기를 클릭하여 선택하세요",
+        dropzoneSub: "JPEG, PNG, PDF 지원, 최대 5MB"
+      },
+      step4: {
+        title: "승객 상세 정보 입력",
+        subtitle: "탑승객 수와 개인 정보를 추가하고 확인해 주세요.",
+        primaryPassenger: "대표 승객",
+        primarySub: "서비스 예약을 위해 각 승객의 정보가 필요합니다.",
+        firstName: "이름 (First Name) *",
+        lastName: "성 (Last Name) *",
+        dobLabel: "생년월일 *",
+        classLabel: "좌석 등급",
+        emailLabel: "이메일 주소 *",
+        phoneLabel: "연락처 번호 *",
+        phoneNote: "예약 관련 SMS 알림을 받을 수 있습니다.",
+        wheelchair: "항공사 휠체어 요청",
+        additionalPax: "추가 승객 #",
+        morePeople: "추가 동반 승객이 있으신가요?",
+        moreSub: "예약에 승객을 추가하거나 제거하세요.",
+        btnAddPax: "승객 추가"
+      },
+      step5: {
+        title: "연락처 정보",
+        subtitle: "본 예약과 관련하여 가장 적합한 연락처를 기재해 주세요.",
+        sameAsPrimary: "대표 승객 정보와 동일",
+        signIn: "로그인"
+      },
+      step6: {
+        orderId: "주문 ID",
+        unpaid: "미결제",
+        title: "결제 상세 정보",
+        quoteTitle: "서비스 견적 (USD)",
+        total: "합계:",
+        paymentNicepay: "Nicepay",
+        paymentNicepaySub: "국내 카드 결제",
+        paymentPaypal: "PayPal",
+        paymentPaypalSub: "해외 결제",
+        submitPayment: "결제 진행하기",
+        orderSummary: "주문 요약",
+        invoiceRelated: "관련 청구서",
+        anyQuestions: "궁금한 점이 있으신가요?",
+        questionsSub: "언제든지 연락해 주세요. 전문가 팀이 24시간 연중무휴 대기하고 있습니다!",
+        contactWhatsapp: "WhatsApp으로 문의하기"
+      }
     }
   },
   en: {
@@ -827,6 +922,101 @@ export const translations = {
         }
       ],
       copyright: "All rights reserved. Under CAS Aviation Portfolio."
+    },
+    wizard: {
+      steps: {
+        step1: "Select service",
+        step2: "Additional services",
+        step3: "Flight information",
+        step4: "Passengers details",
+        step5: "Contact information",
+        step6: "Payment details"
+      },
+      common: {
+        back: "Back",
+        completed: "Completed",
+        inProgress: "In progress",
+        notCompleted: "Not completed",
+        selectBook: "Select & Book Now",
+        continue: "Continue",
+        proceedPay: "Proceed to Pay",
+        termsNote: "By clicking to proceed I acknowledge that I agree with SkyVip Terms & Conditions & Privacy Policy",
+        requiredField: "* Required",
+        optionalField: "optional"
+      },
+      step1: {
+        meetGreetTitle: "VIP Meet & Greet",
+        meetGreetDesc: "Personal assistance throughout the airport.",
+        servicePrice: "Service price",
+        perPassenger: "/ 1 passenger",
+        includedTitle: "INCLUDED IN PACKAGE:",
+        noticeText: "The transfer rates provided are applicable for travel to city center with MPV. If you require a transfer to a different destination or upgrade a car class, please feel free to contact us."
+      },
+      step2: {
+        title: "Additional Services",
+        subtitle: "Tell us more about your trip and pick anything you'd like us to handle.",
+        luggageTitle: "Luggage Assistance",
+        luggageSub: "We will handle your luggage for you",
+        bagsLabel: "Amount of bags",
+        vehicleTitle: "Chauffeur Vehicle",
+        vehicleSub: "Private transfer within the city to your destination",
+        vehicleNone: "None (No Chauffeur Vehicle)"
+      },
+      step3: {
+        title: "Flight Information",
+        subtitle: "Please add flight information below.",
+        arrivalTitle: "Arrival flight",
+        departureTitle: "Departure flight",
+        connectionTitle: "Connection flight",
+        airlineLabel: "Airline *",
+        flightLabel: "Flight number *",
+        flightNote: "You can find your flight number on your ticket, please provide us with numbers only.",
+        uploadTitle: "Upload your Flight Tickets",
+        uploadSub: "You can upload your tickets now, or our team will contact you about this later on.",
+        dropzone: "Drag & drop your files or click here to select files",
+        dropzoneSub: "JPEG, PNG, PDF files supported, up to 5MB"
+      },
+      step4: {
+        title: "Enter Passengers Details",
+        subtitle: "Add and review the number of passengers and their personal details.",
+        primaryPassenger: "Primary passenger",
+        primarySub: "We need each passenger details to book a service for you",
+        firstName: "First Name *",
+        lastName: "Last Name *",
+        dobLabel: "Date of birth *",
+        classLabel: "Class of travel",
+        emailLabel: "Email *",
+        phoneLabel: "Phone number *",
+        phoneNote: "You may receive SMS updates about your booking",
+        wheelchair: "Wheelchair requested from the airline",
+        additionalPax: "Passenger #",
+        morePeople: "More people traveling?",
+        moreSub: "Add or remove passengers from your booking.",
+        btnAddPax: "Add passenger"
+      },
+      step5: {
+        title: "Contact Information",
+        subtitle: "The best point of contact for this reservation.",
+        sameAsPrimary: "Same as a primary passenger",
+        signIn: "Sign in"
+      },
+      step6: {
+        orderId: "Order ID",
+        unpaid: "UNPAID",
+        title: "Payment details",
+        quoteTitle: "QUOTE FOR SERVICE (USD)",
+        total: "Total:",
+        paymentNicepay: "Nicepay",
+        paymentNicepaySub: "(Domestic Card)",
+        paymentPaypal: "PayPal",
+        paymentPaypalSub: "(International)",
+        submitPayment: "Submit payment",
+        orderSummary: "Order summary",
+        invoiceRelated: "Invoices related to your order",
+        anyQuestions: "Any questions left?",
+        questionsSub: "Feel free to reach out, our team of professionals is online 24/7 and ready to help!",
+        contactWhatsapp: "Contact us via WhatsApp"
+      }
     }
   }
 };

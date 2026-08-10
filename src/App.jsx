@@ -8,7 +8,6 @@ import Services from './components/Services';
 import Fleet from './components/Fleet';
 import CasRoadmap from './components/CasRoadmap';
 import Team from './components/Team';
-import ReservationForm from './components/ReservationForm';
 import Faq from './components/Faq';
 import TermsModal from './components/TermsModal';
 import Footer from './components/Footer';
@@ -16,6 +15,9 @@ import Footer from './components/Footer';
 // Admin Components
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
+import ReviewSystem from './components/ReviewSystem';
+import Chatbot from './components/Chatbot';
+import BookingWizard from './components/BookingWizard';
 
 import { translations as defaultTranslations } from './translations';
 
@@ -23,10 +25,19 @@ function App() {
   const [lang, setLang] = useState('ko');
   const [selectedVehicle, setSelectedVehicle] = useState('none');
   const [termsOpen, setTermsOpen] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardData, setWizardData] = useState(null);
 
   const defaultImages = {
-    heroBg: '/luxury_airport_vip.png',
-    fleetBg: '/luxury_fleet.png'
+    heroBg: '/hero-bg.jpg',
+    fleetBg: '/luxury_fleet.png',
+  };
+
+  const defaultChatbot = {
+    apiKey: '',
+    systemPrompt: 'You are a VIP concierge for Beyond The Gate, a premium black car service in Korea. Be polite and helpful.',
+    knowledgeBase: 'We provide airport transfers in luxury vehicles (Genesis G90, Mercedes Sprinter).',
+    fallbackMessage: 'Please leave your email or call us directly, and a human agent will assist you.',
   };
 
   const defaultSettings = {
@@ -34,6 +45,40 @@ function App() {
     extraPassengerFeeUsd: 50,
     extraLuggageFeeUsd: 20,
     exchangeRate: 1350,
+    airports: [
+      {
+        code: 'ICN',
+        city: 'Seoul',
+        name: 'Incheon Intl',
+        services: {
+          arrival: { usd: 250, krw: 310000 },
+          departure: { usd: 270, krw: 330000 },
+          transfer: { usd: 340, krw: 420000 },
+          picketing: { usd: 140, krw: 150000 }
+        },
+        vehicles: [
+          { id: 'staria', name: 'Premium Minivan (Staria)', priceUsd: 104, priceKrw: 140000 },
+          { id: 'g90', name: 'Luxury Sedan (G90)', priceUsd: 178, priceKrw: 240000 },
+          { id: 'sprinter', name: 'VIP Large Van (Sprinter)', priceUsd: 178, priceKrw: 240000 }
+        ]
+      },
+      {
+        code: 'CDG',
+        city: 'Paris',
+        name: 'Paris Charles de',
+        services: {
+          arrival: { usd: 300, krw: 400000 },
+          departure: { usd: 300, krw: 400000 },
+          transfer: { usd: 400, krw: 540000 },
+          picketing: { usd: 150, krw: 200000 }
+        },
+        vehicles: [
+          { id: 'vclass', name: 'Mercedes V-Class', priceUsd: 200, priceKrw: 270000 },
+          { id: 'sclass', name: 'Mercedes S-Class', priceUsd: 300, priceKrw: 400000 }
+        ]
+      }
+    ],
+    chatbot: defaultChatbot,
     servicePrices: {
       arrival: { usd: 250, krw: 310000 },
       departure: { usd: 270, krw: 330000 },
@@ -196,7 +241,10 @@ function App() {
       
       <main>
         {/* Pass customized images to sections */}
-        <Hero t={t} customImage={images.heroBg} />
+        <Hero t={t} customImage={images.heroBg} settings={settings} onOpenWizard={(data) => {
+          setWizardData(data);
+          setIsWizardOpen(true);
+        }} />
         
         <CoreValues t={t} />
         
@@ -212,14 +260,8 @@ function App() {
         
         <Team t={t} />
         
-        <ReservationForm 
-          t={t} 
-          lang={lang}
-          selectedVehicle={selectedVehicle} 
-          setSelectedVehicle={setSelectedVehicle} 
-          settings={settings}
-        />
-        
+        <ReviewSystem t={t} />
+
         <Faq t={t} />
       </main>
 
@@ -230,6 +272,17 @@ function App() {
         onClose={() => setTermsOpen(false)} 
         t={t} 
       />
+      
+      <Chatbot settings={settings} />
+
+      {isWizardOpen && (
+        <BookingWizard 
+          initialData={wizardData}
+          onClose={() => setIsWizardOpen(false)} 
+          settings={settings}
+          t={t}
+        />
+      )}
     </>
   );
 }

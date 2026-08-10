@@ -13,8 +13,9 @@ export default function Success() {
       const orderId = searchParams.get('orderId');
       const amount = searchParams.get('amount');
 
-      if (gateway === 'paypal') {
+      if (gateway === 'paypal' || gateway === 'nicepay') {
         // PayPal is already captured in PaypalPayment.jsx
+        // Nicepay is already captured in backend /api/nicepay-return
         setStatus('success');
         return;
       }

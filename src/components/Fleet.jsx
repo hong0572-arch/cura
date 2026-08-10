@@ -8,21 +8,24 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
       translationKey: 'minivan',
       iconColor: '#c5a880',
       pax: 4,
-      bags: 4
+      bags: 4,
+      bg: '/staria.jpg'
     },
     {
       id: 'g90',
       translationKey: 'sedan',
       iconColor: '#d4af37',
       pax: 2,
-      bags: 2
+      bags: 2,
+      bg: '/g90.webp'
     },
     {
       id: 'sprinter',
       translationKey: 'large_van',
       iconColor: '#a68b64',
       pax: 6,
-      bags: 6
+      bags: 6,
+      bg: 'https://images.unsplash.com/photo-1619682817481-e994891cb1b4?auto=format&fit=crop&w=600'
     }
   ];
 
@@ -50,7 +53,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
         </div>
 
         {/* Hero Visual Showcase */}
-        <div className="fleet-hero-banner glass-panel">
+        <div className="fleet-hero-banner">
           <div className="fleet-hero-overlay"></div>
           <div className="fleet-hero-img" style={{ backgroundImage: `url(${customImage || '/luxury_fleet.png'})` }}></div>
           <div className="fleet-hero-content">
@@ -64,38 +67,45 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
           {fleetItems.map((item) => {
             const data = t.fleet.types[item.translationKey];
             return (
-              <div key={item.id} className="fleet-card glass-panel">
-                <div className="fleet-card-header">
-                  <div className="fleet-class-badge" style={{ borderColor: item.iconColor, color: item.iconColor }}>
-                    {data.class}
+              <div
+                key={item.id}
+                className="image-card"
+                style={{ backgroundImage: `url(${item.bg})` }}
+              >
+                <div className="image-card-overlay"></div>
+                <div className="image-card-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'flex-end', paddingBottom: '16px' }}>
+                  <div className="fleet-card-header" style={{ marginBottom: '12px' }}>
+                    <div className="fleet-class-badge" style={{ borderColor: item.iconColor, color: item.iconColor }}>
+                      {data.class}
+                    </div>
+                    <h3 className="image-card-title">{data.name}</h3>
+                    <div className="fleet-price-tag">
+                      <span className="price-label">{t.fleet.starts_from || 'Starts from'}</span>
+                      <span className="price-amount">{data.price}</span>
+                    </div>
                   </div>
-                  <h3 className="fleet-name">{data.name}</h3>
-                  <div className="fleet-price-tag">
-                    <span className="price-label">{t.fleet.starts_from || 'Starts from'}</span>
-                    <span className="price-amount">{data.price}</span>
+
+                  <p className="image-card-desc">{data.desc}</p>
+
+                  <div className="fleet-specs" style={{ borderTop: '1px solid rgba(255,255,255,0.2)', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingTop: '12px', paddingBottom: '12px', marginBottom: '16px', marginTop: '16px' }}>
+                    <div className="spec-item" style={{ color: '#fff' }}>
+                      <Users size={16} className="spec-icon" />
+                      <span>{data.capacity}</span>
+                    </div>
+                    <div className="spec-item" style={{ color: '#fff' }}>
+                      <Briefcase size={16} className="spec-icon" />
+                      <span>{item.bags} {t.fleet.bags_max_label || 'Checked Bags Max'}</span>
+                    </div>
                   </div>
+
+                  <button
+                    onClick={() => handleSelect(item.id)}
+                    className="btn-select-fleet"
+                  >
+                    <span>{t.fleet.btn_select || 'Select & Get Quote'}</span>
+                    <ChevronRight size={16} />
+                  </button>
                 </div>
-
-                <p className="fleet-desc">{data.desc}</p>
-
-                <div className="fleet-specs">
-                  <div className="spec-item">
-                    <Users size={16} className="spec-icon" />
-                    <span>{data.capacity}</span>
-                  </div>
-                  <div className="spec-item">
-                    <Briefcase size={16} className="spec-icon" />
-                    <span>{item.bags} {t.fleet.bags_max_label || 'Checked Bags Max'}</span>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={() => handleSelect(item.id)} 
-                  className="btn-select-fleet"
-                >
-                  <span>{t.fleet.btn_select || 'Select & Get Quote'}</span>
-                  <ChevronRight size={16} />
-                </button>
               </div>
             );
           })}
@@ -116,7 +126,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
 
       <style>{`
         .fleet-section {
-          background: var(--bg-primary);
+          background: transparent;
           position: relative;
         }
 

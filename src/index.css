@@ -2,25 +2,25 @@
 
 /* CSS Variable Design System */
 :root {
-  --bg-primary: #060b17;
-  --bg-secondary: #0f1d40;
-  --bg-card: rgba(15, 29, 64, 0.75);
-  --bg-card-hover: rgba(22, 40, 84, 0.85);
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-card: rgba(255, 255, 255, 0.75);
+  --bg-card-hover: rgba(255, 255, 255, 0.9);
   
-  --gold-primary: #fcb933;
-  --gold-light: #ffe18c;
-  --gold-dark: #cb901f;
-  --gold-glow: rgba(252, 185, 51, 0.18);
-  --gold-glow-strong: rgba(252, 185, 51, 0.45);
+  --gold-primary: #3043c0;
+  --gold-light: #7f8eec;
+  --gold-dark: #172476;
+  --gold-glow: rgba(48, 67, 192, 0.18);
+  --gold-glow-strong: rgba(48, 67, 192, 0.45);
   
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ab0cc;
-  --text-muted: #64748b;
-  --text-gold: #fcb933;
+  --text-primary: #0a0a0c;
+  --text-secondary: #4a4a58;
+  --text-muted: #727284;
+  --text-gold: #3043c0;
   
-  --border-subtle: rgba(252, 185, 51, 0.15);
-  --border-focus: rgba(252, 185, 51, 0.55);
-  --border-gradient: linear-gradient(135deg, rgba(252, 185, 51, 0.3) 0%, rgba(6, 11, 23, 0.1) 100%);
+  --border-subtle: rgba(48, 67, 192, 0.15);
+  --border-focus: rgba(48, 67, 192, 0.55);
+  --border-gradient: linear-gradient(135deg, rgba(48, 67, 192, 0.3) 0%, rgba(244, 245, 251, 0.1) 100%);
   
   --font-serif: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -28,7 +28,7 @@
   --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast: all 0.2s ease;
   
-  --glow-shadow: 0 0 30px rgba(252, 185, 51, 0.08);
+  --glow-shadow: 0 0 30px rgba(48, 67, 192, 0.08);
 }
 
 
@@ -53,12 +53,11 @@ body {
   overflow-x: hidden;
   width: 100%;
   position: relative;
-  line-height: 1.6;
+  line-height: 1.7;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
-  background-attachment: fixed;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(197, 168, 128, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(13, 22, 42, 0.8) 0%, transparent 50%);
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-primary);
 }
 
 /* Scrollbar Customization */
@@ -78,8 +77,9 @@ body {
 
 /* Typography Utilities */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .font-serif {
@@ -93,21 +93,66 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-text-fill-color: transparent;
 }
 
-/* Glassmorphism Styles */
+/* Image Card Styles */
+.image-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transition: var(--transition-smooth);
+  background-size: cover;
+  background-position: center;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  text-decoration: none;
+}
+
+.image-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+.image-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%);
+  z-index: 1;
+}
+
+.image-card-content {
+  position: relative;
+  z-index: 2;
+  padding: 32px;
+  color: #fff;
+}
+
+.image-card-title {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.image-card-desc {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Glassmorphism Styles (Keep for wizard/hero stats if needed) */
 .glass-panel {
-  background: var(--bg-card);
+  background: rgba(255,255,255,0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   box-shadow: var(--glow-shadow);
   transition: var(--transition-smooth);
-}
-
-.glass-panel:hover {
-  border-color: rgba(197, 168, 128, 0.3);
-  box-shadow: 0 10px 40px rgba(197, 168, 128, 0.12);
-  transform: translateY(-4px);
 }
 
 /* Button Designs */
@@ -357,4 +402,1519 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+
+/* Booking Wizard Styles */
+.wizard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: var(--bg-primary);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.wizard-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.wizard-back-btn, .wizard-close-btn {
+  background: none;
+  border: none;
+  color: var(--gold-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.wizard-stepper {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  gap: 24px;
+}
+
+.stepper-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.step-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.step-status {
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-status.completed { color: #0b6a37; }
+.step-status.progress { color: var(--gold-primary); }
+.step-status.pending { color: var(--text-muted); }
+
+.wizard-body {
+  display: flex;
+  gap: 32px;
+  padding: 40px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.wizard-content {
+  flex: 1;
+}
+
+.wizard-sidebar {
+  width: 360px;
+}
+
+.cart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+  position: sticky;
+  top: 100px;
+}
+
+.cart-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.cart-total {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cart-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.package-selector {
+  display: flex;
+  gap: 16px;
+}
+
+.pkg-card {
+  flex: 1;
+  border: 2px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  background: var(--bg-secondary);
+  transition: all 0.2s;
+}
+
+.pkg-card.active {
+  border-color: var(--gold-primary);
+  background: rgba(48, 67, 192, 0.05);
+}
+
+.pkg-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pkg-check {
+  color: var(--gold-primary);
+}
+
+.add-on-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.p-24 { padding: 24px; }
+.mb-24 { margin-bottom: 24px; }
+.mt-24 { margin-top: 24px; }
+.mb-20 { margin-bottom: 20px; }
+.mt-20 { margin-top: 20px; }
+.mb-16 { margin-bottom: 16px; }
+.mt-16 { margin-top: 16px; }
+.mb-12 { margin-bottom: 12px; }
+.mt-12 { margin-top: 12px; }
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 0.9rem; }
+.text-xs { font-size: 0.8rem; }
+.text-right { text-align: right; }
+
+/* SkyVIP Step 1 Custom Design Styles */
+.sky-step-header {
+  background: #f5f6f8;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.sky-header-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.sky-header-meta {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  color: #666;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.sky-pkg-card {
+  max-width: 260px;
+  background: #fff;
+  border: 2px solid #868e96;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.sky-pkg-card.active {
+  border-color: #495057;
+  background: #f8f9fa;
+}
+
+.sky-pkg-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.sky-pkg-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #212529;
+}
+
+.sky-check-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b5bdb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sky-pkg-desc {
+  font-size: 0.8rem;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.sky-pkg-detail-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+}
+
+.sky-pill-badge {
+  display: inline-block;
+  background: #adb5bd;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.sky-pkg-detail-body {
+  display: flex;
+  gap: 32px;
+  margin-top: 12px;
+}
+
+.sky-pkg-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sky-pkg-main-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 24px;
+}
+
+.sky-price-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sky-price-amount {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.sky-per-pass {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #6c757d;
+}
+
+.sky-pkg-right {
+  flex: 1.5;
+}
+
+.sky-included-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #868e96;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.sky-included-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sky-included-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: #495057;
+  line-height: 1.4;
+}
+
+.sky-inc-icon {
+  font-size: 1rem;
+}
+
+.sky-notice-box {
+  background: #fdf7e7;
+  border: 1px solid #f5dfb8;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.sky-notice-icon {
+  background: #e69c24;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sky-notice-text {
+  font-size: 0.82rem;
+  color: #795548;
+  line-height: 1.45;
+}
+
+/* Sidebar Styles */
+.sky-sidebar-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e9ecef;
+}
+
+.sky-sidebar-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+.sky-sidebar-sub {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 12px;
+}
+
+.sky-sidebar-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: #495057;
+}
+
+.sky-quote-section {
+  border-top: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+  padding: 12px 0;
+  margin: 16px 0;
+}
+
+.sky-quote-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #868e96;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.sky-quote-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: #495057;
+  margin-bottom: 6px;
+}
+
+.sky-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.sky-total-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.sky-total-amount {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.sky-fee-note {
+  font-size: 0.75rem;
+  color: #868e96;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.btn-sky-book-now {
+  width: 100%;
+  background: #3b5bdb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-sky-book-now:hover {
+  background: #364fc7;
+}
+
+.sky-terms-note {
+  font-size: 0.72rem;
+  color: #868e96;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sky-terms-note a {
+  color: #3b5bdb;
+  text-decoration: underline;
+}
+
+.sky-sidebar-box {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #212529;
+}
+
+.sky-sidebar-box.vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.sky-sidebar-box.vertical h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.sky-sidebar-box.vertical p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.btn-text-blue {
+  background: none;
+  border: none;
+  color: #3b5bdb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Step 2 Additional Services Styles */
+.sky-step2-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+.sky-step2-sub {
+  font-size: 0.95rem;
+  color: #6c757d;
+}
+
+.sky-addon-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+}
+
+.sky-addon-img-wrap {
+  width: 220px;
+  height: 150px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sky-addon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sky-addon-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sky-addon-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 4px;
+}
+
+.sky-addon-sub {
+  font-size: 0.95rem;
+  color: #6c757d;
+  margin-bottom: 8px;
+}
+
+.sky-counter-box {
+  background: #f1f3f5;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sky-counter-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.sky-bag-icon {
+  color: #495057;
+}
+
+.sky-counter-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sky-counter-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #333;
+  transition: transform 0.1s, background 0.2s;
+}
+
+.sky-counter-btn:hover {
+  background: #f8f9fa;
+  transform: scale(1.05);
+}
+
+.sky-counter-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+  min-width: 20px;
+  text-align: center;
+}
+
+.sky-vehicle-select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  background: #fff;
+  font-size: 0.95rem;
+  color: #212529;
+  outline: none;
+}
+
+/* Step 3 Flight Information Styles */
+.sky-flight-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+}
+
+.sky-flight-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.sky-flight-icon {
+  color: #495057;
+  margin-top: 2px;
+}
+
+.sky-flight-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sky-optional-tag {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #868e96;
+}
+
+.sky-flight-sub {
+  font-size: 0.88rem;
+  color: #6c757d;
+}
+
+.sky-flight-form-row {
+  display: flex;
+  gap: 24px;
+}
+
+.sky-form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sky-form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 8px;
+}
+
+.sky-airline-input-wrap {
+  position: relative;
+}
+
+.sky-airline-box {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  padding: 0 14px;
+  height: 48px;
+  transition: all 0.2s;
+}
+
+.sky-airline-box.active {
+  background: #fff;
+  border-color: #3b5bdb;
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15);
+}
+
+.sky-search-icon {
+  color: #6c757d;
+  margin-right: 10px;
+}
+
+.sky-chevron-icon {
+  color: #6c757d;
+  margin-left: 10px;
+}
+
+.sky-airline-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.95rem;
+  color: #212529;
+}
+
+.sky-text-input {
+  background: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  padding: 0 16px;
+  height: 48px;
+  font-size: 0.95rem;
+  color: #212529;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.sky-text-input:focus {
+  background: #fff;
+  border-color: #3b5bdb;
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15);
+}
+
+.sky-field-note {
+  font-size: 0.8rem;
+  color: #868e96;
+  line-height: 1.4;
+}
+
+.sky-airline-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  padding: 6px 0;
+}
+
+.sky-airline-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #212529;
+  transition: background 0.15s;
+}
+
+.sky-airline-item:hover {
+  background: #f1f3f5;
+}
+
+.sky-airline-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sky-plane-icon {
+  color: #adb5bd;
+}
+
+.sky-airline-code {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.sky-dropzone-box {
+  background: #f8f9fa;
+  border: 1px dashed #ced4da;
+  border-radius: 12px;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sky-dropzone-box:hover {
+  background: #f1f3f5;
+}
+
+.sky-upload-icon {
+  color: #6c757d;
+}
+
+.sky-dropzone-text {
+  font-size: 0.95rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.sky-click-link {
+  color: #3b5bdb;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sky-dropzone-sub {
+  font-size: 0.8rem;
+  color: #868e96;
+}
+
+@media (max-width: 768px) {
+  .sky-flight-form-row {
+    flex-direction: column;
+  }
+}
+
+/* Step 4 Passengers Details Styles */
+.sky-pax-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sky-pax-header-left {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.sky-pax-type-select {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #212529;
+  outline: none;
+}
+
+.sky-dob-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 12px;
+}
+
+.sky-select-input {
+  background: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  padding: 0 14px;
+  height: 48px;
+  font-size: 0.95rem;
+  color: #212529;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.sky-select-input:focus {
+  background: #fff;
+  border-color: #3b5bdb;
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15);
+}
+
+.center-text {
+  text-align: center;
+}
+
+.sky-phone-input-wrap {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  padding: 0 14px;
+  height: 48px;
+}
+
+.sky-flag-prefix {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #495057;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.sky-phone-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.95rem;
+  color: #212529;
+}
+
+.sky-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sky-toggle-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #212529;
+}
+
+/* Switch Toggle Styling */
+.sky-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.sky-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sky-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ced4da;
+  transition: .3s;
+}
+
+.sky-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+}
+
+input:checked + .sky-slider {
+  background-color: #3b5bdb;
+}
+
+input:checked + .sky-slider:before {
+  transform: translateX(20px);
+}
+
+.sky-slider.round {
+  border-radius: 24px;
+}
+
+.sky-slider.round:before {
+  border-radius: 50%;
+}
+
+.sky-more-people-card {
+  justify-content: space-between;
+  padding: 24px;
+}
+
+.sky-more-people-left {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  max-width: 500px;
+}
+
+.sky-more-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 4px;
+}
+
+.sky-more-sub {
+  font-size: 0.85rem;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.btn-sky-add-pax {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #212529;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-sky-add-pax:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.btn-sky-add-pax.remove-btn {
+  color: #e03131;
+  border-color: #ffc9c9;
+  background: #fff5f5;
+}
+
+.btn-sky-add-pax.remove-btn:hover {
+  background: #ffe3e3;
+}
+
+.sky-country-code-select {
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  padding-right: 8px;
+  border-right: 1px solid #dee2e6;
+  margin-right: 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.btn-sky-remove-pax {
+  background: #fff5f5;
+  border: 1px solid #ffc9c9;
+  color: #e03131;
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sky-remove-pax:hover {
+  background: #ffe3e3;
+  color: #c92a2a;
+}
+
+.sky-pax-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Step 5 Contact Information Styles */
+.sky-signin-btn {
+  width: 100%;
+  padding: 14px;
+  background: #e9ecef;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #212529;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sky-signin-btn:hover {
+  background: #dee2e6;
+}
+
+.sky-or-divider {
+  position: relative;
+  text-align: center;
+}
+
+.sky-or-divider:before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e9ecef;
+}
+
+.sky-or-divider span {
+  position: relative;
+  background: #fff;
+  padding: 0 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #adb5bd;
+  letter-spacing: 0.5px;
+}
+
+.sky-checkbox-wrap {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sky-checkbox-wrap input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.sky-checkbox-custom {
+  height: 20px;
+  width: 20px;
+  background-color: #fff;
+  border: 2px solid #ced4da;
+  border-radius: 6px;
+  margin-right: 12px;
+  display: inline-block;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.sky-checkbox-wrap:hover input ~ .sky-checkbox-custom {
+  border-color: #3b5bdb;
+}
+
+.sky-checkbox-wrap input:checked ~ .sky-checkbox-custom {
+  background-color: #3b5bdb;
+  border-color: #3b5bdb;
+}
+
+.sky-checkbox-custom:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.sky-checkbox-wrap input:checked ~ .sky-checkbox-custom:after {
+  display: block;
+}
+
+.sky-checkbox-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+/* Step 6 Order & Payment Details Page Styles */
+.sky-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sky-order-id-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #212529;
+  letter-spacing: -0.5px;
+}
+
+.sky-unpaid-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff4e6;
+  border: 1px solid #ffe066;
+  color: #d9480f;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.sky-unpaid-badge.sm {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+.sky-dollar-icon {
+  background: #d9480f;
+  color: #fff;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+}
+
+.sky-quote-accordion {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px 20px;
+  border: 1px solid #e9ecef;
+}
+
+.sky-quote-accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #6c757d;
+  letter-spacing: 0.5px;
+}
+
+.sky-quote-accordion-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.sky-quote-accordion-total {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #dee2e6;
+  font-size: 1.1rem;
+  color: #212529;
+}
+
+.sky-quote-total-val {
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.sky-payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sky-payment-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border: 1px solid #ced4da;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sky-payment-option:hover {
+  border-color: #3b5bdb;
+}
+
+.sky-payment-option.selected {
+  border-color: #3b5bdb;
+  box-shadow: 0 0 0 2px rgba(59, 91, 219, 0.15);
+  background: #f8f9fa;
+}
+
+.sky-payment-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sky-radio-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #adb5bd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sky-payment-option.selected .sky-radio-circle {
+  border-color: #3b5bdb;
+}
+
+.sky-radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b5bdb;
+}
+
+.sky-pay-icon {
+  color: #495057;
+}
+
+.sky-pay-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #212529;
+}
+
+.sky-pay-sublabel {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+.sky-gpay-pill {
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #3c4043;
+}
+
+.sky-paypal-badge {
+  background: #003087;
+  color: #fff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-style: italic;
+}
+
+.btn-sky-submit-payment {
+  width: 100%;
+  padding: 16px;
+  background: #3b5bdb;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-sky-submit-payment:hover {
+  background: #324bbf;
+}
+
+.sky-airport-banner {
+  background: #f1f3f5;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.sky-banner-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #212529;
+}
+
+.sky-banner-meta {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.sky-invoice-box {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.sky-invoice-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sky-invoice-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sky-inv-code {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.sky-inv-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #212529;
+}
+
+.sky-inv-desc {
+  font-size: 0.88rem;
+  color: #6c757d;
+}
+
+.sky-invoice-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e9ecef;
+  font-size: 0.95rem;
+  color: #212529;
+}
+
+/* Right Sidebar Questions Card */
+.sky-questions-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #212529;
+}
+
+.sky-questions-sub {
+  font-size: 0.85rem;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.sky-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sky-contact-emoji {
+  font-size: 1.1rem;
+}
+
+.sky-contact-link {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #212529;
+  text-decoration: none;
+}
+
+.sky-contact-link:hover {
+  color: #3b5bdb;
+}
+
+.btn-sky-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #212529;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-sky-whatsapp:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+@media (max-width: 768px) {
+  .sky-more-people-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+
+
+
+
+
 

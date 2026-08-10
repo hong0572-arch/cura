@@ -9,6 +9,8 @@ const app = express();
 const port = process.env.PORT || 4242;
 
 app.use(cors());
+// URL-encoded body parser is required because Nicepay POSTs form data
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // 자동 이메일 발송 API
@@ -88,6 +90,51 @@ app.post('/confirm/toss', async (req, res) => {
   } catch (error) {
     console.error('Toss Payments Confirm Error:', error);
     res.status(500).json({ error: 'Payment confirmation failed' });
+  }
+});
+
+// --- Nicepay Integration ---
+app.post('/api/nicepay-return', async (req, res) => {
+  const { authResultCode, authResultMsg, tid, txTid, authToken, mid, orderId, amount, signature, clientId } = req.body;
+  const transactionId = tid || txTid; // Nicepay V2 uses 'tid'
+  const secretKey = process.env.NICEPAY_SECRET_KEY;
+  // Fallback to env var if clientId is not in req.body
+  const nicepayClientId = clientId || process.env.VITE_NICEPAY_CLIENT_KEY;
+
+  if (!secretKey || !nicepayClientId) {
+    return res.redirect(`/fail?message=${encodeURIComponent('Nicepay keys are missing')}`);
+  }
+
+  // authResultCode '0000' means authentication succeeded
+  if (authResultCode !== '0000') {
+    return res.redirect(`/fail?message=${encodeURIComponent(authResultMsg || 'Authentication failed')}`);
+  }
+
+  const encryptedSecretKey = Buffer.from(`${nicepayClientId}:${secretKey}`).toString('base64');
+
+  try {
+    const response = await fetch(`https://api.nicepay.co.kr/v1/payments/${transactionId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${encryptedSecretKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ amount: parseInt(amount) }),
+    });
+
+    const data = await response.json();
+    
+    // resultCode '0000' means capture succeeded
+    if (!response.ok || data.resultCode !== '0000') {
+      console.error("Nicepay Capture Failed:", data);
+      return res.redirect(`/fail?message=${encodeURIComponent(data.resultMsg || 'Capture failed')}`);
+    }
+    
+    // Success! Redirect to frontend success page
+    res.redirect(`/success?gateway=nicepay&paymentKey=${transactionId}&orderId=${orderId}&amount=${amount}`);
+  } catch (error) {
+    console.error('Nicepay Capture Error:', error);
+    res.redirect(`/fail?message=${encodeURIComponent('Payment capture process failed')}`);
   }
 });
 

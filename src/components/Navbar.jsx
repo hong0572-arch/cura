@@ -26,8 +26,7 @@ export default function Navbar({ lang, setLang, t }) {
     { id: 'fleet', label: t.nav.fleet },
     { id: 'cas', label: t.nav.cas },
     { id: 'team', label: t.nav.team },
-    { id: 'faq', label: t.nav.faq },
-    { id: 'reserve', label: t.nav.reserve }
+    { id: 'faq', label: t.nav.faq }
   ];
 
   const handleNavClick = (id) => {
@@ -72,10 +71,6 @@ export default function Navbar({ lang, setLang, t }) {
             <Globe size={18} className="lang-icon" />
             <span className="lang-text">{lang === 'ko' ? 'EN' : 'KO'}</span>
           </button>
-          
-          <button onClick={() => handleNavClick('reserve')} className="btn-nav-reserve">
-            {t.hero.cta_reserve}
-          </button>
         </div>
 
         {/* Mobile Toggle Buttons */}
@@ -107,12 +102,6 @@ export default function Navbar({ lang, setLang, t }) {
               {item.label}
             </button>
           ))}
-          <button 
-            onClick={() => handleNavClick('reserve')} 
-            className="btn-premium primary mobile-cta"
-          >
-            {t.hero.cta_reserve}
-          </button>
         </div>
       </div>
 
@@ -214,7 +203,7 @@ export default function Navbar({ lang, setLang, t }) {
         .nav-link-btn {
           background: transparent;
           border: none;
-          color: var(--text-secondary);
+          color: #ffffff;
           font-size: 0.9rem;
           font-weight: 500;
           cursor: pointer;
@@ -348,7 +337,7 @@ export default function Navbar({ lang, setLang, t }) {
         .mobile-nav-link-btn {
           background: transparent;
           border: none;
-          color: var(--text-primary);
+          color: #ffffff;
           font-size: 1.1rem;
           text-align: left;
           padding: 8px 0;
