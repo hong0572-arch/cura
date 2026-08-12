@@ -16,11 +16,17 @@ const SERVICES = [
   { id: 'transfer', label: 'Connection', icon: ArrowRightLeft },
 ];
 
+const getInitialDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  return d.toISOString().split('T')[0];
+};
+
 export default function Hero({ t, customImage, onOpenWizard, settings }) {
   const [formData, setFormData] = useState({
     airport: 'ICN',
     serviceType: 'arrival',
-    date: '2026-08-18',
+    date: getInitialDate(),
     adults: 1,
     children: 0,
     email: 'joonkiehong@gmail.com'
@@ -67,13 +73,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
   const selectedAirport = activeAirports.find(a => a.code === formData.airport) || activeAirports[0];
   const selectedService = SERVICES.find(s => s.id === formData.serviceType) || SERVICES[0];
 
-  const getMinDate = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 4);
-    return d.toISOString().split('T')[0];
-  };
-
-  const minDate = getMinDate();
+  const minDate = getInitialDate();
 
   useEffect(() => {
     if (!formData.date || formData.date < minDate) {

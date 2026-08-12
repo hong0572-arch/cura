@@ -1,7 +1,10 @@
 import React from 'react';
 import { Mail, Phone, MapPin, ArrowUp, ExternalLink, Lock } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Footer({ t, onOpenTerms }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const scrollToTop = () => {
     window.scrollTo({
@@ -10,16 +13,20 @@ export default function Footer({ t, onOpenTerms }) {
     });
   };
 
-  const handleLinkClick = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+  const handleLinkClick = (id, path = '/') => {
+    if (location.pathname !== path) {
+      navigate(`${path}#${id}`);
+    } else {
+      const element = document.getElementById(id);
+      if (element) {
+        const offset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
     }
   };
 
@@ -44,12 +51,12 @@ export default function Footer({ t, onOpenTerms }) {
           <div className="footer-links-col">
             <h4>{t.footer?.quick_links_title || 'Quick Links'}</h4>
             <ul className="footer-links-list">
-              <li><button onClick={() => handleLinkClick('hero')}>{t.nav.home}</button></li>
-              <li><button onClick={() => handleLinkClick('values')}>{t.nav.values}</button></li>
-              <li><button onClick={() => handleLinkClick('services')}>{t.nav.services}</button></li>
-              <li><button onClick={() => handleLinkClick('fleet')}>{t.nav.fleet}</button></li>
-              <li><button onClick={() => handleLinkClick('cas')}>{t.nav.cas}</button></li>
-              <li><button onClick={() => handleLinkClick('faq')}>{t.nav.faq}</button></li>
+              <li><button onClick={() => handleLinkClick('hero', '/')}>{t.nav.home}</button></li>
+              <li><button onClick={() => handleLinkClick('values', '/')}>{t.nav.values}</button></li>
+              <li><button onClick={() => handleLinkClick('services', '/')}>{t.nav.services}</button></li>
+              <li><button onClick={() => handleLinkClick('fleet', '/')}>{t.nav.fleet}</button></li>
+              <li><button onClick={() => handleLinkClick('faq', '/')}>{t.nav.faq}</button></li>
+              <li><button onClick={() => handleLinkClick('about', '/about')}>About Us</button></li>
             </ul>
           </div>
 
@@ -110,6 +117,11 @@ export default function Footer({ t, onOpenTerms }) {
         <div className="footer-bottom-row">
           <div className="copyright-box">
             <span>© 2026 {t.brand}. {t.footer?.copyright || 'All rights reserved. Under CAS Aviation Portfolio.'}</span>
+            <div style={{ marginTop: '8px', display: 'flex', gap: '12px', flexWrap: 'wrap', color: 'var(--text-muted)' }}>
+              <span>통신판매업 번호: 제 2026-영종구-0090호</span>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <span>사업자등록번호: 696-87-04263</span>
+            </div>
           </div>
 
           <div className="legal-links-box">

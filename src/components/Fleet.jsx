@@ -25,7 +25,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
       iconColor: '#a68b64',
       pax: 6,
       bags: 6,
-      bg: 'https://images.unsplash.com/photo-1619682817481-e994891cb1b4?auto=format&fit=crop&w=600'
+      bg: '/sprinter.webp'
     }
   ];
 
@@ -69,12 +69,12 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
             return (
               <div
                 key={item.id}
-                className="image-card"
+                className="image-card fleet-hover-card"
                 style={{ backgroundImage: `url(${item.bg})` }}
               >
-                <div className="image-card-overlay"></div>
-                <div className="image-card-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'flex-end', paddingBottom: '16px' }}>
-                  <div className="fleet-card-header" style={{ marginBottom: '12px' }}>
+                <div className="image-card-overlay fleet-overlay"></div>
+                <div className="image-card-content fleet-card-content">
+                  <div className="fleet-card-header">
                     <div className="fleet-class-badge" style={{ borderColor: item.iconColor, color: item.iconColor }}>
                       {data.class}
                     </div>
@@ -85,26 +85,30 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
                     </div>
                   </div>
 
-                  <p className="image-card-desc">{data.desc}</p>
+                  <div className="fleet-details-wrapper">
+                    <div className="fleet-card-details">
+                      <p className="fleet-desc">{data.desc}</p>
 
-                  <div className="fleet-specs" style={{ borderTop: '1px solid rgba(255,255,255,0.2)', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingTop: '12px', paddingBottom: '12px', marginBottom: '16px', marginTop: '16px' }}>
-                    <div className="spec-item" style={{ color: '#fff' }}>
-                      <Users size={16} className="spec-icon" />
-                      <span>{data.capacity}</span>
-                    </div>
-                    <div className="spec-item" style={{ color: '#fff' }}>
-                      <Briefcase size={16} className="spec-icon" />
-                      <span>{item.bags} {t.fleet.bags_max_label || 'Checked Bags Max'}</span>
+                      <div className="fleet-specs">
+                        <div className="spec-item">
+                          <Users size={16} className="spec-icon" />
+                          <span>{data.capacity}</span>
+                        </div>
+                        <div className="spec-item">
+                          <Briefcase size={16} className="spec-icon" />
+                          <span>{item.bags} {t.fleet.bags_max_label || 'Checked Bags Max'}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleSelect(item.id)}
+                        className="btn-select-fleet"
+                      >
+                        <span>{t.fleet.btn_select || 'Select & Get Quote'}</span>
+                        <ChevronRight size={16} />
+                      </button>
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => handleSelect(item.id)}
-                    className="btn-select-fleet"
-                  >
-                    <span>{t.fleet.btn_select || 'Select & Get Quote'}</span>
-                    <ChevronRight size={16} />
-                  </button>
                 </div>
               </div>
             );
@@ -194,8 +198,54 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
           height: 100%;
         }
 
+        .fleet-hover-card {
+          border-radius: 16px;
+        }
+
+        .fleet-hover-card .fleet-overlay {
+          background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+          transition: background 0.4s ease;
+        }
+
+        .fleet-hover-card:hover .fleet-overlay {
+          background: rgba(0, 0, 0, 0.75);
+        }
+
+        .fleet-card-content {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          justify-content: flex-end;
+          padding: 24px;
+        }
+
         .fleet-card-header {
-          margin-bottom: 20px;
+          transition: transform 0.4s ease;
+        }
+
+        .fleet-hover-card:hover .fleet-card-header {
+          transform: translateY(-10px);
+        }
+
+        .fleet-details-wrapper {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.4s ease;
+        }
+
+        .fleet-hover-card:hover .fleet-details-wrapper {
+          grid-template-rows: 1fr;
+        }
+
+        .fleet-card-details {
+          overflow: hidden;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .fleet-hover-card:hover .fleet-card-details {
+          opacity: 1;
+          transition-delay: 0.15s;
         }
 
         .fleet-class-badge {
@@ -220,11 +270,12 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
         .fleet-price-tag {
           display: flex;
           flex-direction: column;
+          margin-top: 8px;
         }
 
         .price-label {
           font-size: 0.75rem;
-          color: var(--text-muted);
+          color: rgba(255, 255, 255, 0.85);
           text-transform: uppercase;
         }
 
@@ -236,21 +287,20 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
         }
 
         .fleet-desc {
-          color: var(--text-secondary);
+          color: #ffffff;
           font-size: 0.95rem;
-          margin-bottom: 24px;
+          margin-bottom: 20px;
           line-height: 1.6;
-          min-height: 48px;
         }
 
         .fleet-specs {
           display: flex;
           flex-direction: column;
           gap: 12px;
-          border-top: 1px solid var(--border-subtle);
-          border-bottom: 1px solid var(--border-subtle);
+          border-top: 1px solid rgba(255,255,255,0.15);
+          border-bottom: 1px solid rgba(255,255,255,0.15);
           padding: 16px 0;
-          margin-bottom: 24px;
+          margin-bottom: 20px;
         }
 
         .spec-item {
@@ -258,7 +308,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
           align-items: center;
           gap: 10px;
           font-size: 0.9rem;
-          color: var(--text-primary);
+          color: #fff;
         }
 
         .spec-icon {

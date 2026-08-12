@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import Navbar from './components/Navbar';
@@ -11,6 +12,7 @@ import Team from './components/Team';
 import Faq from './components/Faq';
 import TermsModal from './components/TermsModal';
 import Footer from './components/Footer';
+import AboutUs from './pages/AboutUs';
 
 // Admin Components
 import AdminLogin from './components/AdminLogin';
@@ -22,6 +24,7 @@ import BookingWizard from './components/BookingWizard';
 import { translations as defaultTranslations } from './translations';
 
 function App() {
+  const location = useLocation();
   const [lang, setLang] = useState('ko');
   const [selectedVehicle, setSelectedVehicle] = useState('none');
   const [termsOpen, setTermsOpen] = useState(false);
@@ -29,12 +32,12 @@ function App() {
   const [wizardData, setWizardData] = useState(null);
 
   const defaultImages = {
-    heroBg: '/hero-bg.jpg',
+    heroBg: '/luxury_airport_vip.jpg',
     fleetBg: '/luxury_fleet.png',
   };
 
   const defaultChatbot = {
-    apiKey: '',
+    apiKey: import.meta.env.VITE_CHATBOT_API_KEY || '',
     systemPrompt: 'You are a VIP concierge for Beyond The Gate, a premium black car service in Korea. Be polite and helpful.',
     knowledgeBase: 'We provide airport transfers in luxury vehicles (Genesis G90, Mercedes Sprinter).',
     fallbackMessage: 'Please leave your email or call us directly, and a human agent will assist you.',
@@ -120,7 +123,17 @@ function App() {
             setContent(merge(data.content, defaultTranslations));
           }
           if (data.images) setImages(data.images);
-          if (data.settings) setSettings(data.settings);
+          if (data.settings) {
+            // Ensure chatbot settings exist even if data.settings is from an older save
+            const mergedSettings = { ...data.settings };
+            if (!mergedSettings.chatbot || !mergedSettings.chatbot.apiKey) {
+              mergedSettings.chatbot = {
+                ...(mergedSettings.chatbot || {}),
+                ...defaultChatbot,
+              };
+            }
+            setSettings(mergedSettings);
+          }
         }
       } catch (error) {
         console.error('Error fetching data from Firestore:', error);
@@ -190,7 +203,7 @@ function App() {
       setContent(defaultTranslations);
       setImages(defaultImages);
       setSettings(defaultSettings);
-      
+
       try {
         await setDoc(doc(db, 'siteData', 'main'), {
           content: defaultTranslations,
@@ -216,19 +229,19 @@ function App() {
   if (view === 'admin') {
     if (!isLoggedIn) {
       return (
-        <AdminLogin 
-          onLoginSuccess={handleAdminLogin} 
-          onCancel={() => { window.location.hash = ''; }} 
+        <AdminLogin
+          onLoginSuccess={handleAdminLogin}
+          onCancel={() => { window.location.hash = ''; }}
         />
       );
     }
     return (
-      <AdminDashboard 
-        data={content} 
-        images={images} 
+      <AdminDashboard
+        data={content}
+        images={images}
         settings={settings}
-        onSave={handleSaveAdminData} 
-        onReset={handleResetDefaults} 
+        onSave={handleSaveAdminData}
+        onReset={handleResetDefaults}
         onPreview={() => { window.location.hash = ''; }}
       />
     );
@@ -238,47 +251,50 @@ function App() {
   return (
     <>
       <Navbar lang={lang} setLang={setLang} t={t} />
-      
-      <main>
-        {/* Pass customized images to sections */}
-        <Hero t={t} customImage={images.heroBg} settings={settings} onOpenWizard={(data) => {
-          setWizardData(data);
-          setIsWizardOpen(true);
-        }} />
-        
-        <CoreValues t={t} />
-        
-        <Services t={t} />
-        
-        <Fleet 
-          t={t} 
-          onSelectVehicle={setSelectedVehicle} 
-          customImage={images.fleetBg}
-        />
-        
-        <CasRoadmap t={t} />
-        
-        <Team t={t} />
-        
-        <ReviewSystem t={t} />
 
-        <Faq t={t} />
+      <main>
+        <Routes>
+          <Route path="/" element={
+            <>
+              {/* Pass customized images to sections */}
+              <Hero t={t} customImage={images.heroBg} settings={settings} onOpenWizard={(data) => {
+                setWizardData(data);
+                setIsWizardOpen(true);
+              }} />
+
+              <CoreValues t={t} />
+
+              <Services t={t} />
+
+              <Fleet
+                t={t}
+                onSelectVehicle={setSelectedVehicle}
+                customImage={images.fleetBg}
+              />
+
+              <ReviewSystem t={t} />
+
+              <Faq t={t} />
+            </>
+          } />
+          <Route path="/about" element={<AboutUs t={t} />} />
+        </Routes>
       </main>
 
       <Footer t={t} onOpenTerms={() => setTermsOpen(true)} />
 
-      <TermsModal 
-        isOpen={termsOpen} 
-        onClose={() => setTermsOpen(false)} 
-        t={t} 
+      <TermsModal
+        isOpen={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        t={t}
       />
-      
-      <Chatbot settings={settings} />
+
+      <Chatbot settings={settings} lang={lang} />
 
       {isWizardOpen && (
-        <BookingWizard 
+        <BookingWizard
           initialData={wizardData}
-          onClose={() => setIsWizardOpen(false)} 
+          onClose={() => setIsWizardOpen(false)}
           settings={settings}
           t={t}
         />

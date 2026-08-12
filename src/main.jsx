@@ -12,7 +12,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App />} />
+        <Route path="/*" element={<App />} />
         <Route path="/payment" element={<NicePayment />} />
         <Route path="/payment/paypal" element={<PaypalPayment />} />
         <Route path="/success" element={<Success />} />

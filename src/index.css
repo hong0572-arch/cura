@@ -532,6 +532,126 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
   transition: all 0.2s;
 }
 
+@keyframes dot-flashing {
+  0% {
+    background-color: var(--gold-primary);
+  }
+  50%, 100% {
+    background-color: rgba(48, 67, 192, 0.2);
+  }
+}
+
+/* Process Diagram UI */
+.process-diagram-container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.process-wrapper {
+  padding: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+}
+.process-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.process-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid var(--gold-primary);
+  color: var(--gold-primary);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+.process-header h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+  color: var(--gold-primary);
+}
+.process-header p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.process-flow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: 40px;
+}
+.process-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+.process-icon-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  color: var(--gold-primary);
+  transition: all 0.3s ease;
+}
+.process-step:hover .process-icon-circle {
+  background: var(--gold-primary);
+  color: var(--bg-primary);
+  transform: scale(1.05);
+}
+.process-step h4 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.process-step span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.process-arrow {
+  color: var(--border-subtle);
+  flex-shrink: 0;
+  margin: 0 10px;
+}
+.process-footer {
+  text-align: center;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 24px;
+}
+.process-footer p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .process-flow {
+    flex-direction: column;
+    gap: 30px;
+  }
+  .process-arrow {
+    transform: rotate(90deg);
+    margin: 10px 0;
+  }
+  .process-wrapper {
+    padding: 30px 20px;
+  }
+}
+
 .pkg-card.active {
   border-color: var(--gold-primary);
   background: rgba(48, 67, 192, 0.05);

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 
-export default function Chatbot({ settings }) {
+export default function Chatbot({ settings, lang }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ text: 'Hello! How can we help you today?', isBot: true }]);
+  const [messages, setMessages] = useState([{ text: lang === 'ko' ? '안녕하세요! 무엇을 도와드릴까요?' : 'Hello! How can we help you today?', isBot: true }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -19,6 +19,13 @@ export default function Chatbot({ settings }) {
     }
   }, [messages, isOpen]);
 
+  // Update greeting when language changes if no history yet
+  useEffect(() => {
+    if (messages.length === 1 && messages[0].isBot) {
+      setMessages([{ text: lang === 'ko' ? '안녕하세요! 무엇을 도와드릴까요?' : 'Hello! How can we help you today?', isBot: true }]);
+    }
+  }, [lang]);
+
   const toggleChat = () => setIsOpen(!isOpen);
 
   const handleSend = async (e) => {
@@ -32,7 +39,9 @@ export default function Chatbot({ settings }) {
     
     const chatbotConfig = settings?.chatbot || {};
     const apiKey = chatbotConfig.apiKey;
-    const fallbackMessage = chatbotConfig.fallbackMessage || 'Thank you for your message. A representative will get back to you shortly.';
+    const fallbackMessage = lang === 'ko' 
+      ? '감사합니다. 담당자가 곧 연락드리겠습니다.' 
+      : (chatbotConfig.fallbackMessage || 'Thank you for your message. A representative will get back to you shortly.');
 
     if (!apiKey) {
       setTimeout(() => {
@@ -43,37 +52,49 @@ export default function Chatbot({ settings }) {
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey: apiKey });
+      const ai = new GoogleGenAI({ 
+        apiKey: apiKey,
+        apiVersion: 'v1'
+      });
       
+      const languageInstruction = lang === 'ko' 
+        ? '현재 웹사이트가 한국어로 설정되어 있습니다. 반드시 사용자의 언어와 상관없이 항상 자연스러운 한국어로 대답해주세요.' 
+        : 'The website is currently set to English. Please ensure your responses are in English.';
+
       const systemInstruction = `
 ${chatbotConfig.systemPrompt || 'You are a helpful assistant.'}
+${languageInstruction}
 
 Here is the company Knowledge Base to use for answering questions:
 ${chatbotConfig.knowledgeBase || ''}
       `.trim();
 
-      const history = messages.slice(1).map(msg => ({
-        role: msg.isBot ? 'model' : 'user',
-        parts: [{ text: msg.text }]
-      }));
+      const payload = {
+        model: 'gemini-3.5-flash-lite',
+        input: userMessage
+      };
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: [
-          ...history,
-          { role: 'user', parts: [{ text: userMessage }] }
-        ],
-        config: {
-          systemInstruction: systemInstruction,
-          temperature: 0.7,
-        }
-      });
+      if (messages.length > 2 && window.lastInteractionId) {
+        payload.previous_interaction_id = window.lastInteractionId;
+      } else {
+        // First turn: Inject system instruction into the prompt
+        payload.input = `[System Instructions]\n${systemInstruction}\n\n[User Message]\n${userMessage}`;
+      }
 
-      const botReply = response.text || fallbackMessage;
+      const interaction = await ai.interactions.create(payload);
+      
+      if (interaction.id) {
+        window.lastInteractionId = interaction.id;
+      }
+
+      const textOutput = interaction.outputs?.find(o => o.type === 'text' || o.text);
+      const botReply = textOutput ? textOutput.text : (interaction.text || fallbackMessage);
+      
       setMessages(prev => [...prev, { text: botReply, isBot: true }]);
     } catch (error) {
       console.error("Gemini API Error:", error);
-      setMessages(prev => [...prev, { text: fallbackMessage, isBot: true }]);
+      const errorMsg = `Error: ${error.message || 'API request failed'}. Please check your API key and network.`;
+      setMessages(prev => [...prev, { text: errorMsg, isBot: true }]);
     } finally {
       setIsLoading(false);
     }

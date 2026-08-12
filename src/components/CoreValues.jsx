@@ -13,12 +13,12 @@ export default function CoreValues({ t }) {
   ];
 
   const bgImages = [
-    'https://images.unsplash.com/photo-1540339832862-474599807836?auto=format&fit=crop&w=600',
-    'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?auto=format&fit=crop&w=600',
-    'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600',
-    'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=600',
-    'https://images.unsplash.com/photo-1620614136976-79db04b732fb?auto=format&fit=crop&w=600',
-    'https://images.unsplash.com/photo-1556761175-5973dc0f32b7?auto=format&fit=crop&w=600'
+    '/value_trust.jpg',
+    '/value_security.jpg',
+    '/value_response.jpg',
+    '/value_professionalism.jpg',
+    '/value_efficiency.jpg',
+    '/value_247.jpg'
   ];
 
   return (

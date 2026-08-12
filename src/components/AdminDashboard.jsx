@@ -1228,7 +1228,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <input 
                     type="password" 
                     value={editSettings?.chatbot?.apiKey || ''} 
-                    onChange={e => handleSettingsChange('chatbot', e.target.value, 'apiKey')}
+                    onChange={e => handleSettingChange('chatbot', e.target.value, 'apiKey')}
                     placeholder="AIzaSy..."
                   />
                   <small style={{ color: 'var(--text-muted)' }}>Get your API key from Google AI Studio. Note: As this is a frontend app, the key will be exposed to the client. Use with caution.</small>
@@ -1238,7 +1238,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <label>System Prompt (Bot Persona)</label>
                   <textarea 
                     value={editSettings?.chatbot?.systemPrompt || ''} 
-                    onChange={e => handleSettingsChange('chatbot', e.target.value, 'systemPrompt')}
+                    onChange={e => handleSettingChange('chatbot', e.target.value, 'systemPrompt')}
                     rows={4}
                   />
                   <small style={{ color: 'var(--text-muted)' }}>Instructions on how the AI should behave (e.g. "You are a VIP concierge...").</small>
@@ -1248,7 +1248,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <label>Knowledge Base (지식 데이터베이스)</label>
                   <textarea 
                     value={editSettings?.chatbot?.knowledgeBase || ''} 
-                    onChange={e => handleSettingsChange('chatbot', e.target.value, 'knowledgeBase')}
+                    onChange={e => handleSettingChange('chatbot', e.target.value, 'knowledgeBase')}
                     rows={12}
                     placeholder="Paste FAQs, pricing, refund policies here..."
                   />
@@ -1260,7 +1260,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <input 
                     type="text" 
                     value={editSettings?.chatbot?.fallbackMessage || ''} 
-                    onChange={e => handleSettingsChange('chatbot', e.target.value, 'fallbackMessage')}
+                    onChange={e => handleSettingChange('chatbot', e.target.value, 'fallbackMessage')}
                   />
                   <small style={{ color: 'var(--text-muted)' }}>The message shown if the AI encounters an error or cannot answer.</small>
                 </div>

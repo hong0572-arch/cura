@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Calculator, CheckCircle2, ShieldCheck, CreditCard, Loader2, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const getInitialDatetimeLocal = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  const tzOffset = d.getTimezoneOffset() * 60000;
+  const localISOTime = new Date(d - tzOffset).toISOString().slice(0, 16);
+  return localISOTime;
+};
+
 export default function ReservationForm({ t, lang, selectedVehicle, setSelectedVehicle, settings }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('arrival');
@@ -12,7 +20,7 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
     email: '',
     phone: '',
     serviceType: 'arrival',
-    date: '',
+    date: getInitialDatetimeLocal(),
     flight: '',
     passengers: 1,
     luggage: 0,
@@ -201,7 +209,7 @@ Beyond the Gate Automated System`;
       email: '',
       phone: '',
       serviceType: 'arrival',
-      date: '',
+      date: getInitialDatetimeLocal(),
       flight: '',
       passengers: 1,
       luggage: 0,

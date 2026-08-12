@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Menu, X, Globe } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Navbar({ lang, setLang, t }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -22,25 +25,34 @@ export default function Navbar({ lang, setLang, t }) {
   };
 
   const navItems = [
-    { id: 'services', label: t.nav.services },
-    { id: 'fleet', label: t.nav.fleet },
-    { id: 'cas', label: t.nav.cas },
-    { id: 'team', label: t.nav.team },
-    { id: 'faq', label: t.nav.faq }
+    { id: 'services', label: t.nav.services, path: '/' },
+    { id: 'fleet', label: t.nav.fleet, path: '/' },
+    { id: 'faq', label: t.nav.faq, path: '/' },
+    { id: 'about', label: 'About Us', path: '/about' }
   ];
 
-  const handleNavClick = (id) => {
+  const handleNavClick = (item) => {
     setMobileMenuOpen(false);
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+    
+    // Default to '/' if no path is provided
+    const targetPath = item.path || '/';
+
+    if (location.pathname !== targetPath) {
+      // If we are on a different page, navigate first
+      navigate(`${targetPath}#${item.id}`);
+    } else {
+      // If we are already on the target page, scroll to element
+      const element = document.getElementById(item.id);
+      if (element) {
+        const offset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
     }
   };
 
@@ -48,7 +60,7 @@ export default function Navbar({ lang, setLang, t }) {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-container">
         {/* Brand Logo */}
-        <div className="nav-brand" onClick={() => handleNavClick('hero')}>
+        <div className="nav-brand" onClick={() => navigate('/')}>
           <img src="/logo.png" alt="Beyond the Gate Logo" className="brand-logo-img" />
         </div>
 
@@ -57,7 +69,7 @@ export default function Navbar({ lang, setLang, t }) {
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => handleNavClick(item.id)}
+              onClick={() => handleNavClick(item)}
               className="nav-link-btn"
             >
               {item.label}
@@ -96,7 +108,7 @@ export default function Navbar({ lang, setLang, t }) {
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => handleNavClick(item.id)}
+              onClick={() => handleNavClick(item)}
               className="mobile-nav-link-btn"
             >
               {item.label}
