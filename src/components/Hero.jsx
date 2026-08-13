@@ -13,13 +13,13 @@ const DEFAULT_AIRPORTS = [
 const SERVICES = [
   { id: 'arrival', label: 'Arrival', icon: PlaneLanding },
   { id: 'departure', label: 'Departure', icon: PlaneTakeoff },
-  { id: 'transfer', label: 'Connection', icon: ArrowRightLeft },
+  { id: 'transfer', label: 'Transfer', icon: ArrowRightLeft },
+  { id: 'picketing', label: 'Picketing', icon: Users },
 ];
 
 const getInitialDate = () => {
   const d = new Date();
-  d.setDate(d.getDate() + 3);
-  return d.toISOString().split('T')[0];
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
 export default function Hero({ t, customImage, onOpenWizard, settings }) {
@@ -29,7 +29,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
     date: getInitialDate(),
     adults: 1,
     children: 0,
-    email: 'joonkiehong@gmail.com'
+    email: 'example@gmail.com'
   });
   
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -352,7 +352,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
           border-radius: 30px;
           background: rgba(197, 168, 128, 0.08);
           border: 1px solid var(--border-subtle);
-          color: var(--gold-primary);
+          color: #ffffff;
           font-size: 0.8rem;
           font-weight: 700;
           letter-spacing: 0.2em;

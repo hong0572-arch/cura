@@ -48,7 +48,16 @@ export default function Services({ t }) {
         <div className="section-header">
           <span className="badge-gold">{t.services.badge || 'Meet & Assist'}</span>
           <h2 className="font-serif">{t.services.title}</h2>
-          <p>{t.services.subtitle}</p>
+          <p>
+            {t.services.subtitle && typeof t.services.subtitle === 'string'
+              ? t.services.subtitle.split('. ').map((sentence, i, arr) => (
+                  <React.Fragment key={i}>
+                    {sentence}{i !== arr.length - 1 ? '.' : ''}
+                    {i !== arr.length - 1 && <br />}
+                  </React.Fragment>
+                ))
+              : t.services.subtitle}
+          </p>
         </div>
 
         {/* Services Grid (Image Cards) */}

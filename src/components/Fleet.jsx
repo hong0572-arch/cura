@@ -1,7 +1,9 @@
 import React from 'react';
 import { Users, Briefcase, ChevronRight, Info } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Fleet({ t, onSelectVehicle, customImage }) {
+  const navigate = useNavigate();
   const fleetItems = [
     {
       id: 'staria',
@@ -30,17 +32,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
   ];
 
   const handleSelect = (vehicleId) => {
-    onSelectVehicle(vehicleId);
-    const element = document.getElementById('reserve');
-    if (element) {
-      const offset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
+    navigate(`/book-vehicle?vehicle=${vehicleId}`);
   };
 
   return (

@@ -15,7 +15,7 @@ app.use(express.json());
 
 // 자동 이메일 발송 API
 app.post('/api/send-email', async (req, res) => {
-  const { customerEmail, adminEmail, subject, text } = req.body;
+  const { customerEmail, adminEmail, subject, text, html } = req.body;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
@@ -44,12 +44,19 @@ app.post('/api/send-email', async (req, res) => {
 
     // 2. 고객에게 확인 메일 발송
     if (customerEmail) {
-      await transporter.sendMail({
+      const mailOptions = {
         from: `"Beyond The Gate" <${user}>`,
         to: customerEmail,
         subject: `[Beyond The Gate] ${subject}`,
-        text: `안녕하세요. Beyond The Gate 예약 시스템입니다.\n\n고객님의 예약이 성공적으로 접수되었습니다. 예약 내역은 아래와 같습니다.\n\n${text}`,
-      });
+      };
+
+      if (html) {
+        mailOptions.html = html;
+      } else {
+        mailOptions.text = `안녕하세요. Beyond The Gate 예약 시스템입니다.\n\n고객님의 예약이 성공적으로 접수되었습니다. 예약 내역은 아래와 같습니다.\n\n${text}`;
+      }
+
+      await transporter.sendMail(mailOptions);
     }
 
     res.status(200).json({ success: true, message: 'Emails sent successfully' });

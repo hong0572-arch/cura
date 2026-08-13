@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 
 const getInitialDatetimeLocal = () => {
   const d = new Date();
-  d.setDate(d.getDate() + 3);
   const tzOffset = d.getTimezoneOffset() * 60000;
   const localISOTime = new Date(d - tzOffset).toISOString().slice(0, 16);
   return localISOTime;
@@ -71,28 +70,86 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
   // Recalculate prices in real-time
   useEffect(() => {
     const serviceType = formData.serviceType || 'arrival';
-    const baseFeeUsd = settings?.servicePrices?.[serviceType]?.usd ?? 250;
-    const baseFeeKrw = settings?.servicePrices?.[serviceType]?.krw ?? 310000;
-    const currentExRate = settings?.exchangeRate || 1350;
     
-    // Vehicle pricing in KRW
-    let vehicleKrw = 0;
-    if (vehicleType === 'staria') vehicleKrw = settings?.vehiclePricesKrw?.staria || 140000;
-    else if (vehicleType === 'g90') vehicleKrw = settings?.vehiclePricesKrw?.g90 || 240000;
-    else if (vehicleType === 'sprinter') vehicleKrw = settings?.vehiclePricesKrw?.sprinter || 240000;
+    let defaultBaseUsd = 250;
+    if (serviceType === 'departure') defaultBaseUsd = 270;
+    if (serviceType === 'transfer') defaultBaseUsd = 340;
 
-    const vehicleUsd = Math.round(vehicleKrw / currentExRate);
+    const baseFeeUsd = settings?.servicePrices?.[serviceType]?.usd ?? defaultBaseUsd;
+    const currentExRate = settings?.exchangeRate || 1350;
+    const baseFeeKrw = baseFeeUsd * currentExRate;
+    
+    // Vehicle pricing in USD
+    let vehicleUsd = 0;
+    if (vehicleType === 'staria') vehicleUsd = settings?.vehiclePricesUsd?.staria || 130;
+    else if (vehicleType === 'g90') vehicleUsd = settings?.vehiclePricesUsd?.g90 || 200;
+    else if (vehicleType === 'sprinter') vehicleUsd = settings?.vehiclePricesUsd?.sprinter || 200;
 
-    // Extra passenger charges ($50 USD per person beyond 4)
-    const extraPassCount = Math.max(0, formData.passengers - 4);
-    const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 50);
+    if (serviceType === 'departure' && vehicleType === 'g90' && vehicleUsd === 200) {
+      vehicleUsd = 180;
+    }
 
-    // Extra luggage charges ($20 USD per bag beyond 4)
-    const extraLugCount = Math.max(0, formData.luggage - 4);
-    const extraLugUsd = extraLugCount * (settings?.extraLuggageFeeUsd || 20);
+    const vehicleKrw = vehicleUsd * currentExRate;
 
-    const totalUsd = baseFeeUsd + vehicleUsd + extraPassUsd + extraLugUsd;
-    const totalKrw = baseFeeKrw + vehicleKrw + Math.round((extraPassUsd + extraLugUsd) * currentExRate);
+    // Extra passenger charges
+    const extraPassCount = Math.max(0, formData.passengers - 2);
+    const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 120);
+
+    // Luggage & Porter calculation
+    let extraLugUsd = 0;
+    let porterUsd = 0;
+    const totalBags = formData.luggage;
+    
+    if (totalBags >= 9) {
+      porterUsd = (settings?.porterFeeUsd || 110) * 2;
+    } else if (totalBags >= 5) {
+      porterUsd = settings?.porterFeeUsd || 110;
+    } else {
+      const allowedLuggage = Math.max(2, formData.passengers);
+      const extraBags = Math.max(0, totalBags - allowedLuggage);
+      extraLugUsd = extraBags * (settings?.extraLuggageFeeUsd || 40);
+    }
+
+    let nightFeeKrw = 0, nightFeeUsd = 0;
+    let urgentFeeKrw = 0, urgentFeeUsd = 0;
+    let weekendFeeKrw = 0, weekendFeeUsd = 0;
+
+    if (formData.date) {
+      const flightDate = new Date(formData.date);
+      const now = new Date();
+      
+      const hour = flightDate.getHours();
+      if (hour >= 22 || hour < 6) {
+        nightFeeUsd = settings?.nightSurchargeUsd || 40;
+        nightFeeKrw = nightFeeUsd * currentExRate;
+      }
+      
+      const diffMs = flightDate - now;
+      const diffHours = diffMs / (1000 * 60 * 60);
+      
+      if (diffHours >= 0 && diffHours <= 6) {
+        urgentFeeUsd = settings?.urgentSurcharge6hUsd || 48;
+        urgentFeeKrw = urgentFeeUsd * currentExRate;
+      } else if (diffHours > 6 && diffHours <= 24) {
+        urgentFeeUsd = settings?.urgentSurcharge24hUsd || 40;
+        urgentFeeKrw = urgentFeeUsd * currentExRate;
+      }
+      
+      const day = flightDate.getDay();
+      if (day === 0 || day === 6) {
+        weekendFeeUsd = settings?.weekendSurchargeUsd || 40;
+        weekendFeeKrw = weekendFeeUsd * currentExRate;
+      }
+    }
+
+    const baseTotalUsd = baseFeeUsd + vehicleUsd + extraPassUsd + extraLugUsd + porterUsd + nightFeeUsd + urgentFeeUsd + weekendFeeUsd;
+    const baseTotalKrw = baseFeeKrw + vehicleKrw + Math.round((extraPassUsd + extraLugUsd + porterUsd) * currentExRate) + nightFeeKrw + urgentFeeKrw + weekendFeeKrw;
+
+    const ccFeeUsd = Math.round(baseTotalUsd * 0.04 * 100) / 100;
+    const ccFeeKrw = Math.round(baseTotalKrw * 0.04);
+
+    const totalUsd = baseTotalUsd + ccFeeUsd;
+    const totalKrw = baseTotalKrw + ccFeeKrw;
 
     setPrices({
       base: baseFeeUsd,
@@ -100,10 +157,16 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
       vehicle: vehicleUsd,
       extraPass: extraPassUsd,
       extraLug: extraLugUsd,
+      porterUsd,
+      nightFeeUsd,
+      urgentFeeUsd,
+      weekendFeeUsd,
+      ccFeeUsd,
+      ccFeeKrw,
       totalUsd,
       totalKrw
     });
-  }, [formData.passengers, formData.luggage, formData.serviceType, vehicleType, settings]);
+  }, [formData.passengers, formData.luggage, formData.serviceType, formData.date, vehicleType, settings]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -178,6 +241,7 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
 - Chauffeur Vehicle Fee: $${prices.vehicle}
 - Extra Passenger Surcharge: $${prices.extraPass}
 - Extra Baggage Surcharge: $${prices.extraLug}
+${prices.porterUsd > 0 ? `- Porter Service: $${prices.porterUsd}\n` : ''}${prices.nightFeeUsd > 0 ? `- Night Service Surcharge: $${prices.nightFeeUsd}\n` : ''}${prices.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${prices.urgentFeeUsd}\n` : ''}${prices.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${prices.weekendFeeUsd}\n` : ''}- Credit Card Surcharge (4%): $${prices.ccFeeUsd}
 --------------------------------------------------
 - Estimated Total Cost: $${prices.totalUsd} (≈ ${prices.totalKrw.toLocaleString()} KRW)
 
@@ -314,6 +378,19 @@ Beyond the Gate Automated System`;
                     </div>
                   </div>
 
+                  {(prices.nightFeeUsd > 0 || prices.urgentFeeUsd > 0 || prices.weekendFeeUsd > 0 || prices.ccFeeUsd > 0 || prices.porterUsd > 0) && (
+                    <>
+                      <div className="calc-divider"></div>
+                      <div className="surcharges-list" style={{ fontSize: '0.85rem', color: '#666' }}>
+                        {prices.porterUsd > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span>Porter Service:</span><span>+${prices.porterUsd}</span></div>}
+                        {prices.nightFeeUsd > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span>Night Surcharge ({new Date(formData.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }).toLowerCase()}):</span><span>+${prices.nightFeeUsd}</span></div>}
+                        {prices.urgentFeeUsd > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span>Urgent Surcharge ({prices.urgentFeeUsd === 48 ? '< 6 hours' : '< 24 hours'}):</span><span>+${prices.urgentFeeUsd}</span></div>}
+                        {prices.weekendFeeUsd > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span>Weekend Surcharge:</span><span>+${prices.weekendFeeUsd}</span></div>}
+                        {prices.ccFeeUsd > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>CC Fee (4%):</span><span>+${prices.ccFeeUsd}</span></div>}
+                      </div>
+                    </>
+                  )}
+
                   <div className="calc-divider"></div>
 
                   <div className="total-display">
@@ -399,9 +476,9 @@ Beyond the Gate Automated System`;
                           onChange={(e) => handleVehicleChange(e.target.value)}
                         >
                           <option value="none">{t.form.none}</option>
-                          <option value="staria">{t.form.staria}</option>
-                          <option value="g90">{t.form.g90}</option>
-                          <option value="sprinter">{t.form.sprinter}</option>
+                          <option value="staria">Staria USD {settings?.vehiclePricesUsd?.staria || 130}</option>
+                          <option value="g90">G90 USD {settings?.vehiclePricesUsd?.g90 || 200}</option>
+                          <option value="sprinter">Benz Sprinter USD {settings?.vehiclePricesUsd?.sprinter || 200}</option>
                         </select>
                       </div>
                       <div className="form-item">

@@ -1529,7 +1529,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 <div className="form-row-2">
                   <div className="form-field-pair">
                     <label className="field-main-label">Extra Passenger Surcharge (USD)</label>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per passenger beyond 4 passengers</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per passenger beyond 2 passengers</p>
                     <div className="form-field">
                       <input 
                         type="number" 
@@ -1541,7 +1541,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   </div>
                   <div className="form-field-pair">
                     <label className="field-main-label">Extra Luggage Surcharge (USD)</label>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per checked bag beyond 4 bags</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per checked bag beyond allowed</p>
                     <div className="form-field">
                       <input 
                         type="number" 
@@ -1552,28 +1552,95 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     </div>
                   </div>
                 </div>
-
-                <div className="divider"></div>
-                <h3>Chauffeur Vehicle Pricing (KRW)</h3>
-                <div className="form-row-2">
+                
+                <div className="form-row-2" style={{ marginTop: '1rem' }}>
                   <div className="form-field-pair">
-                    <label className="field-main-label">Staria Minivan price (KRW)</label>
+                    <label className="field-main-label">Porter Fee Base (USD)</label>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Applied when bags &ge; 5</p>
                     <div className="form-field">
                       <input 
                         type="number" 
-                        value={editSettings.vehiclePricesKrw?.staria || 0} 
-                        onChange={(e) => handleSettingChange('vehiclePricesKrw', parseInt(e.target.value) || 0, 'staria')}
+                        value={editSettings.porterFeeUsd || 0} 
+                        onChange={(e) => handleSettingChange('porterFeeUsd', parseInt(e.target.value) || 0)}
                         min="0"
                       />
                     </div>
                   </div>
                   <div className="form-field-pair">
-                    <label className="field-main-label">Genesis G90 Sedan price (KRW)</label>
+                    <label className="field-main-label">Night Surcharge (USD)</label>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Flights between 22:00 - 06:00</p>
                     <div className="form-field">
                       <input 
                         type="number" 
-                        value={editSettings.vehiclePricesKrw?.g90 || 0} 
-                        onChange={(e) => handleSettingChange('vehiclePricesKrw', parseInt(e.target.value) || 0, 'g90')}
+                        value={editSettings.nightSurchargeUsd || 0} 
+                        onChange={(e) => handleSettingChange('nightSurchargeUsd', parseInt(e.target.value) || 0)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-row-2" style={{ marginTop: '1rem' }}>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Urgent Surcharge &lt; 6h (USD)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.urgentSurcharge6hUsd || 0} 
+                        onChange={(e) => handleSettingChange('urgentSurcharge6hUsd', parseInt(e.target.value) || 0)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Urgent Surcharge &lt; 24h (USD)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.urgentSurcharge24hUsd || 0} 
+                        onChange={(e) => handleSettingChange('urgentSurcharge24hUsd', parseInt(e.target.value) || 0)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-row-2" style={{ marginTop: '1rem' }}>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Weekend Surcharge (USD)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.weekendSurchargeUsd || 0} 
+                        onChange={(e) => handleSettingChange('weekendSurchargeUsd', parseInt(e.target.value) || 0)}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+
+                <div className="divider"></div>
+                <h3>Chauffeur Vehicle Pricing (USD)</h3>
+                <div className="form-row-2">
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Staria Minivan price (USD)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.vehiclePricesUsd?.staria || 0} 
+                        onChange={(e) => handleSettingChange('vehiclePricesUsd', parseInt(e.target.value) || 0, 'staria')}
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-field-pair">
+                    <label className="field-main-label">Genesis G90 Sedan price (USD)</label>
+                    <div className="form-field">
+                      <input 
+                        type="number" 
+                        value={editSettings.vehiclePricesUsd?.g90 || 0} 
+                        onChange={(e) => handleSettingChange('vehiclePricesUsd', parseInt(e.target.value) || 0, 'g90')}
                         min="0"
                       />
                     </div>
@@ -1582,12 +1649,12 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
 
                 <div className="form-row-2" style={{ marginTop: '10px' }}>
                   <div className="form-field-pair">
-                    <label className="field-main-label">Benz Sprinter Large Van price (KRW)</label>
+                    <label className="field-main-label">Benz Sprinter Large Van price (USD)</label>
                     <div className="form-field">
                       <input 
                         type="number" 
-                        value={editSettings.vehiclePricesKrw?.sprinter || 0} 
-                        onChange={(e) => handleSettingChange('vehiclePricesKrw', parseInt(e.target.value) || 0, 'sprinter')}
+                        value={editSettings.vehiclePricesUsd?.sprinter || 0} 
+                        onChange={(e) => handleSettingChange('vehiclePricesUsd', parseInt(e.target.value) || 0, 'sprinter')}
                         min="0"
                       />
                     </div>
@@ -1703,10 +1770,14 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           right: 0;
           bottom: 0;
           display: flex;
-          background: #02060f;
+          background: #f8fafc;
           z-index: 1500;
-          color: var(--text-primary);
+          color: #0f172a;
           font-family: var(--font-sans);
+          --border-subtle: #e2e8f0;
+          --text-muted: #64748b;
+          --text-secondary: #475569;
+          --text-primary: #0f172a;
         }
 
         .admin-sidebar {
@@ -1715,7 +1786,8 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           flex-direction: column;
           border-radius: 0;
           border-width: 0 1px 0 0;
-          background: rgba(4, 9, 20, 0.6);
+          border-right: 1px solid var(--border-subtle);
+          background: #ffffff;
         }
 
         .admin-brand {
@@ -1741,7 +1813,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           font-family: var(--font-sans);
           font-size: 1.3rem;
           font-weight: 700;
-          color: #fff;
+          color: #0f172a;
         }
 
         .brand-subname {
@@ -1802,7 +1874,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           flex: 1;
           border-radius: 0;
           border-width: 0;
-          background: rgba(4, 9, 20, 0.2);
+          background: #f8fafc;
           overflow: hidden;
         }
 
@@ -1823,7 +1895,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
 
         .admin-content-header h2 {
           font-size: 1.4rem;
-          color: #fff;
+          color: #0f172a;
           margin-bottom: 4px;
         }
 
@@ -1858,10 +1930,11 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           display: flex;
           flex-direction: column;
           gap: 8px;
-          background: rgba(255, 255, 255, 0.01);
-          border: 1px solid rgba(255, 255, 255, 0.02);
+          background: #ffffff;
+          border: 1px solid var(--border-subtle);
           padding: 16px;
           border-radius: 10px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .field-main-label {
@@ -1910,9 +1983,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
         .form-field textarea,
         .form-field-nested input,
         .form-field-nested textarea {
-          background: rgba(4, 9, 20, 0.6);
+          background: #ffffff;
           border: 1px solid var(--border-subtle);
-          color: #fff;
+          color: #0f172a;
           padding: 10px 14px;
           border-radius: 6px;
           font-size: 0.9rem;
@@ -1965,11 +2038,11 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           position: absolute;
           top: -10px;
           left: 15px;
-          background: #02060f;
+          background: #f8fafc;
           padding: 2px 10px;
           font-size: 0.75rem;
           font-weight: 600;
-          color: var(--gold-primary);
+          color: #0f172a;
           border: 1px solid var(--border-subtle);
           border-radius: 4px;
         }
@@ -2003,7 +2076,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
         }
 
         .reset-info h4 {
-          color: #fff;
+          color: #0f172a;
           margin-bottom: 6px;
         }
 
@@ -2033,7 +2106,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           align-items: center;
           gap: 12px;
           border-color: var(--gold-primary);
-          background: rgba(13, 22, 42, 0.95);
+          background: #ffffff;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+          color: #0f172a;
           animation: slideInLeft 0.3s ease-out;
           z-index: 1600;
           border-radius: 12px;

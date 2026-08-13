@@ -13,6 +13,9 @@ import Faq from './components/Faq';
 import TermsModal from './components/TermsModal';
 import Footer from './components/Footer';
 import AboutUs from './pages/AboutUs';
+import VehicleReservation from './pages/VehicleReservation';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 
 // Admin Components
 import AdminLogin from './components/AdminLogin';
@@ -45,8 +48,13 @@ function App() {
 
   const defaultSettings = {
     companyEmail: 'support@beyondthegate.vip',
-    extraPassengerFeeUsd: 50,
-    extraLuggageFeeUsd: 20,
+    extraPassengerFeeUsd: 120,
+    extraLuggageFeeUsd: 40,
+    porterFeeUsd: 110,
+    nightSurchargeUsd: 40,
+    urgentSurcharge6hUsd: 48,
+    urgentSurcharge24hUsd: 40,
+    weekendSurchargeUsd: 40,
     exchangeRate: 1350,
     airports: [
       {
@@ -60,9 +68,9 @@ function App() {
           picketing: { usd: 140, krw: 150000 }
         },
         vehicles: [
-          { id: 'staria', name: 'Premium Minivan (Staria)', priceUsd: 104, priceKrw: 140000 },
-          { id: 'g90', name: 'Luxury Sedan (G90)', priceUsd: 178, priceKrw: 240000 },
-          { id: 'sprinter', name: 'VIP Large Van (Sprinter)', priceUsd: 178, priceKrw: 240000 }
+          { id: 'staria', name: 'Premium Minivan (Staria)', priceUsd: 130, priceKrw: 175500 },
+          { id: 'g90', name: 'Luxury Sedan (G90)', priceUsd: 200, priceKrw: 270000 },
+          { id: 'sprinter', name: 'VIP Large Van (Sprinter)', priceUsd: 200, priceKrw: 270000 }
         ]
       },
       {
@@ -88,10 +96,10 @@ function App() {
       transfer: { usd: 340, krw: 420000 },
       picketing: { usd: 140, krw: 150000 }
     },
-    vehiclePricesKrw: {
-      staria: 140000,
-      g90: 240000,
-      sprinter: 240000
+    vehiclePricesUsd: {
+      staria: 130,
+      g90: 200,
+      sprinter: 200
     }
   };
 
@@ -278,6 +286,9 @@ function App() {
             </>
           } />
           <Route path="/about" element={<AboutUs t={t} />} />
+          <Route path="/book-vehicle" element={<VehicleReservation t={t} settings={settings} />} />
+          <Route path="/terms" element={<Terms t={t} />} />
+          <Route path="/privacy" element={<Privacy t={t} />} />
         </Routes>
       </main>
 

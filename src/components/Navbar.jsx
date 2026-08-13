@@ -254,8 +254,8 @@ export default function Navbar({ lang, setLang, t }) {
           align-items: center;
           gap: 6px;
           background: rgba(197, 168, 128, 0.08);
-          border: 1px solid var(--border-subtle);
-          color: var(--gold-primary);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #ffffff;
           padding: 6px 12px;
           border-radius: 20px;
           cursor: pointer;
@@ -298,8 +298,8 @@ export default function Navbar({ lang, setLang, t }) {
           align-items: center;
           gap: 4px;
           background: transparent;
-          border: 1px solid var(--border-subtle);
-          color: var(--gold-primary);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #ffffff;
           padding: 6px 10px;
           border-radius: 15px;
           cursor: pointer;

@@ -183,21 +183,21 @@ export const translations = {
         minivan: {
           name: "스타리아 (Staria)",
           class: "프리미엄 미니밴",
-          price: "140,000원 ~",
+          price: "175,500원 ~",
           desc: "다인승 이동 및 넉넉한 수하물 적재 가능",
           capacity: "최대 4인 + 수하물 탑재"
         },
         sedan: {
           name: "제네시스 G90 (Genesis G90)",
           class: "럭셔리 플래그십 세단",
-          price: "240,000원 ~",
+          price: "270,000원 ~",
           desc: "최상의 안락함과 프라이빗하고 품격 있는 이동 제공",
           capacity: "최대 2인 + 수하물 탑재"
         },
         large_van: {
           name: "벤츠 스프린터 (Sprinter)",
           class: "VIP 리무진 대형 밴",
-          price: "240,000원 ~",
+          price: "270,000원 ~",
           desc: "VIP 그룹 의전 및 대규모 인원의 편안한 수송",
           capacity: "최대 6인 + 수하물 탑재"
         }
@@ -353,9 +353,9 @@ export const translations = {
       placeholder_msg: "항공편 정보 및 특별 요청 사항을 입력해 주세요...",
       
       none: "차량 미사용 (의전 서비스만 이용)",
-      staria: "스타리아 미니밴 (Staria Minivan) (+140,000 KRW)",
-      g90: "제네시스 G90 고급세단 (Genesis G90) (+240,000 KRW)",
-      sprinter: "벤츠 스프린터 대형밴 (Benz Sprinter) (+240,000 KRW)",
+      staria: "스타리아 미니밴 (Staria Minivan) (+175,500 KRW)",
+      g90: "제네시스 G90 고급세단 (Genesis G90) (+270,000 KRW)",
+      sprinter: "벤츠 스프린터 대형밴 (Benz Sprinter) (+270,000 KRW)",
       
       calc_title: "실시간 견적 산출 내역",
       calc_base: "의전 기본 요금 ($200)",
@@ -693,21 +693,21 @@ export const translations = {
         minivan: {
           name: "Staria",
           class: "Premium Minivan",
-          price: "140,000 KRW~",
+          price: "175,500 KRW~",
           desc: "Spacious passenger transport with robust luggage capacity",
           capacity: "Up to 4 Pax + Checked Bags"
         },
         sedan: {
           name: "Genesis G90",
           class: "Luxury Flagship Sedan",
-          price: "240,000 KRW~",
+          price: "270,000 KRW~",
           desc: "Unmatched comfort and absolute privacy for elite travelers",
           capacity: "Up to 2 Pax + Checked Bags"
         },
         large_van: {
           name: "Mercedes-Benz Sprinter",
           class: "VIP Limousine Heavy Van",
-          price: "240,000 KRW~",
+          price: "270,000 KRW~",
           desc: "VIP group escorts and high-capacity luxury transportation",
           capacity: "Up to 6 Pax + Checked Bags"
         }
@@ -863,9 +863,9 @@ export const translations = {
       placeholder_msg: "Provide airline details, special dietary, or child seats requested...",
       
       none: "No vehicle (Meet & Assist service only)",
-      staria: "Staria Minivan (+140,000 KRW)",
-      g90: "Genesis G90 Sedan (+240,000 KRW)",
-      sprinter: "Mercedes Benz Sprinter (+240,000 KRW)",
+      staria: "Staria Minivan (+175,500 KRW)",
+      g90: "Genesis G90 Sedan (+270,000 KRW)",
+      sprinter: "Mercedes Benz Sprinter (+270,000 KRW)",
       
       calc_title: "Live Estimation Details",
       calc_base: "Base Meet & Assist Fee ($200)",
