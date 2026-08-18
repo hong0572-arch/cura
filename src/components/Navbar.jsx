@@ -28,6 +28,7 @@ export default function Navbar({ lang, setLang, t }) {
     { id: 'services', label: lang === 'ko' ? '공항서비스' : t.nav.services, path: '/' },
     { id: 'fleet', label: t.nav.fleet, path: '/' },
     { id: 'faq', label: t.nav.faq, path: '/' },
+    { id: 'blog', label: lang === 'ko' ? '블로그' : 'Blog', path: '/blog' },
     { id: 'about', label: 'About Us', path: '/about' },
     { id: 'hero', label: lang === 'ko' ? '예약하기' : (t.nav.reserve || 'Book'), path: '/' }
   ];

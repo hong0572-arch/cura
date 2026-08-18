@@ -8,6 +8,7 @@ function Blog({ t }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     const fetchPosts = async () => {
       try {
         const q = query(collection(db, 'blog_posts'), orderBy('createdAt', 'desc'));
@@ -27,11 +28,27 @@ function Blog({ t }) {
   }, []);
 
   return (
-    <div style={{ backgroundColor: 'var(--bg-secondary)', minHeight: '100vh', paddingTop: '100px', paddingBottom: '60px' }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 20px' }}>
-        <h1 style={{ textAlign: 'center', fontSize: '2.8rem', color: 'var(--text-primary)', marginBottom: '50px', fontWeight: 'bold' }}>
-          Beyond The Gate <span style={{ color: 'var(--gold-primary)' }}>Blog</span>
+    <div style={{ backgroundColor: 'var(--bg-secondary)', minHeight: '100vh', paddingBottom: '60px' }}>
+      
+      {/* Blog Hero Section */}
+      <div style={{
+        backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("/luxury_airport_vip.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        padding: '140px 20px 100px',
+        textAlign: 'center',
+        marginBottom: '60px'
+      }}>
+        <h1 style={{ fontSize: '3.5rem', color: '#ffffff', fontWeight: 'bold', marginBottom: '15px', letterSpacing: '-1px' }}>
+          Beyond The Gate <span style={{ color: '#d4af37' }}>Blog</span>
         </h1>
+        <p style={{ color: '#f0f0f0', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', fontWeight: '300', wordBreak: 'keep-all' }}>
+          최상위 VIP를 위한 프리미엄 공항 의전 서비스의 모든 것과 글로벌 모빌리티 트렌드를 만나보세요.
+        </p>
+      </div>
+
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 20px' }}>
         
         {loading ? (
           <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-muted)' }}>게시글을 불러오는 중입니다...</div>
