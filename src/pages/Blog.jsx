@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
+import ReactMarkdown from 'react-markdown';
 
 function Blog({ t }) {
   const [posts, setPosts] = useState([]);
@@ -26,27 +27,63 @@ function Blog({ t }) {
   }, []);
 
   return (
-    <div style={{ padding: '100px 20px', minHeight: '80vh', maxWidth: '800px', margin: '0 auto', color: '#fff' }}>
-      <h1 style={{ marginBottom: '40px', textAlign: 'center', fontSize: '2.5rem' }}>Blog</h1>
-      {loading ? (
-        <p style={{ textAlign: 'center' }}>Loading posts...</p>
-      ) : posts.length === 0 ? (
-        <p style={{ textAlign: 'center' }}>No posts available.</p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-          {posts.map(post => (
-            <article key={post.id} style={{ background: '#111', padding: '30px', borderRadius: '8px', border: '1px solid #333' }}>
-              <h2 style={{ marginBottom: '15px', color: '#d4af37' }}>{post.title}</h2>
-              <div style={{ marginBottom: '20px', fontSize: '0.9rem', color: '#888' }}>
-                <span>{post.author}</span> • <span>{post.createdAt?.toDate().toLocaleDateString() || 'Just now'}</span>
-              </div>
-              <div style={{ lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                {post.content}
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+    <div style={{ backgroundColor: 'var(--bg-secondary)', minHeight: '100vh', paddingTop: '100px', paddingBottom: '60px' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 20px' }}>
+        <h1 style={{ textAlign: 'center', fontSize: '2.8rem', color: 'var(--text-primary)', marginBottom: '50px', fontWeight: 'bold' }}>
+          Beyond The Gate <span style={{ color: 'var(--gold-primary)' }}>Blog</span>
+        </h1>
+        
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-muted)' }}>게시글을 불러오는 중입니다...</div>
+        ) : posts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-muted)' }}>등록된 포스팅이 없습니다.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '50px' }}>
+            {posts.map(post => (
+              <article key={post.id} style={{ 
+                backgroundColor: 'var(--bg-primary)', 
+                borderRadius: '16px', 
+                overflow: 'hidden',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                transition: 'transform 0.3s ease',
+              }}>
+                {post.mainImageUrl && (
+                  <div style={{ width: '100%', height: '400px', overflow: 'hidden' }}>
+                    <img src={post.mainImageUrl} alt="Main" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+                
+                <div style={{ padding: '40px' }}>
+                  <div style={{ marginBottom: '15px', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '500' }}>
+                    <span style={{ color: 'var(--gold-primary)', marginRight: '10px' }}>{post.author}</span> • <span style={{ marginLeft: '10px' }}>{post.createdAt?.toDate().toLocaleDateString('ko-KR') || '방금 전'}</span>
+                  </div>
+                  
+                  {/* Remove the # prefix if it's there in the title since we render it explicitly */}
+                  <h2 style={{ marginBottom: '25px', color: 'var(--text-primary)', fontSize: '1.8rem', lineHeight: '1.4', fontWeight: 'bold' }}>
+                    {post.title.replace(/^#+\s*/, '')}
+                  </h2>
+                  
+                  <div style={{ 
+                    lineHeight: '1.8', 
+                    color: 'var(--text-secondary)',
+                    fontSize: '1.05rem',
+                  }}>
+                    <ReactMarkdown>
+                      {post.content.replace(/^#+\s+(.*)$/m, '') /* Remove the title from body */}
+                    </ReactMarkdown>
+                  </div>
+
+                  {post.subImageUrl && (
+                    <div style={{ width: '100%', height: '300px', overflow: 'hidden', marginTop: '30px', borderRadius: '12px' }}>
+                      <img src={post.subImageUrl} alt="Sub" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

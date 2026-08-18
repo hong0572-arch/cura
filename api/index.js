@@ -266,10 +266,38 @@ app.get('/api/cron', async (req, res) => {
     const titleMatch = content.match(/^#+\s+(.*)$/m);
     const title = titleMatch ? titleMatch[1] : `프리미엄 공항 의전 서비스 가이드 - ${new Date().toLocaleDateString()}`;
 
+    // 이미지 생성 (메인 이미지, 보조 이미지)
+    let mainImageUrl = '';
+    let subImageUrl = '';
+    
+    try {
+      const mainImageResp = await ai.models.generateImages({
+        model: 'imagen-3.0-generate-001',
+        prompt: 'A luxurious black premium van like Mercedes Sprinter or Hyundai Staria waiting outside an international airport terminal, professional cinematic photography, VIP service concept, high quality',
+        config: { numberOfImages: 1, aspectRatio: '16:9', outputMimeType: 'image/jpeg' }
+      });
+      if (mainImageResp.generatedImages && mainImageResp.generatedImages.length > 0) {
+        mainImageUrl = `data:image/jpeg;base64,${mainImageResp.generatedImages[0].image.imageBytes}`;
+      }
+
+      const subImageResp = await ai.models.generateImages({
+        model: 'imagen-3.0-generate-001',
+        prompt: 'A professional chauffeur in a black suit opening the door of a luxury black sedan for a VIP passenger, elegant, business travel, 8k resolution, photorealistic',
+        config: { numberOfImages: 1, aspectRatio: '16:9', outputMimeType: 'image/jpeg' }
+      });
+      if (subImageResp.generatedImages && subImageResp.generatedImages.length > 0) {
+        subImageUrl = `data:image/jpeg;base64,${subImageResp.generatedImages[0].image.imageBytes}`;
+      }
+    } catch (imgError) {
+      console.error('Image generation failed (fallback to text-only):', imgError);
+    }
+
     // Firestore에 저장
     const docRef = await addDoc(collection(db, "blog_posts"), {
       title,
       content,
+      mainImageUrl,
+      subImageUrl,
       createdAt: serverTimestamp(),
       author: "Gemini AI",
       published: true
