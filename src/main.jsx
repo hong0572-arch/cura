@@ -7,6 +7,7 @@ import NicePayment from './components/NicePayment.jsx'
 import Success from './pages/Success.jsx'
 import Fail from './pages/Fail.jsx'
 import PaypalPayment from './components/PaypalPayment.jsx'
+import { Analytics } from "@vercel/analytics/react"
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -19,5 +20,6 @@ createRoot(document.getElementById('root')).render(
         <Route path="/fail" element={<Fail />} />
       </Routes>
     </BrowserRouter>
+    <Analytics />
   </StrictMode>,
 )
