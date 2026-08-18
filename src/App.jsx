@@ -239,6 +239,7 @@ function App() {
     if (!isLoggedIn) {
       return (
         <AdminLogin
+          adminPassword={settings?.system?.adminPassword || 'admin1234'}
           onLoginSuccess={handleAdminLogin}
           onCancel={() => { window.location.hash = ''; }}
         />

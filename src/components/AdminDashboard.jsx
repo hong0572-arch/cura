@@ -1299,6 +1299,16 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 <div className="divider"></div>
                 <h3>System Preferences</h3>
                 <p>Manage persistence variables and system initialization defaults.</p>
+                <div className="form-field" style={{ marginTop: '20px' }}>
+                  <label>Admin Access Passcode</label>
+                  <input 
+                    type="password" 
+                    value={editSettings?.system?.adminPassword || ''} 
+                    onChange={e => handleSettingChange('system', e.target.value, 'adminPassword')}
+                    placeholder="Leave blank for default (admin1234)"
+                  />
+                  <p className="field-hint">The passcode required to access this dashboard.</p>
+                </div>
                 <div className="array-card glass-panel reset-card" style={{ marginTop: '20px' }}>
                   <div className="reset-info">
                     <h4>Reset Website to Original Config</h4>

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Lock, AlertCircle, ArrowLeft } from 'lucide-react';
 
-export default function AdminLogin({ onLoginSuccess, onCancel }) {
+export default function AdminLogin({ adminPassword = 'admin1234', onLoginSuccess, onCancel }) {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (passcode === 'admin1234') {
+    if (passcode === adminPassword) {
       setError(false);
       onLoginSuccess();
     } else {
@@ -57,10 +57,6 @@ export default function AdminLogin({ onLoginSuccess, onCancel }) {
             </button>
           </div>
         </form>
-
-        <div className="login-footer">
-          <span>Standard Passcode: <code>admin1234</code></span>
-        </div>
       </div>
 
       <style>{`

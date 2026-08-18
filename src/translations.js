@@ -396,7 +396,7 @@ export const translations = {
       title: "고객 지원 및 연락처",
       desc: "서비스 예약 접수, 긴급 일정 변경 등 24시간 열려 있는 창구를 통해 신속히 지원합니다.",
       email_lbl: "공식 이메일 문의",
-      phone_lbl: "24/7 고객센터 전화",
+      phone_lbl: "고객센터 전화 (월요일부터 금요일 09:00~18:00)",
       address_lbl: "사무실 주소"
     },
     footer: {
@@ -906,7 +906,7 @@ export const translations = {
       title: "Contact & Assistance",
       desc: "For inquiries, immediate updates, or urgent support, our support channels are open 24/7.",
       email_lbl: "Email Support",
-      phone_lbl: "24/7 Center Hotline",
+      phone_lbl: "Center Hotline (Mon-Fri 09:00~18:00)",
       address_lbl: "Office Address"
     },
     footer: {
