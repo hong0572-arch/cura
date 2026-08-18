@@ -256,7 +256,7 @@ app.get('/api/cron', async (req, res) => {
 6. 단순히 홍보만 하는 것이 아니라 실제 공항 이용 팁, 국가별/공항별 의전 서비스의 필요성 등 가치 있는 정보를 포함하세요.`;
     
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.0-flash',
       contents: prompt,
     });
     
