@@ -13,29 +13,27 @@ export default function Success() {
       const orderId = searchParams.get('orderId');
       const amount = searchParams.get('amount');
 
-      if (gateway === 'paypal' || gateway === 'nicepay') {
-        // PayPal is already captured in PaypalPayment.jsx
-        // Nicepay is already captured in backend /api/nicepay-return
-        setStatus('success');
-        return;
-      }
-
-      if (!paymentKey || !orderId || !amount) {
-        setStatus('error');
-        return;
-      }
-
       try {
-        const response = await fetch('/confirm/toss', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ paymentKey, orderId, amount }),
-        });
+        let isSuccess = false;
+        if (gateway === 'paypal' || gateway === 'nicepay') {
+          isSuccess = true;
+        } else {
+          const response = await fetch('/confirm/toss', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentKey, orderId, amount }),
+          });
+          isSuccess = response.ok;
+        }
 
-        if (response.ok) {
+        if (isSuccess) {
           setStatus('success');
+          // Update Firebase Status to 결제 완료
+          const { doc, updateDoc } = await import('firebase/firestore');
+          const { db } = await import('../firebase');
+          await updateDoc(doc(db, "reservations", orderId), {
+            status: '결제 완료'
+          });
         } else {
           setStatus('error');
         }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Save, Eye, RotateCcw, Layout, FileText, 
   HelpCircle, Image, Settings, Sparkles, Check,
@@ -8,6 +8,10 @@ import {
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set worker source for pdfjs using unpkg/cdnjs
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 export default function AdminDashboard({ data, images, settings, onSave, onReset, onPreview }) {
   const [activeTab, setActiveTab] = useState('hero');
@@ -15,16 +19,111 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
   const [editImages, setEditImages] = useState({ ...images });
   const [editSettings, setEditSettings] = useState(JSON.parse(JSON.stringify(settings)));
   const [saveStatus, setSaveStatus] = useState(false);
+  const [inquiries, setInquiries] = useState([]);
   const [reservations, setReservations] = useState(() => {
     const saved = localStorage.getItem('btg_reservations');
     return saved ? JSON.parse(saved) : [];
   });
   const [uploading, setUploading] = useState({ heroBg: false, fleetBg: false });
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false);
 
-  const handleClearReservations = () => {
+  // Fetch chatbot inquiries from Firebase
+  const fetchInquiries = async () => {
+    try {
+      const { collection, getDocs, query, orderBy } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+      const q = query(collection(db, "inquiries"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+      setInquiries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (e) {
+      console.error("Failed to fetch inquiries:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchInquiries();
+  }, []);
+
+  const handleDeleteInquiry = async (id) => {
+    if (window.confirm('이 문의 기록을 완전히 삭제하시겠습니까?')) {
+      try {
+        const { doc, deleteDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+        await deleteDoc(doc(db, "inquiries", id));
+        setInquiries(prev => prev.filter(item => item.id !== id));
+      } catch (e) {
+        console.error("Failed to delete inquiry:", e);
+      }
+    }
+  };
+
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      alert('Please upload a valid PDF file.');
+      return;
+    }
+
+    setIsExtractingPdf(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let extractedText = `\n\n[Document: ${file.name}]\n`;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const strings = content.items.map(item => item.str);
+        extractedText += strings.join(' ') + '\n';
+      }
+
+      // Append to existing knowledge base
+      const currentKnowledgeBase = editSettings?.chatbot?.knowledgeBase || '';
+      handleSettingChange('chatbot', currentKnowledgeBase + extractedText, 'knowledgeBase');
+      alert('PDF text extracted and added to Knowledge Base successfully!');
+    } catch (error) {
+      console.error('Error extracting PDF:', error);
+      alert('Failed to extract text from PDF: ' + error.message);
+    } finally {
+      setIsExtractingPdf(false);
+      // Reset input
+      e.target.value = null;
+    }
+  };
+
+  const fetchReservations = async () => {
+    try {
+      const { collection, getDocs, query, orderBy } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+      const q = query(collection(db, "reservations"), orderBy("updatedAt", "desc"));
+      const snapshot = await getDocs(q);
+      setReservations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (e) {
+      console.error("Failed to fetch reservations:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchInquiries();
+    fetchReservations();
+  }, []);
+
+  const handleClearReservations = async () => {
     if (window.confirm('Are you sure you want to clear all reservation history?')) {
-      localStorage.removeItem('btg_reservations');
-      setReservations([]);
+      try {
+        const { collection, getDocs, deleteDoc, doc } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+        const snapshot = await getDocs(collection(db, "reservations"));
+        for (const document of snapshot.docs) {
+          await deleteDoc(doc(db, "reservations", document.id));
+        }
+        setReservations([]);
+        localStorage.removeItem('btg_reservations'); // Clear local fallback too
+      } catch (e) {
+        console.error("Error clearing reservations:", e);
+      }
     }
   };
 
@@ -1245,7 +1344,26 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 </div>
 
                 <div className="form-field">
-                  <label>Knowledge Base (지식 데이터베이스)</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ margin: 0 }}>Knowledge Base (지식 데이터베이스)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handlePdfUpload}
+                        disabled={isExtractingPdf}
+                        id="pdf-upload"
+                        style={{ display: 'none' }}
+                      />
+                      <label 
+                        htmlFor="pdf-upload" 
+                        className={`btn-premium secondary ${isExtractingPdf ? 'disabled' : ''}`}
+                        style={{ padding: '6px 12px', fontSize: '0.8rem', cursor: isExtractingPdf ? 'wait' : 'pointer' }}
+                      >
+                        {isExtractingPdf ? '추출 중... (Extracting...)' : '📄 PDF 업로드 (Upload PDF)'}
+                      </label>
+                    </div>
+                  </div>
                   <textarea 
                     value={editSettings?.chatbot?.knowledgeBase || ''} 
                     onChange={e => handleSettingChange('chatbot', e.target.value, 'knowledgeBase')}
@@ -1263,6 +1381,45 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     onChange={e => handleSettingChange('chatbot', e.target.value, 'fallbackMessage')}
                   />
                   <small style={{ color: 'var(--text-muted)' }}>The message shown if the AI encounters an error or cannot answer.</small>
+                </div>
+
+                <div className="divider"></div>
+                <div style={{ marginTop: '30px' }}>
+                  <h3 style={{ borderBottom: '2px solid var(--gold-primary)', paddingBottom: '10px' }}>💬 챗봇 문의 관리 (Inquiries)</h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', textAlign: 'left' }}>
+                        <th style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)' }}>접수 시간</th>
+                        <th style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)' }}>연락처 (Email/Phone)</th>
+                        <th style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)' }}>문의 문맥 / 상황</th>
+                        <th style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)' }}>관리</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inquiries.length === 0 ? (
+                        <tr><td colSpan="4" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>아직 들어온 챗봇 문의가 없습니다.</td></tr>
+                      ) : (
+                        inquiries.map(inq => (
+                          <tr key={inq.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.02)' }}>
+                            <td style={{ padding: '12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                              {inq.createdAt?.toDate ? inq.createdAt.toDate().toLocaleString() : '방금 전'}
+                            </td>
+                            <td style={{ padding: '12px', fontWeight: 'bold', color: 'var(--gold-primary)' }}>{inq.contactInfo}</td>
+                            <td style={{ padding: '12px', fontSize: '0.9rem' }}>{inq.userContext}</td>
+                            <td style={{ padding: '12px' }}>
+                              <button 
+                                type="button"
+                                onClick={() => handleDeleteInquiry(inq.id)}
+                                style={{ padding: '6px 12px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                              >
+                                삭제
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -1701,6 +1858,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                           <th style={{ padding: '16px', minWidth: '100px' }}>Vehicle</th>
                           <th style={{ padding: '16px', minWidth: '80px' }}>Pax/Bags</th>
                           <th style={{ padding: '16px', textAlign: 'right', minWidth: '100px' }}>Total Cost</th>
+                          <th style={{ padding: '16px', minWidth: '100px' }}>Status</th>
                           <th style={{ padding: '16px', minWidth: '200px' }}>Message / Note</th>
                         </tr>
                       </thead>
@@ -1737,6 +1895,17 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                             <td style={{ padding: '16px', textAlign: 'right' }}>
                               <strong style={{ color: 'var(--gold-primary)', display: 'block', fontSize: '0.95rem' }}>${res.totalUsd}</strong>
                               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>≈ {res.totalKrw?.toLocaleString()} KRW</span>
+                            </td>
+                            <td style={{ padding: '16px' }}>
+                              <span style={{ 
+                                padding: '4px 8px', 
+                                borderRadius: '4px', 
+                                fontSize: '0.8rem',
+                                backgroundColor: res.status === '결제 완료' ? 'rgba(74, 222, 128, 0.2)' : res.status === '결제 대기중' ? 'rgba(250, 204, 21, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                color: res.status === '결제 완료' ? '#4ade80' : res.status === '결제 대기중' ? '#facc15' : '#ef4444'
+                              }}>
+                                {res.status || '완료'}
+                              </span>
                             </td>
                             <td style={{ padding: '16px', wordBreak: 'break-word', color: 'var(--text-secondary)' }}>
                               {res.msg || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No special requests</span>}

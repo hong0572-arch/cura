@@ -4,12 +4,12 @@ export const translations = {
     brand_sub: "CURA AIRPORT SERVICE",
     nav: {
       home: "홈",
-      services: "의전 서비스",
+      services: "공항서비스",
       fleet: "차량 서비스",
       cas: "항공 사업(CAS)",
       team: "CEO 메시지",
       faq: "자주 묻는 질문",
-      reserve: "예약/견적 문의"
+      reserve: "예약하기"
     },
     hero: {
       title: "공항 게이트를 넘어선,\n완벽한 여정의 시작",

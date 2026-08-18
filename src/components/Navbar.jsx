@@ -25,10 +25,11 @@ export default function Navbar({ lang, setLang, t }) {
   };
 
   const navItems = [
-    { id: 'services', label: t.nav.services, path: '/' },
+    { id: 'services', label: lang === 'ko' ? '공항서비스' : t.nav.services, path: '/' },
     { id: 'fleet', label: t.nav.fleet, path: '/' },
     { id: 'faq', label: t.nav.faq, path: '/' },
-    { id: 'about', label: 'About Us', path: '/about' }
+    { id: 'about', label: 'About Us', path: '/about' },
+    { id: 'hero', label: lang === 'ko' ? '예약하기' : (t.nav.reserve || 'Book'), path: '/' }
   ];
 
   const handleNavClick = (item) => {

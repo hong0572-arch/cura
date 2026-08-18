@@ -16,6 +16,7 @@ import AboutUs from './pages/AboutUs';
 import VehicleReservation from './pages/VehicleReservation';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import Blog from './pages/Blog';
 
 // Admin Components
 import AdminLogin from './components/AdminLogin';
@@ -286,9 +287,10 @@ function App() {
             </>
           } />
           <Route path="/about" element={<AboutUs t={t} />} />
-          <Route path="/book-vehicle" element={<VehicleReservation t={t} settings={settings} />} />
+          <Route path="/book-vehicle" element={<VehicleReservation t={t} settings={settings} lang={lang} />} />
           <Route path="/terms" element={<Terms t={t} />} />
           <Route path="/privacy" element={<Privacy t={t} />} />
+          <Route path="/blog" element={<Blog t={t} />} />
         </Routes>
       </main>
 

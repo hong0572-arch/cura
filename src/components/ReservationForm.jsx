@@ -215,6 +215,17 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
       resList.unshift(newReservation);
       localStorage.setItem('btg_reservations', JSON.stringify(resList));
 
+      // Save to Firebase
+      import('firebase/firestore').then(({ doc, setDoc }) => {
+        import('../firebase').then(({ db }) => {
+          setDoc(doc(db, "reservations", newBookingId), {
+            ...newReservation,
+            status: '결제 대기중', // "Pending Payment"
+            updatedAt: new Date().toISOString()
+          }, { merge: true }).catch(e => console.error("Firebase sync error:", e));
+        });
+      });
+
       // Construct email content
       const targetEmail = settings?.companyEmail || 'support@beyondthegate.vip';
       const emailSubject = `New Reservation Request - ${newBookingId}`;

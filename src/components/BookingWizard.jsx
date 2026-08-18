@@ -3,6 +3,8 @@ import { Check, ChevronLeft, CreditCard, ChevronDown, ChevronUp, Minus, Plus, Lu
 import { useNavigate } from 'react-router-dom';
 import { generateProposalHtml } from '../utils/emailTemplate';
 
+const orderId = ""; // 임시로 빈 문자열 할당
+
 const COUNTRY_CODES = [
   { code: '+82', flag: '🇰🇷', name: 'South Korea' },
   { code: '+1', flag: '🇺🇸', name: 'USA/Canada' },
@@ -55,14 +57,14 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
     date: initialData?.date || getTodayString(),
     passengers: initialData?.passengers || 1,
     email: initialData?.email || '',
-    
+
     // Step 1: Select Service
     package: 'meet_greet', // meet_greet | vip_terminal
-    
+
     // Step 2: Additional Services
     luggageCount: 0,
     addTransfer: false,
-    
+
     // Step 3: Flight Information
     airline: '',
     flightNumber: '',
@@ -70,7 +72,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
     transferAirline: '',
     transferFlightNumber: '',
     transferFlightTime: '',
-    
+
     // Step 4: Passenger Details
     firstName: '',
     lastName: '',
@@ -80,7 +82,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
     travelClass: '',
     phone: '',
     wheelchair: false,
-    
+
     // Step 5: Contact
     sameAsPrimary: true,
     contactFirst: '',
@@ -92,12 +94,40 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
 
   const updateForm = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
 
+  // Firebase Sync for Tracking Abandoned Reservations
+  useEffect(() => {
+    const syncToFirebase = async () => {
+      try {
+        const { doc, setDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+
+        let status = '작성 중';
+        if (step === 6) status = '결제 대기중';
+        else if (step > 3) status = '중도 중단됨 (이탈)';
+
+        await setDoc(doc(db, "reservations", bookingId), {
+          id: bookingId,
+          ...formData,
+          step,
+          status,
+          dateSubmitted: new Date().toLocaleString(),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (e) {
+        console.error("Firebase sync error:", e);
+      }
+    };
+
+    const timeoutId = setTimeout(syncToFirebase, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [step, formData, bookingId]);
+
   // Price Calculation Integration
   const exRate = settings?.exchangeRate || 1350;
-  
+
   const serviceTypeKey = ['arrival', 'departure', 'transfer', 'picketing'].includes(formData.serviceType) ? formData.serviceType : 'arrival';
   const currentAirport = settings?.airports?.find(a => a.code === formData.airport) || null;
-  
+
   // Base prices based on selected airport or fallback
   let defaultBaseUsd = 250;
   if (serviceTypeKey === 'departure') defaultBaseUsd = 270;
@@ -110,7 +140,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
   // Vehicle pricing
   let vehicleUsd = 0;
   const currentVehicle = currentAirport?.vehicles?.find(v => v.id === formData.vehicleType) || null;
-  
+
   if (formData.vehicleType === 'staria') {
     vehicleUsd = settings?.vehiclePricesUsd?.staria || 130;
   } else if (formData.vehicleType === 'g90') {
@@ -120,12 +150,12 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
   } else if (currentVehicle) {
     vehicleUsd = currentVehicle.priceUsd;
   }
-  
+
   // Exception for DEP + G90 (Total should be 450. Base 270 + Vehicle 180 = 450)
   if (serviceTypeKey === 'departure' && formData.vehicleType === 'g90' && vehicleUsd === 200) {
-    vehicleUsd = 180; 
+    vehicleUsd = 180;
   }
-  
+
   let vehicleKrw = vehicleUsd * exRate;
 
   // Extra passenger charges
@@ -136,7 +166,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
   let extraLugUsd = 0;
   let porterUsd = 0;
   const totalBags = formData.luggageCount;
-  
+
   if (totalBags >= 9) {
     porterUsd = (settings?.porterFeeUsd || 110) * 2;
   } else if (totalBags >= 5) {
@@ -160,21 +190,21 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
     let nightFeeKrw = 0, nightFeeUsd = 0;
     let urgentFeeKrw = 0, urgentFeeUsd = 0;
     let weekendFeeKrw = 0, weekendFeeUsd = 0;
-    
+
     if (formData.date && formData.flightTime) {
       const flightDateStr = `${formData.date}T${formData.flightTime}`;
       const flightDate = new Date(flightDateStr);
       const now = new Date();
-      
+
       const hour = flightDate.getHours();
       if (hour >= 22 || hour < 6) {
         nightFeeUsd = settings?.nightSurchargeUsd || 40;
         nightFeeKrw = nightFeeUsd * exRate;
       }
-      
+
       const diffMs = flightDate - now;
       const diffHours = diffMs / (1000 * 60 * 60);
-      
+
       if (diffHours >= 0 && diffHours <= 6) {
         urgentFeeUsd = settings?.urgentSurcharge6hUsd || 48;
         urgentFeeKrw = urgentFeeUsd * exRate;
@@ -182,7 +212,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
         urgentFeeUsd = settings?.urgentSurcharge24hUsd || 40;
         urgentFeeKrw = urgentFeeUsd * exRate;
       }
-      
+
       const day = flightDate.getDay();
       if (day === 0 || day === 6) {
         weekendFeeUsd = settings?.weekendSurchargeUsd || 40;
@@ -214,13 +244,13 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
   useEffect(() => {
     if (step === 6 && !hasSentProposal.current && formData.email) {
       hasSentProposal.current = true; // Set immediately to prevent strict mode double-fire
-      
+
       const emailHtml = generateProposalHtml(formData, t, {
         totalUsd, ccFeeUsd, baseFeeUsd, totalKrw, vehicleUsd, extraPassUsd, extraLugUsd, porterUsd, surcharges, bookingId
       });
-      
+
       const emailSubject = `Your personalised VIP airport service proposal`;
-      
+
       fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,16 +261,16 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
           text: `Your personalised VIP airport service proposal has been generated.\n\nPlease view this email in an HTML compatible client to see the full proposal details.`
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          console.log('Automated proposal email sent successfully.');
-        }
-      })
-      .catch(err => {
-        console.error("Error sending proposal email:", err);
-        hasSentProposal.current = false; // Revert if failed
-      });
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            console.log('Automated proposal email sent successfully.');
+          }
+        })
+        .catch(err => {
+          console.error("Error sending proposal email:", err);
+          hasSentProposal.current = false; // Revert if failed
+        });
     }
   }, [step, formData, t, totalUsd, ccFeeUsd, baseFeeUsd]);
 
@@ -275,7 +305,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
   };
 
   const handlePayment = (method) => {
-    
+
     const newReservation = {
       id: bookingId,
       dateSubmitted: new Date().toLocaleString(),
@@ -340,8 +370,18 @@ Beyond the Gate Automated System`;
       })
     }).catch(err => console.error("Email send error:", err));
 
+    import('firebase/firestore').then(({ doc, updateDoc }) => {
+      import('../firebase').then(({ db }) => {
+        updateDoc(doc(db, "reservations", bookingId), {
+          status: '결제 대기중'
+        }).catch(e => console.error("Firebase payment update error:", e));
+      });
+    });
+
+    alert(t?.wizard?.common?.successMsg || `Thank you! Your reservation (${bookingId}) has been received successfully. Our VIP manager will contact you shortly.`);
+
     if (method === 'nicepay' || method === 'card' || method === 'domestic') {
-      navigate('/payment', { 
+      navigate('/payment', {
         state: {
           orderId: bookingId,
           orderName: `VIP ${formData.serviceType} in ICN`,
@@ -352,7 +392,7 @@ Beyond the Gate Automated System`;
         }
       });
     } else {
-      navigate('/payment/paypal', { 
+      navigate('/payment/paypal', {
         state: {
           orderId: bookingId,
           orderName: `VIP ${formData.serviceType} in ICN`,
@@ -378,7 +418,7 @@ Beyond the Gate Automated System`;
                 {s.id}. {s.name}
               </div>
               <div className={`step-status ${step > s.id ? 'completed' : step === s.id ? 'progress' : 'pending'}`}>
-                {step > s.id ? <><Check size={14}/> {t?.wizard?.common?.completed || 'Completed'}</> : step === s.id ? (t?.wizard?.common?.inProgress || 'In progress') : (t?.wizard?.common?.notCompleted || 'Not completed')}
+                {step > s.id ? <><Check size={14} /> {t?.wizard?.common?.completed || 'Completed'}</> : step === s.id ? (t?.wizard?.common?.inProgress || 'In progress') : (t?.wizard?.common?.notCompleted || 'Not completed')}
               </div>
             </div>
           ))}
@@ -388,7 +428,7 @@ Beyond the Gate Automated System`;
 
       <div className="wizard-body container">
         <div className="wizard-content">
-          
+
           {step === 1 && (
             <div className="step-panel">
               <div className="sky-step-header mb-24">
@@ -408,7 +448,7 @@ Beyond the Gate Automated System`;
                   { id: 'transfer', label: 'Transfer (환승)' },
                   { id: 'picketing', label: 'Picketing (피켓팅)' }
                 ].map(svc => (
-                  <div 
+                  <div
                     key={svc.id}
                     className={`sky-pkg-card ${formData.serviceType === svc.id ? 'active' : ''}`}
                     onClick={() => updateForm('serviceType', svc.id)}
@@ -432,7 +472,7 @@ Beyond the Gate Automated System`;
                 <div className="sky-pkg-detail-body">
                   <div className="sky-pkg-left">
                     <h3 className="sky-pkg-main-title">{t?.wizard?.step1?.meetGreetTitle || 'VIP Meet & Greet'}</h3>
-                    
+
                     <div className="sky-price-section">
                       <span className="sky-price-label">{t?.wizard?.step1?.servicePrice || 'Service price'}</span>
                       <div className="sky-price-amount">
@@ -440,7 +480,7 @@ Beyond the Gate Automated System`;
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="sky-pkg-right">
                     <div className="sky-included-title">{t?.wizard?.step1?.includedTitle || 'INCLUDED IN PACKAGE:'}</div>
                     <ul className="sky-included-list">
@@ -453,9 +493,9 @@ Beyond the Gate Automated System`;
                           <li>
                             <span className="sky-inc-icon">🏃</span>
                             <div>
-                              <strong>Fast-track immigration</strong> through priority lanes (where available)<br/>
-                              Priority guidance through airport procedures (Fast Track lanes available only for eligible passengers)<br/>
-                              <div style={{fontSize: '0.8rem', color: '#666', marginTop: '4px'}}>
+                              <strong>Fast-track immigration</strong> through priority lanes (where available)<br />
+                              Priority guidance through airport procedures (Fast Track lanes available only for eligible passengers)<br />
+                              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
                                 <strong>* Fast Track Notice:</strong> Incheon Airport does not offer commercial Fast Track officially. Fast Track access is limited to airport-authorized passengers only. Our staff will guide you through the most efficient route available.
                               </div>
                             </div>
@@ -490,9 +530,9 @@ Beyond the Gate Automated System`;
                           <li>
                             <span className="sky-inc-icon">🏃</span>
                             <div>
-                              <strong>Fast-track immigration</strong> through priority lanes (where available)<br/>
-                              Priority guidance through airport procedures (Fast Track lanes available only for eligible passengers)<br/>
-                              <div style={{fontSize: '0.8rem', color: '#666', marginTop: '4px'}}>
+                              <strong>Fast-track immigration</strong> through priority lanes (where available)<br />
+                              Priority guidance through airport procedures (Fast Track lanes available only for eligible passengers)<br />
+                              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
                                 <strong>* Fast Track Notice:</strong> Incheon Airport does not offer commercial Fast Track officially. Fast Track access is limited to airport-authorized passengers only. Our staff will guide you through the most efficient route available.
                               </div>
                             </div>
@@ -527,8 +567,8 @@ Beyond the Gate Automated System`;
                           <li>
                             <span className="sky-inc-icon">🏃</span>
                             <div>
-                              <strong>Fast track</strong> through the airport formalities<br/>
-                              <div style={{fontSize: '0.8rem', color: '#666', marginTop: '4px'}}>
+                              <strong>Fast track</strong> through the airport formalities<br />
+                              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
                                 <strong>* Fast Track Notice:</strong> Incheon Airport does not offer commercial Fast Track officially. Fast Track access is limited to airport-authorized passengers only. Our staff will guide you through the most efficient route available.
                               </div>
                             </div>
@@ -547,7 +587,7 @@ Beyond the Gate Automated System`;
                           </li>
                         </>
                       )}
-                      
+
                       <li style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #eee' }}>
                         <span className="sky-inc-icon">📍</span>
                         <div><strong>Meeting Point:</strong> At the arrival gate (airbridge) or designated arrival hall depending on airport regulations</div>
@@ -559,7 +599,7 @@ Beyond the Gate Automated System`;
                       <li>
                         <span className="sky-inc-icon">📅</span>
                         <div>
-                          <strong>Cancellation Policy:</strong><br/>
+                          <strong>Cancellation Policy:</strong><br />
                           <ul style={{ paddingLeft: '20px', margin: '4px 0 0 0', color: '#555', fontSize: '0.9rem', listStyleType: 'disc' }}>
                             <li>Free cancellation up to 48 hours before service</li>
                             <li>50% charge within 24–48 hours</li>
@@ -585,31 +625,31 @@ Beyond the Gate Automated System`;
             <div className="step-panel">
               <h2 className="sky-step2-title">{t?.wizard?.step2?.title || 'Additional Services'}</h2>
               <p className="sky-step2-sub mb-24">{t?.wizard?.step2?.subtitle || "Tell us more about your trip and pick anything you'd like us to handle."}</p>
-              
+
               <div className="sky-addon-card mb-24">
                 <div className="sky-addon-img-wrap">
-                  <div style={{width:'100%', height:'100%', background:'#f0f4f8', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <div style={{ width: '100%', height: '100%', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Users size={48} color="#6366f1" />
                   </div>
                 </div>
                 <div className="sky-addon-content">
                   <h3 className="sky-addon-title">{t?.wizard?.step4?.title || 'Passengers'}</h3>
                   <p className="sky-addon-sub">{t?.wizard?.step4?.morePeopleSub?.replace('{n}', formData.passengers) || `Total ${formData.passengers} passenger(s). Add or remove passengers.`}</p>
-                  
+
                   <div className="sky-counter-box mt-16">
                     <div className="sky-counter-label">
                       <Users size={18} className="sky-bag-icon" />
                       <span>{t?.wizard?.step4?.title || 'Passengers'}</span>
                     </div>
                     <div className="sky-counter-controls">
-                      <button 
+                      <button
                         className="sky-counter-btn"
                         onClick={() => updateForm('passengers', Math.max(1, formData.passengers - 1))}
                       >
                         <Minus size={14} />
                       </button>
                       <span className="sky-counter-value">{formData.passengers}</span>
-                      <button 
+                      <button
                         className="sky-counter-btn"
                         onClick={() => updateForm('passengers', formData.passengers + 1)}
                       >
@@ -627,21 +667,21 @@ Beyond the Gate Automated System`;
                 <div className="sky-addon-content">
                   <h3 className="sky-addon-title">{t?.wizard?.step2?.luggageTitle || 'Luggage Assistance'}</h3>
                   <p className="sky-addon-sub">{t?.wizard?.step2?.luggageSub || 'We will handle your luggage for you'}</p>
-                  
+
                   <div className="sky-counter-box mt-16">
                     <div className="sky-counter-label">
                       <Luggage size={18} className="sky-bag-icon" />
                       <span>{t?.wizard?.step2?.bagsLabel || 'Amount of bags'}</span>
                     </div>
                     <div className="sky-counter-controls">
-                      <button 
+                      <button
                         className="sky-counter-btn"
                         onClick={() => updateForm('luggageCount', Math.max(0, formData.luggageCount - 1))}
                       >
                         <Minus size={14} />
                       </button>
                       <span className="sky-counter-value">{formData.luggageCount}</span>
-                      <button 
+                      <button
                         className="sky-counter-btn"
                         onClick={() => updateForm('luggageCount', formData.luggageCount + 1)}
                       >
@@ -661,10 +701,10 @@ Beyond the Gate Automated System`;
                   <div className="sky-addon-content">
                     <h3 className="sky-addon-title">{t?.wizard?.step2?.vehicleTitle || 'Chauffeur Vehicle'}</h3>
                     <p className="sky-addon-sub">{t?.wizard?.step2?.vehicleSub || 'Private transfer within the city to your destination'}</p>
-                    
+
                     <div className="sky-counter-box mt-16">
-                      <select 
-                        value={formData.vehicleType} 
+                      <select
+                        value={formData.vehicleType}
                         onChange={e => updateForm('vehicleType', e.target.value)}
                         className="sky-vehicle-select"
                       >
@@ -694,7 +734,7 @@ Beyond the Gate Automated System`;
             <div className="step-panel">
               <h2 className="sky-step2-title">{t?.wizard?.step3?.title || 'Flight Information'}</h2>
               <p className="sky-step2-sub mb-24">{t?.wizard?.step3?.subtitle || 'Please add flight information below.'}</p>
-              
+
               {/* Flight Details Card */}
               <div className="sky-flight-card mb-24">
                 <div className="sky-flight-header mb-20">
@@ -712,13 +752,13 @@ Beyond the Gate Automated System`;
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step3?.airlineLabel || 'Airline'} *</label>
                     <div className="sky-airline-input-wrap">
-                      <div 
+                      <div
                         className={`sky-airline-box ${isAirlineOpen ? 'active' : ''}`}
                         onClick={() => setIsAirlineOpen(!isAirlineOpen)}
                       >
                         <Search size={16} className="sky-search-icon" />
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           placeholder={t?.wizard?.step3?.airlinePlaceholder || "Search for your airline"}
                           value={formData.airline || airlineSearch}
                           onChange={(e) => {
@@ -735,12 +775,12 @@ Beyond the Gate Automated System`;
 
                       {isAirlineOpen && (
                         <div className="sky-airline-dropdown">
-                          {AIRLINES.filter(a => 
+                          {AIRLINES.filter(a =>
                             a.name.toLowerCase().includes((formData.airline || airlineSearch).toLowerCase()) ||
                             a.code.toLowerCase().includes((formData.airline || airlineSearch).toLowerCase())
                           ).map(a => (
-                            <div 
-                              key={a.code} 
+                            <div
+                              key={a.code}
                               className="sky-airline-item"
                               onClick={() => {
                                 updateForm('airline', a.name);
@@ -763,8 +803,8 @@ Beyond the Gate Automated System`;
                   {/* Flight Number */}
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step3?.flightNumLabel || 'Flight number'} *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder=""
                       value={formData.flightNumber}
                       onChange={(e) => updateForm('flightNumber', e.target.value)}
@@ -774,14 +814,14 @@ Beyond the Gate Automated System`;
                       {t?.wizard?.step3?.flightNumNote || 'You can find your flight number on your ticket, please provide us with numbers only.'}
                     </p>
                   </div>
-                  
+
                   {/* Flight Time */}
                   <div className="sky-form-group">
                     <label className="sky-form-label">
                       {formData.serviceType === 'arrival' ? 'Arrival time' : formData.serviceType === 'departure' ? 'Departure time' : 'Flight time'} *
                     </label>
-                    <input 
-                      type="time" 
+                    <input
+                      type="time"
                       value={formData.flightTime}
                       onChange={(e) => updateForm('flightTime', e.target.value)}
                       className="sky-text-input"
@@ -808,13 +848,13 @@ Beyond the Gate Automated System`;
                     <div className="sky-form-group">
                       <label className="sky-form-label">{t?.wizard?.step3?.airlineLabel || 'Airline'} *</label>
                       <div className="sky-airline-input-wrap">
-                        <div 
+                        <div
                           className={`sky-airline-box ${isTransferAirlineOpen ? 'active' : ''}`}
                           onClick={() => setIsTransferAirlineOpen(!isTransferAirlineOpen)}
                         >
                           <Search size={16} className="sky-search-icon" />
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             placeholder={t?.wizard?.step3?.airlinePlaceholder || "Search for your airline"}
                             value={formData.transferAirline || transferAirlineSearch}
                             onChange={(e) => {
@@ -831,12 +871,12 @@ Beyond the Gate Automated System`;
 
                         {isTransferAirlineOpen && (
                           <div className="sky-airline-dropdown">
-                            {AIRLINES.filter(a => 
+                            {AIRLINES.filter(a =>
                               a.name.toLowerCase().includes((formData.transferAirline || transferAirlineSearch).toLowerCase()) ||
                               a.code.toLowerCase().includes((formData.transferAirline || transferAirlineSearch).toLowerCase())
                             ).map(a => (
-                              <div 
-                                key={a.code} 
+                              <div
+                                key={a.code}
                                 className="sky-airline-item"
                                 onClick={() => {
                                   updateForm('transferAirline', a.name);
@@ -859,8 +899,8 @@ Beyond the Gate Automated System`;
                     {/* Flight Number */}
                     <div className="sky-form-group">
                       <label className="sky-form-label">{t?.wizard?.step3?.flightNumLabel || 'Flight number'} *</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         placeholder=""
                         value={formData.transferFlightNumber}
                         onChange={(e) => updateForm('transferFlightNumber', e.target.value)}
@@ -870,12 +910,12 @@ Beyond the Gate Automated System`;
                         {t?.wizard?.step3?.flightNumNote || 'You can find your flight number on your ticket, please provide us with numbers only.'}
                       </p>
                     </div>
-                    
+
                     {/* Flight Time */}
                     <div className="sky-form-group">
                       <label className="sky-form-label">Departure time *</label>
-                      <input 
-                        type="time" 
+                      <input
+                        type="time"
                         value={formData.transferFlightTime}
                         onChange={(e) => updateForm('transferFlightTime', e.target.value)}
                         className="sky-text-input"
@@ -965,7 +1005,7 @@ Beyond the Gate Automated System`;
             <div className="step-panel">
               <h2 className="sky-step2-title">{t?.wizard?.step4?.title || 'Enter Passengers Details'}</h2>
               <p className="sky-step2-sub mb-24">{t?.wizard?.step4?.subtitle || 'Add and review the number of passengers and their personal details.'}</p>
-              
+
               {/* Primary Passenger Card */}
               <div className="sky-flight-card mb-24">
                 <div className="sky-pax-card-header mb-24">
@@ -976,9 +1016,9 @@ Beyond the Gate Automated System`;
                       <p className="sky-flight-sub">{t?.wizard?.step4?.primarySub || 'We need each passenger details to book a service for you'}</p>
                     </div>
                   </div>
-                  
-                  <select 
-                    value={formData.paxCategory || 'adult'} 
+
+                  <select
+                    value={formData.paxCategory || 'adult'}
                     onChange={(e) => updateForm('paxCategory', e.target.value)}
                     className="sky-pax-type-select"
                   >
@@ -991,8 +1031,8 @@ Beyond the Gate Automated System`;
                 <div className="sky-flight-form-row mb-20">
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step4?.firstName || 'First Name'} *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder={t?.wizard?.step4?.firstName || "Enter first name"}
                       value={formData.firstName}
                       onChange={(e) => updateForm('firstName', e.target.value)}
@@ -1001,8 +1041,8 @@ Beyond the Gate Automated System`;
                   </div>
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step4?.lastName || 'Last Name'} *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder={t?.wizard?.step4?.lastName || "Enter last name"}
                       value={formData.lastName}
                       onChange={(e) => updateForm('lastName', e.target.value)}
@@ -1016,8 +1056,8 @@ Beyond the Gate Automated System`;
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step4?.dob || 'Date of birth'} *</label>
                     <div className="sky-dob-grid">
-                      <select 
-                        value={formData.dobMonth} 
+                      <select
+                        value={formData.dobMonth}
                         onChange={(e) => updateForm('dobMonth', e.target.value)}
                         className="sky-select-input"
                       >
@@ -1035,16 +1075,16 @@ Beyond the Gate Automated System`;
                         <option value="11">Nov</option>
                         <option value="12">Dec</option>
                       </select>
-                      <input 
-                        type="text" 
-                        placeholder="Day" 
+                      <input
+                        type="text"
+                        placeholder="Day"
                         value={formData.dobDay}
                         onChange={(e) => updateForm('dobDay', e.target.value)}
                         className="sky-text-input center-text"
                       />
-                      <input 
-                        type="text" 
-                        placeholder="Year" 
+                      <input
+                        type="text"
+                        placeholder="Year"
                         value={formData.dobYear}
                         onChange={(e) => updateForm('dobYear', e.target.value)}
                         className="sky-text-input center-text"
@@ -1054,8 +1094,8 @@ Beyond the Gate Automated System`;
 
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step4?.travelClass || 'Class of travel'} <span className="sky-optional-tag">{t?.wizard?.common?.optional || 'optional'}</span></label>
-                    <select 
-                      value={formData.travelClass} 
+                    <select
+                      value={formData.travelClass}
                       onChange={(e) => updateForm('travelClass', e.target.value)}
                       className="sky-select-input"
                     >
@@ -1072,8 +1112,8 @@ Beyond the Gate Automated System`;
                 <div className="sky-flight-form-row mb-24">
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step4?.email || 'Email'} *</label>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       placeholder={t?.wizard?.step4?.email || "Enter email"}
                       value={formData.email}
                       onChange={(e) => updateForm('email', e.target.value)}
@@ -1083,8 +1123,8 @@ Beyond the Gate Automated System`;
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step4?.phone || 'Phone number'} *</label>
                     <div className="sky-phone-input-wrap">
-                      <select 
-                        value={formData.countryCode || '+1'} 
+                      <select
+                        value={formData.countryCode || '+1'}
                         onChange={(e) => updateForm('countryCode', e.target.value)}
                         className="sky-country-code-select"
                       >
@@ -1094,9 +1134,9 @@ Beyond the Gate Automated System`;
                           </option>
                         ))}
                       </select>
-                      <input 
-                        type="tel" 
-                        placeholder="— — — — —" 
+                      <input
+                        type="tel"
+                        placeholder="— — — — —"
                         value={formData.phone}
                         onChange={(e) => updateForm('phone', e.target.value)}
                         className="sky-phone-input"
@@ -1111,10 +1151,10 @@ Beyond the Gate Automated System`;
                 {/* Toggle Switch: Wheelchair */}
                 <div className="sky-toggle-row">
                   <label className="sky-switch">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.wheelchair} 
-                      onChange={(e) => updateForm('wheelchair', e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      checked={formData.wheelchair}
+                      onChange={(e) => updateForm('wheelchair', e.target.checked)}
                     />
                     <span className="sky-slider round"></span>
                   </label>
@@ -1135,10 +1175,10 @@ Beyond the Gate Automated System`;
                           <p className="sky-flight-sub">{t?.wizard?.step4?.additionalSub || 'Additional passenger details'}</p>
                         </div>
                       </div>
-                      
+
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <select 
-                          value={formData[`paxCategory_${paxNum}`] || 'adult'} 
+                        <select
+                          value={formData[`paxCategory_${paxNum}`] || 'adult'}
                           onChange={(e) => updateForm(`paxCategory_${paxNum}`, e.target.value)}
                           className="sky-pax-type-select"
                         >
@@ -1146,7 +1186,7 @@ Beyond the Gate Automated System`;
                           <option value="child">{t?.wizard?.step4?.childLabel || 'Child (0-7 years)'}</option>
                         </select>
 
-                        <button 
+                        <button
                           type="button"
                           onClick={() => updateForm('passengers', formData.passengers - 1)}
                           className="btn-sky-remove-pax"
@@ -1160,9 +1200,9 @@ Beyond the Gate Automated System`;
                     <div className="sky-flight-form-row mb-20">
                       <div className="sky-form-group">
                         <label className="sky-form-label">{t?.wizard?.step4?.firstName || 'First Name'}</label>
-                        <input 
-                          type="text" 
-                          placeholder={t?.wizard?.step4?.firstName || "Enter first name"} 
+                        <input
+                          type="text"
+                          placeholder={t?.wizard?.step4?.firstName || "Enter first name"}
                           value={formData[`firstName_${paxNum}`] || ''}
                           onChange={(e) => updateForm(`firstName_${paxNum}`, e.target.value)}
                           className="sky-text-input"
@@ -1170,9 +1210,9 @@ Beyond the Gate Automated System`;
                       </div>
                       <div className="sky-form-group">
                         <label className="sky-form-label">{t?.wizard?.step4?.lastName || 'Last Name'}</label>
-                        <input 
-                          type="text" 
-                          placeholder={t?.wizard?.step4?.lastName || "Enter last name"} 
+                        <input
+                          type="text"
+                          placeholder={t?.wizard?.step4?.lastName || "Enter last name"}
                           value={formData[`lastName_${paxNum}`] || ''}
                           onChange={(e) => updateForm(`lastName_${paxNum}`, e.target.value)}
                           className="sky-text-input"
@@ -1197,7 +1237,7 @@ Beyond the Gate Automated System`;
 
                 <div className="sky-pax-action-btns">
                   {formData.passengers > 1 && (
-                    <button 
+                    <button
                       type="button"
                       className="btn-sky-add-pax remove-btn"
                       onClick={() => updateForm('passengers', Math.max(1, formData.passengers - 1))}
@@ -1205,7 +1245,7 @@ Beyond the Gate Automated System`;
                       <Minus size={16} /> {t?.wizard?.common?.remove || 'Remove'}
                     </button>
                   )}
-                  <button 
+                  <button
                     type="button"
                     className="btn-sky-add-pax"
                     onClick={() => updateForm('passengers', formData.passengers + 1)}
@@ -1221,7 +1261,7 @@ Beyond the Gate Automated System`;
             <div className="step-panel">
               <h2 className="sky-step2-title">{t?.wizard?.step5?.title || 'Contact Information'}</h2>
               <p className="sky-step2-sub mb-24">{t?.wizard?.step5?.subtitle || 'The best point of contact for this reservation.'}</p>
-              
+
               <button type="button" className="sky-signin-btn mb-24">
                 {t?.wizard?.step5?.signIn || 'Sign in'}
               </button>
@@ -1232,9 +1272,9 @@ Beyond the Gate Automated System`;
 
               <div className="sky-flight-card mb-24">
                 <label className="sky-checkbox-wrap mb-24">
-                  <input 
-                    type="checkbox" 
-                    checked={formData.sameAsPrimary} 
+                  <input
+                    type="checkbox"
+                    checked={formData.sameAsPrimary}
                     onChange={(e) => {
                       const isSame = e.target.checked;
                       updateForm('sameAsPrimary', isSame);
@@ -1244,7 +1284,7 @@ Beyond the Gate Automated System`;
                         updateForm('contactEmail', formData.email);
                         updateForm('contactPhone', formData.phone);
                       }
-                    }} 
+                    }}
                   />
                   <span className="sky-checkbox-custom"></span>
                   <span className="sky-checkbox-label">{t?.wizard?.step5?.sameAsPrimary || 'Same as a primary passenger'}</span>
@@ -1254,9 +1294,9 @@ Beyond the Gate Automated System`;
                 <div className="sky-flight-form-row mb-20">
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step5?.firstName || 'First Name'} *</label>
-                    <input 
-                      type="text" 
-                      placeholder="" 
+                    <input
+                      type="text"
+                      placeholder=""
                       value={formData.sameAsPrimary ? formData.firstName : formData.contactFirst}
                       onChange={(e) => !formData.sameAsPrimary && updateForm('contactFirst', e.target.value)}
                       readOnly={formData.sameAsPrimary}
@@ -1265,9 +1305,9 @@ Beyond the Gate Automated System`;
                   </div>
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step5?.lastName || 'Last Name'} *</label>
-                    <input 
-                      type="text" 
-                      placeholder="" 
+                    <input
+                      type="text"
+                      placeholder=""
                       value={formData.sameAsPrimary ? formData.lastName : formData.contactLast}
                       onChange={(e) => !formData.sameAsPrimary && updateForm('contactLast', e.target.value)}
                       readOnly={formData.sameAsPrimary}
@@ -1280,9 +1320,9 @@ Beyond the Gate Automated System`;
                 <div className="sky-flight-form-row">
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step5?.email || 'Email'} *</label>
-                    <input 
-                      type="email" 
-                      placeholder="" 
+                    <input
+                      type="email"
+                      placeholder=""
                       value={formData.sameAsPrimary ? formData.email : formData.contactEmail}
                       onChange={(e) => !formData.sameAsPrimary && updateForm('contactEmail', e.target.value)}
                       readOnly={formData.sameAsPrimary}
@@ -1292,8 +1332,8 @@ Beyond the Gate Automated System`;
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step5?.phone || 'Phone number'} *</label>
                     <div className="sky-phone-input-wrap">
-                      <select 
-                        value={formData.contactCountryCode || formData.countryCode || '+82'} 
+                      <select
+                        value={formData.contactCountryCode || formData.countryCode || '+82'}
                         onChange={(e) => updateForm('contactCountryCode', e.target.value)}
                         className="sky-country-code-select"
                       >
@@ -1303,9 +1343,9 @@ Beyond the Gate Automated System`;
                           </option>
                         ))}
                       </select>
-                      <input 
-                        type="tel" 
-                        placeholder="— — — — —" 
+                      <input
+                        type="tel"
+                        placeholder="— — — — —"
                         value={formData.sameAsPrimary ? formData.phone : formData.contactPhone}
                         onChange={(e) => !formData.sameAsPrimary && updateForm('contactPhone', e.target.value)}
                         readOnly={formData.sameAsPrimary}
@@ -1325,7 +1365,7 @@ Beyond the Gate Automated System`;
             <div className="step-panel">
               {/* Order ID Top Bar */}
               <div className="sky-order-header mb-24">
-                <h2 className="sky-order-id-title">{t?.wizard?.step6?.orderId || 'Order ID'}: {orderId}</h2>
+                <h2 className="sky-order-id-title">{t?.wizard?.step6?.orderId || 'Order ID'}: {""}</h2>
                 <span className="sky-unpaid-badge">
                   <span className="sky-dollar-icon">$</span> {t?.wizard?.step6?.unpaid || 'UNPAID'}
                 </span>
@@ -1337,7 +1377,7 @@ Beyond the Gate Automated System`;
 
                 {/* Quote Service Accordion */}
                 <div className="sky-quote-accordion mb-24">
-                  <div 
+                  <div
                     className="sky-quote-accordion-header"
                     onClick={() => setIsQuoteOpen(!isQuoteOpen)}
                   >
@@ -1408,7 +1448,7 @@ Beyond the Gate Automated System`;
                 {/* Selectable Payment Methods */}
                 <div className="sky-payment-methods mb-24">
                   {/* Option 1: Nicepay (Domestic Card / 국내 결제) */}
-                  <div 
+                  <div
                     className={`sky-payment-option ${selectedPayment === 'nicepay' ? 'selected' : ''}`}
                     onClick={() => setSelectedPayment('nicepay')}
                   >
@@ -1425,7 +1465,7 @@ Beyond the Gate Automated System`;
                   </div>
 
                   {/* Option 2: PayPal (International / 해외 결제) */}
-                  <div 
+                  <div
                     className={`sky-payment-option ${selectedPayment === 'paypal' ? 'selected' : ''}`}
                     onClick={() => setSelectedPayment('paypal')}
                   >
@@ -1443,7 +1483,7 @@ Beyond the Gate Automated System`;
                 </div>
 
                 {/* Submit Payment Button */}
-                <button 
+                <button
                   type="button"
                   onClick={() => handlePayment(selectedPayment)}
                   className="btn-sky-submit-payment mb-16"
@@ -1470,7 +1510,7 @@ Beyond the Gate Automated System`;
               {/* Order Summary Card */}
               <div className="sky-flight-card mb-24">
                 <h3 className="sky-flight-title mb-4">{t?.wizard?.step6?.orderSummaryTitle || 'Order summary'}</h3>
-                <p className="sky-flight-sub mb-20">{t?.wizard?.step6?.invoiceNote || 'Invoices related to your order'} {orderId}</p>
+                <p className="sky-flight-sub mb-20">{t?.wizard?.step6?.invoiceNote || 'Invoices related to your order'} {""}</p>
 
                 <div className="sky-invoice-box">
                   <div className="sky-invoice-row mb-12">
@@ -1482,7 +1522,7 @@ Beyond the Gate Automated System`;
                     </div>
                     <span className="sky-inv-amount">USD {totalUsd.toFixed(2)}</span>
                   </div>
-                  
+
                   <p className="sky-inv-desc mb-16">
                     VIP {formData.serviceType === 'departure' ? 'Departure' : formData.serviceType === 'arrival' ? 'Arrival' : 'Connection'} in {formData.airport}
                   </p>
@@ -1497,7 +1537,7 @@ Beyond the Gate Automated System`;
           )}
 
         </div>
-        
+
         {/* Cart Sidebar */}
         <div className="wizard-sidebar">
           {step === 6 ? (
@@ -1518,9 +1558,9 @@ Beyond the Gate Automated System`;
                 <a href="mailto:reservations@usvipservices.com" className="sky-contact-link">reservations@usvipservices.com</a>
               </div>
 
-              <a 
-                href="https://wa.me/18555759847" 
-                target="_blank" 
+              <a
+                href="https://wa.me/18555759847"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="btn-sky-whatsapp"
               >
@@ -1533,7 +1573,7 @@ Beyond the Gate Automated System`;
               <div className="sky-sidebar-card mb-16">
                 <h3 className="sky-sidebar-title">Meet & Greet - {formData.serviceType.charAt(0).toUpperCase() + formData.serviceType.slice(1)}</h3>
                 <p className="sky-sidebar-sub">At {formData.airport}, Incheon International Airport</p>
-                
+
                 <div className="sky-sidebar-meta mb-20">
                   <span>📅 {formData.date || '18 Aug, 2026'}</span>
                   <span>👥 {formData.passengers} Adult</span>
