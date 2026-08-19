@@ -317,11 +317,11 @@ export default function Navbar({ lang, setLang, t }) {
         }
 
         .nav-menu-mobile {
-          position: fixed;
+          position: absolute;
           top: 80px;
           left: 0;
           right: 0;
-          background: rgba(4, 9, 20, 0.95);
+          background: rgba(4, 9, 20, 0.98);
           backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border-subtle);
           padding: 24px;
@@ -330,10 +330,13 @@ export default function Navbar({ lang, setLang, t }) {
           z-index: 999;
           opacity: 0;
           pointer-events: none;
+          max-height: calc(100vh - 80px);
+          overflow-y: auto;
         }
 
-        .navbar.scrolled + .nav-menu-mobile {
+        .navbar.scrolled .nav-menu-mobile {
           top: 70px;
+          max-height: calc(100vh - 70px);
         }
 
         .nav-menu-mobile.open {
@@ -354,10 +357,10 @@ export default function Navbar({ lang, setLang, t }) {
           color: #ffffff;
           font-size: 1.1rem;
           text-align: left;
-          padding: 8px 0;
+          padding: 12px 0;
           font-weight: 500;
           cursor: pointer;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .mobile-cta {
@@ -371,6 +374,19 @@ export default function Navbar({ lang, setLang, t }) {
           }
           .nav-actions-mobile {
             display: flex;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .brand-logo-img {
+            height: 28px;
+          }
+          .navbar.scrolled .brand-logo-img {
+            height: 24px;
+          }
+          .lang-toggle-btn-mobile {
+            padding: 4px 8px;
+            font-size: 0.7rem;
           }
         }
 

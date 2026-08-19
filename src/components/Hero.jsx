@@ -715,26 +715,72 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
         }
 
         @media (max-width: 900px) {
+          .hero-title {
+            font-size: 2.2rem;
+          }
+          .hero-subtitle {
+            font-size: 1rem;
+            margin-bottom: 24px;
+          }
+          .custom-search-bar-wrap {
+            padding: 0 8px;
+          }
           .search-inputs-row {
             flex-direction: column;
             height: auto;
+            border-radius: 12px;
+            overflow: visible; /* ensure popovers can break out */
+            background: #fff;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
           }
           .search-input-box {
+            flex: none; /* fix flex-basis 0 collapsing height */
             height: 60px;
+            min-height: 60px;
             border-right: none;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 0 20px;
+          }
+          .search-input-box:last-child {
+            border-bottom: none;
           }
           .search-input-box.no-border {
             border-bottom: none;
           }
           .dropdown-popover {
-            position: relative;
-            top: 0;
-            box-shadow: none;
-            border: none;
-            border-bottom: 1px solid #eee;
-            border-radius: 0;
+            position: absolute;
+            top: 100%;
+            left: 0;
             width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 1px solid #eee;
+            z-index: 100;
+          }
+          /* Override specific popover widths on mobile to be full width */
+          .airport-popover, .service-popover, .passengers-popover, .date-popover {
+            width: 100%;
+            left: 0;
+            right: 0;
+          }
+          .btn-hero-submit {
+            margin-top: 16px;
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 8px 25px rgba(59, 91, 219, 0.3);
+          }
+          .hero-stats-panel {
+            flex-direction: row;
+            padding: 20px;
+            margin-top: 32px;
+            border-radius: 16px;
+            gap: 12px;
+          }
+          .stat-number {
+            font-size: 1.4rem;
+          }
+          .stat-label {
+            font-size: 0.65rem;
           }
         }
       `}</style>

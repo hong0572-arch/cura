@@ -266,3 +266,23 @@
   border-radius: 8px;
   margin-bottom: 16px;
 }
+
+@media (max-width: 768px) {
+  .vr-page-wrapper { padding: 80px 16px 40px; }
+  .vr-page-title { font-size: 32px; }
+  .vr-form-card { padding: 24px; }
+  .vr-summary-box { padding: 16px; }
+  .vr-summary-total { font-size: 18px; flex-direction: column; gap: 8px; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .vr-page-title { font-size: 26px; }
+  .vr-page-subtitle { font-size: 14px; margin-bottom: 24px; }
+  .vr-form-card { padding: 16px; border-radius: 12px; }
+  .vr-section-title { font-size: 18px; }
+  .vr-input, .vr-type-btn, .vr-pay-btn, .vr-submit-btn { padding: 12px; font-size: 14px; }
+  .vr-grid-2 { gap: 16px; }
+  .vr-intro-section { grid-template-columns: 1fr; }
+  .vr-pay-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+}
+

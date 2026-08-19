@@ -2050,3 +2050,49 @@ input:checked + .sky-slider:before {
 
 .reservation-page { background: var(--bg-primary); display: flex; flex-direction: column; width: 100%; }
 
+
+/* Responsive Booking Wizard */
+@media (max-width: 900px) {
+  .wizard-body {
+    flex-direction: column;
+    padding: 24px 16px;
+    gap: 24px;
+  }
+  .wizard-sidebar {
+    width: 100%;
+  }
+  .wizard-stepper {
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 8px;
+    gap: 16px;
+    white-space: nowrap;
+  }
+  .stepper-item {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .wizard-stepper {
+    display: none;
+  }
+  .wizard-header {
+    justify-content: space-between;
+    padding: 16px;
+  }
+  .sky-pkg-detail-body {
+    flex-direction: column;
+  }
+  .sky-flight-form-row, .sky-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .sky-addon-card {
+    flex-direction: column;
+  }
+  .sky-addon-img-wrap {
+    width: 100% !important;
+    height: 160px !important;
+  }
+}
+

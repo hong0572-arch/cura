@@ -237,6 +237,56 @@ app.post('/api/orders/:orderID/capture', async (req, res) => {
   }
 });
 
+// --- Threads Integration ---
+async function postToThreads(text) {
+  const accessToken = process.env.THREADS_ACCESS_TOKEN;
+  const threadsUserId = process.env.THREADS_USER_ID;
+
+  if (!accessToken || !threadsUserId) {
+    console.warn("Threads credentials not found. Skipping Threads post.");
+    return null;
+  }
+
+  try {
+    // 1. 미디어 컨테이너 생성 (TEXT 타입)
+    const createContainerUrl = `https://graph.threads.net/v1.0/${threadsUserId}/threads`;
+    const createParams = new URLSearchParams({
+      media_type: 'TEXT',
+      text: text,
+      access_token: accessToken
+    });
+    
+    const createResp = await fetch(`${createContainerUrl}?${createParams.toString()}`, { method: 'POST' });
+    const createData = await createResp.json();
+
+    if (!createResp.ok) {
+      throw new Error(`Threads Container Error: ${JSON.stringify(createData)}`);
+    }
+
+    const creationId = createData.id;
+
+    // 2. 미디어 컨테이너 발행
+    const publishUrl = `https://graph.threads.net/v1.0/${threadsUserId}/threads_publish`;
+    const publishParams = new URLSearchParams({
+      creation_id: creationId,
+      access_token: accessToken
+    });
+
+    const publishResp = await fetch(`${publishUrl}?${publishParams.toString()}`, { method: 'POST' });
+    const publishData = await publishResp.json();
+
+    if (!publishResp.ok) {
+      throw new Error(`Threads Publish Error: ${JSON.stringify(publishData)}`);
+    }
+
+    console.log("Successfully posted to Threads:", publishData.id);
+    return publishData.id;
+  } catch (error) {
+    console.error("Threads post failed:", error);
+    return null;
+  }
+}
+
 // 블로그 포스팅 자동 발행 (Vercel Cron)
 app.get('/api/cron', async (req, res) => {
   try {
@@ -303,7 +353,30 @@ app.get('/api/cron', async (req, res) => {
       published: true
     });
 
-    res.status(200).json({ success: true, message: 'Blog post published', postId: docRef.id });
+    // --- Threads 자동 포스팅 ---
+    try {
+      const threadsPrompt = `다음은 방금 작성된 블로그 포스팅 내용입니다. 이 내용을 바탕으로 Threads(스레드)에 올릴 짧고 매력적인 홍보글을 작성해주세요. 
+필수 조건:
+1. 300자 이내로 핵심만 간결하게 작성
+2. 관련된 해시태그 3~5개 포함
+3. 마지막에 '자세한 내용은 beyondthegate.kr 에서 확인하세요!' 라는 문구 추가
+
+블로그 제목: ${title}
+블로그 내용 일부:
+${content.substring(0, 500)}...`;
+
+      const threadsResponse = await ai.models.generateContent({
+        model: 'gemini-3.5-flash-lite',
+        contents: threadsPrompt,
+      });
+      
+      const threadsText = threadsResponse.text;
+      await postToThreads(threadsText);
+    } catch (threadsError) {
+      console.error('Threads generation or posting failed:', threadsError);
+    }
+
+    res.status(200).json({ success: true, message: 'Blog post published and sent to Threads', postId: docRef.id });
   } catch (error) {
     console.error('Cron job failed:', error);
     res.status(500).json({ error: 'Failed to generate and publish blog post', details: error.message });
