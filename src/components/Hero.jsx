@@ -29,7 +29,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
     date: getInitialDate(),
     adults: 1,
     children: 0,
-    email: 'example@gmail.com'
+    email: ''
   });
   
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -243,22 +243,11 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
                 )}
               </div>
 
-              {/* 5. Email */}
-              <div className="search-input-box no-border" style={{ cursor: 'text' }}>
-                <input 
-                  type="email" 
-                  value={formData.email} 
-                  onChange={(e) => updateForm('email', e.target.value)} 
-                  placeholder="Email address"
-                  className="hero-email-input"
-                />
-              </div>
             </div>
             
             <button onClick={handleCheckPrice} className="btn-hero-submit">
               Check Price
             </button>
-            <p className="text-muted text-sm mt-12 mb-0" style={{color: 'rgba(255,255,255,0.7)'}}>By clicking "Check Price" you agree to receive email notifications.</p>
           </div>
           
         </div>

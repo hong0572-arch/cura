@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Check, ChevronLeft, CreditCard, ChevronDown, ChevronUp, Minus, Plus, Luggage, PlaneTakeoff, Search, Ticket, UploadCloud, Plane, User, UserPlus, Trash2, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { generateProposalHtml } from '../utils/emailTemplate';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider, appleProvider } from '../firebase';
 
 const orderId = ""; // 임시로 빈 문자열 할당
 
@@ -89,7 +91,8 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
     contactLast: '',
     contactEmail: '',
     contactPhone: '',
-    vehicleType: 'none'
+    vehicleType: 'none',
+    specialRequests: ''
   });
 
   const updateForm = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
@@ -291,6 +294,11 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
         alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
         return;
       }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        alert("Please enter a valid email address.");
+        return;
+      }
     } else if (step === 5) {
       if (!formData.sameAsPrimary && (!formData.contactFirst || !formData.contactLast || !formData.contactEmail || !formData.contactPhone)) {
         alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
@@ -318,6 +326,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
       vehicleType: formData.vehicleType,
       passengers: formData.passengers,
       luggage: formData.luggageCount,
+      specialRequests: formData.specialRequests,
       msg: '',
       totalUsd: totalUsd,
       totalKrw: totalKrw
@@ -342,6 +351,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
 - Name: ${newReservation.name}
 - Email: ${formData.email}
 - Phone: ${formData.phone}
+- Special Requests: ${formData.specialRequests || 'None'}
 
 [Service Configuration]
 - Selected Chauffeur Vehicle: ${formData.vehicleType.toUpperCase()}
@@ -1006,6 +1016,7 @@ Beyond the Gate Automated System`;
               <h2 className="sky-step2-title">{t?.wizard?.step4?.title || 'Enter Passengers Details'}</h2>
               <p className="sky-step2-sub mb-24">{t?.wizard?.step4?.subtitle || 'Add and review the number of passengers and their personal details.'}</p>
 
+
               {/* Primary Passenger Card */}
               <div className="sky-flight-card mb-24">
                 <div className="sky-pax-card-header mb-24">
@@ -1119,6 +1130,31 @@ Beyond the Gate Automated System`;
                       onChange={(e) => updateForm('email', e.target.value)}
                       className="sky-text-input"
                     />
+                    <button 
+                      type="button" 
+                      className="btn-sky-social mt-8" 
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: '500', marginTop: '12px' }}
+                      onClick={async () => {
+                        try {
+                          const result = await signInWithPopup(auth, googleProvider);
+                          const user = result.user;
+                          if (user) {
+                            const nameParts = user.displayName ? user.displayName.split(' ') : [];
+                            const firstName = nameParts[0] || '';
+                            const lastName = nameParts.slice(1).join(' ') || '';
+                            updateForm('firstName', firstName);
+                            updateForm('lastName', lastName);
+                            updateForm('email', user.email || '');
+                          }
+                        } catch (error) {
+                          console.error("Google sign in failed", error);
+                          alert("Google Login Failed: " + error.message);
+                        }
+                      }}
+                    >
+                      <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: 16, height: 16 }} />
+                      Continue with Google
+                    </button>
                   </div>
                   <div className="sky-form-group">
                     <label className="sky-form-label">{t?.wizard?.step4?.phone || 'Phone number'} *</label>
@@ -1355,6 +1391,20 @@ Beyond the Gate Automated System`;
                     <p className="sky-field-note mt-8">
                       {t?.wizard?.step5?.smsConsent || 'By adding your number you agree to receive text messages.'}
                     </p>
+                  </div>
+                </div>
+
+                {/* Row 3: Special Requests */}
+                <div className="sky-flight-form-row mt-24">
+                  <div className="sky-form-group" style={{ width: '100%' }}>
+                    <label className="sky-form-label">{t?.wizard?.step5?.specialRequests || 'Special Requests'} <span className="sky-optional-tag">{t?.wizard?.common?.optional || 'optional'}</span></label>
+                    <textarea
+                      placeholder={t?.wizard?.step5?.specialRequestsPlaceholder || "Please let us know if you have oversized luggage, require a baby seat, or have any other specific needs."}
+                      value={formData.specialRequests}
+                      onChange={(e) => updateForm('specialRequests', e.target.value)}
+                      className="sky-text-input"
+                      style={{ minHeight: '80px', resize: 'vertical', paddingTop: '12px' }}
+                    />
                   </div>
                 </div>
               </div>
