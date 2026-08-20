@@ -34,6 +34,22 @@ export default function BusinessProposal({ t }) {
         createdAt: serverTimestamp(),
         status: 'new'
       });
+
+      // 관리자 이메일 발송
+      try {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminEmail: 'cura@beyondthegate.kr',
+            subject: `[새로운 비즈니스 제안] ${formData.companyName}`,
+            text: `새로운 비즈니스 제안이 접수되었습니다.\n\n회사/기관명: ${formData.companyName}\n담당자명: ${formData.contactName}\n이메일: ${formData.email}\n연락처: ${formData.phone}\n제안 분야: ${formData.proposalType}\n\n[제안 내용]\n${formData.message}`
+          })
+        });
+      } catch (emailErr) {
+        console.error('Failed to send email notification:', emailErr);
+      }
+
       setIsSuccess(true);
       setFormData({
         companyName: '',
