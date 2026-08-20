@@ -1675,16 +1675,20 @@ Beyond the Gate Automated System`;
 
               <div className="sky-contact-item mb-12">
                 <span className="sky-contact-emoji">☎️</span>
-                <a href="tel:+18555759847" className="sky-contact-link">+1 855 575 98 47</a>
+                <a href={`tel:${(t?.footer?.phone_val || '+82212345678').replace(/[^+\d]/g, '')}`} className="sky-contact-link">
+                  {t?.footer?.phone_val || '+82 (0)2-1234-5678'}
+                </a>
               </div>
 
               <div className="sky-contact-item mb-20">
                 <span className="sky-contact-emoji">📬</span>
-                <a href="mailto:reservations@usvipservices.com" className="sky-contact-link">reservations@usvipservices.com</a>
+                <a href={`mailto:${t?.footer?.email_val || 'support@beyondthegate.vip'}`} className="sky-contact-link">
+                  {t?.footer?.email_val || 'support@beyondthegate.vip'}
+                </a>
               </div>
 
               <a
-                href="https://wa.me/18555759847"
+                href={`https://wa.me/${(t?.footer?.phone_val || '+82212345678').replace(/[^+\d]/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-sky-whatsapp"
