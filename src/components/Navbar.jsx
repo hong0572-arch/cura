@@ -30,6 +30,7 @@ export default function Navbar({ lang, setLang, t }) {
     { id: 'faq', label: t.nav.faq, path: '/' },
     { id: 'blog', label: lang === 'ko' ? '블로그' : 'Blog', path: '/blog' },
     { id: 'about', label: 'About Us', path: '/about' },
+    { id: 'business', label: t.nav.business || (lang === 'ko' ? '제휴 제안' : 'Business Proposal'), path: '/business' },
     { id: 'hero', label: lang === 'ko' ? '예약하기' : (t.nav.reserve || 'Book'), path: '/' }
   ];
 

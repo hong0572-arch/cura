@@ -17,6 +17,7 @@ import VehicleReservation from './pages/VehicleReservation';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Blog from './pages/Blog';
+import BusinessProposal from './pages/BusinessProposal';
 
 // Admin Components
 import AdminLogin from './components/AdminLogin';
@@ -292,6 +293,7 @@ function App() {
           <Route path="/terms" element={<Terms t={t} />} />
           <Route path="/privacy" element={<Privacy t={t} />} />
           <Route path="/blog" element={<Blog t={t} />} />
+          <Route path="/business" element={<BusinessProposal t={t} />} />
         </Routes>
       </main>
 

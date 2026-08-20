@@ -9,6 +9,7 @@ export const translations = {
       cas: "항공 사업(CAS)",
       team: "CEO 메시지",
       faq: "자주 묻는 질문",
+      business: "제휴 제안",
       reserve: "예약하기"
     },
     hero: {
@@ -507,6 +508,29 @@ export const translations = {
         questionsSub: "언제든지 연락해 주세요. 전문가 팀이 24시간 연중무휴 대기하고 있습니다!",
         contactWhatsapp: "WhatsApp으로 문의하기"
       }
+    },
+    business: {
+      title: "비즈니스 제안",
+      subtitle: "Beyond the Gate와 함께할 가치 있는 파트너십을 기다립니다.",
+      companyNameLbl: "회사/기관명",
+      companyNamePlaceholder: "회사 또는 기관 이름을 입력해주세요",
+      contactNameLbl: "담당자 성함",
+      contactNamePlaceholder: "담당자 성함을 입력해주세요",
+      emailLbl: "이메일 주소",
+      phoneLbl: "연락처",
+      proposalTypeLbl: "제안 분야",
+      typePartnership: "업무 제휴 / 파트너십",
+      typeMarketing: "마케팅 / 프로모션",
+      typeCorporate: "기업 임직원 서비스 도입",
+      typeOther: "기타",
+      messageLbl: "제안 내용",
+      messagePlaceholder: "제안하실 내용을 상세히 적어주세요",
+      submitBtn: "제안서 제출하기",
+      submitting: "전송 중...",
+      successTitle: "제안이 성공적으로 접수되었습니다.",
+      successDesc: "보내주신 제안을 꼼꼼히 검토한 후 담당자가 연락드리겠습니다. 감사합니다.",
+      newProposalBtn: "새로운 제안 작성하기",
+      error: "오류가 발생했습니다. 나중에 다시 시도해주세요."
     }
   },
   en: {
@@ -519,6 +543,7 @@ export const translations = {
       cas: "Aviation (CAS)",
       team: "CEO Message",
       faq: "FAQ",
+      business: "Business Proposal",
       reserve: "Book & Quote"
     },
     hero: {
@@ -1017,6 +1042,29 @@ export const translations = {
         questionsSub: "Feel free to reach out, our team of professionals is online 24/7 and ready to help!",
         contactWhatsapp: "Contact us via WhatsApp"
       }
+    },
+    business: {
+      title: "Business Proposal",
+      subtitle: "We look forward to valuable partnerships with Beyond the Gate.",
+      companyNameLbl: "Company / Organization",
+      companyNamePlaceholder: "Enter your company name",
+      contactNameLbl: "Contact Person",
+      contactNamePlaceholder: "Enter contact person's name",
+      emailLbl: "Email Address",
+      phoneLbl: "Phone Number",
+      proposalTypeLbl: "Proposal Type",
+      typePartnership: "Business Alliance / Partnership",
+      typeMarketing: "Marketing / Promotion",
+      typeCorporate: "Corporate Employee Service",
+      typeOther: "Other",
+      messageLbl: "Message",
+      messagePlaceholder: "Please describe your proposal in detail",
+      submitBtn: "Submit Proposal",
+      submitting: "Submitting...",
+      successTitle: "Proposal submitted successfully.",
+      successDesc: "Our team will review your proposal and get back to you shortly. Thank you.",
+      newProposalBtn: "Write a new proposal",
+      error: "An error occurred. Please try again later."
     }
   }
 };

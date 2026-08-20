@@ -52,7 +52,7 @@ export default function CasRoadmap({ t }) {
 
       <style>{`
         .cas-section {
-          background: var(--bg-secondary);
+          background: transparent;
           position: relative;
         }
 
@@ -116,7 +116,7 @@ export default function CasRoadmap({ t }) {
         .cas-title {
           font-size: 1.25rem;
           font-weight: 700;
-          color: #fff;
+          color: var(--text-primary);
           margin-bottom: 8px;
           letter-spacing: -0.01em;
         }
