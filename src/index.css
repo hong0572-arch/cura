@@ -2096,3 +2096,8 @@ input:checked + .sky-slider:before {
   }
 }
 
+
+/* Fix Google Maps Autocomplete z-index inside modal */
+.pac-container {
+  z-index: 100000 !important;
+}

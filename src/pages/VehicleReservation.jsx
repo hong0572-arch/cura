@@ -29,6 +29,7 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
+    language: lang,
   });
 
   const isKo = lang === 'ko';
@@ -70,12 +71,25 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
   const handlePlaceChanged = () => {
     if (autocompleteRef.current !== null) {
       const place = autocompleteRef.current.getPlace();
-      if (place && place.formatted_address) {
-        const fieldToUpdate = formData.serviceType === 'arrival' ? 'dropoffLocation' : 'pickupLocation';
-        setFormData(prev => ({ ...prev, [fieldToUpdate]: place.formatted_address }));
+      const fieldToUpdate = formData.serviceType === 'arrival' ? 'dropoffLocation' : 'pickupLocation';
+      
+      let displayAddress = '';
+      if (place && place.name) {
+        const address = place.formatted_address ? ` (${place.formatted_address})` : '';
+        if (place.formatted_address && place.formatted_address.includes(place.name)) {
+          displayAddress = place.formatted_address;
+        } else {
+          displayAddress = `${place.name}${address}`;
+        }
+      } else if (place && place.formatted_address) {
+        displayAddress = place.formatted_address;
+      }
+
+      if (displayAddress) {
+        setFormData(prev => ({ ...prev, [fieldToUpdate]: displayAddress }));
         calculateDistance(
-          formData.serviceType === 'arrival' ? formData.pickupLocation : place.formatted_address,
-          formData.serviceType === 'arrival' ? place.formatted_address : formData.dropoffLocation
+          formData.serviceType === 'arrival' ? formData.pickupLocation : displayAddress,
+          formData.serviceType === 'arrival' ? displayAddress : formData.dropoffLocation
         );
       }
     }

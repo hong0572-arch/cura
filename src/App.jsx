@@ -313,6 +313,7 @@ function App() {
           onClose={() => setIsWizardOpen(false)}
           settings={settings}
           t={t}
+          lang={lang}
         />
       )}
     </>

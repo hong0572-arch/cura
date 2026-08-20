@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { generateProposalHtml } from '../utils/emailTemplate';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../firebase';
+import { useLoadScript, Autocomplete } from '@react-google-maps/api';
 
+const libraries = ['places'];
 const orderId = ""; // 임시로 빈 문자열 할당
 
 const COUNTRY_CODES = [
@@ -37,7 +39,7 @@ const AIRLINES = [
   { name: 'Cathay Pacific', code: 'CX' },
 ];
 
-export default function BookingWizard({ onClose, initialData, settings, t }) {
+export default function BookingWizard({ onClose, initialData, settings, t, lang = 'en' }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isAirlineOpen, setIsAirlineOpen] = useState(false);
@@ -52,6 +54,13 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries,
+    language: lang,
+  });
+  const autocompleteRef = useRef(null);
 
   const [formData, setFormData] = useState({
     airport: initialData?.airport || 'ICN',
@@ -92,10 +101,29 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
     contactEmail: '',
     contactPhone: '',
     vehicleType: 'none',
+    transferAddress: '',
     specialRequests: ''
   });
 
   const updateForm = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
+
+  const handlePlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place && place.name) {
+        // If it's a known place/hotel, combine name and address
+        const address = place.formatted_address ? ` (${place.formatted_address})` : '';
+        // Sometimes place.name is already the full address, so we check to avoid duplication
+        if (place.formatted_address && place.formatted_address.includes(place.name)) {
+          updateForm('transferAddress', place.formatted_address);
+        } else {
+          updateForm('transferAddress', `${place.name}${address}`);
+        }
+      } else if (place && place.formatted_address) {
+        updateForm('transferAddress', place.formatted_address);
+      }
+    }
+  };
 
   // Firebase Sync for Tracking Abandoned Reservations
   useEffect(() => {
@@ -278,7 +306,12 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
   }, [step, formData, t, totalUsd, ccFeeUsd, baseFeeUsd]);
 
   const handleNext = () => {
-    if (step === 3) {
+    if (step === 2) {
+      if (formData.vehicleType !== 'none' && (!formData.transferAddress || formData.transferAddress.trim() === '')) {
+        alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
+        return;
+      }
+    } else if (step === 3) {
       if (!formData.airline || !formData.flightNumber || !formData.flightTime) {
         alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
         return;
@@ -324,6 +357,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
       date: formData.date,
       flight: `${formData.airline} ${formData.flightNumber}`,
       vehicleType: formData.vehicleType,
+      transferAddress: formData.transferAddress,
       passengers: formData.passengers,
       luggage: formData.luggageCount,
       specialRequests: formData.specialRequests,
@@ -355,7 +389,7 @@ export default function BookingWizard({ onClose, initialData, settings, t }) {
 
 [Service Configuration]
 - Selected Chauffeur Vehicle: ${formData.vehicleType.toUpperCase()}
-- Passengers Count: ${formData.passengers}
+${formData.vehicleType !== 'none' ? `- Transfer Address: ${formData.transferAddress || 'Not provided'}\n` : ''}- Passengers Count: ${formData.passengers}
 - Checked Luggage Count: ${formData.luggageCount}
 
 [Pricing Breakdown]
@@ -722,7 +756,7 @@ Beyond the Gate Automated System`;
                         {currentAirport?.vehicles && currentAirport.vehicles.length > 0 ? (
                           currentAirport.vehicles.map(v => (
                             <option key={v.id} value={v.id}>
-                              {v.id === 'staria' ? 'Staria' : v.id === 'g90' ? 'G90' : 'Benz Sprinter'} USD {settings?.vehiclePricesUsd?.[v.id] || v.priceUsd}
+                              {v.name || (v.id === 'staria' ? 'Staria' : v.id === 'g90' ? 'G90' : 'Benz Sprinter')} USD {settings?.vehiclePricesUsd?.[v.id] || v.priceUsd}
                             </option>
                           ))
                         ) : (
@@ -734,6 +768,42 @@ Beyond the Gate Automated System`;
                         )}
                       </select>
                     </div>
+
+                    {/* Address Input (Conditional based on vehicle selection) */}
+                    {formData.vehicleType !== 'none' && (
+                      <div className="sky-form-group mt-16" style={{ width: '100%' }}>
+                        <label className="sky-form-label">
+                          {formData.serviceType === 'arrival' 
+                            ? (t?.wizard?.step2?.dropoffAddress || 'Drop-off Address (Hotel/Destination)')
+                            : (t?.wizard?.step2?.pickupAddress || 'Pick-up Address (Origin/Hotel)')}
+                          {' '}*
+                        </label>
+                        {isLoaded ? (
+                          <Autocomplete
+                            onLoad={(autocomplete) => { autocompleteRef.current = autocomplete; }}
+                            onPlaceChanged={handlePlaceChanged}
+                          >
+                            <input
+                              type="text"
+                              placeholder={formData.serviceType === 'arrival' ? 'Enter your destination address (e.g. Grand Hyatt Seoul)' : 'Enter your pick-up address'}
+                              value={formData.transferAddress || ''}
+                              onChange={(e) => updateForm('transferAddress', e.target.value)}
+                              className="sky-text-input"
+                              style={{ width: '100%' }}
+                            />
+                          </Autocomplete>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder={formData.serviceType === 'arrival' ? 'Enter your destination address (e.g. Grand Hyatt Seoul)' : 'Enter your pick-up address'}
+                            value={formData.transferAddress || ''}
+                            onChange={(e) => updateForm('transferAddress', e.target.value)}
+                            className="sky-text-input"
+                            style={{ width: '100%' }}
+                          />
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -950,33 +1020,33 @@ Beyond the Gate Automated System`;
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid #eee' }}>
-                        <th style={{ padding: '12px 8px' }}>구분</th>
-                        <th style={{ padding: '12px 8px' }}>목적</th>
-                        <th style={{ padding: '12px 8px' }}>추가요금 (KRW)</th>
-                        <th style={{ padding: '12px 8px' }}>추가요금 (USD)</th>
+                        <th style={{ padding: '12px 8px' }}>{lang === 'ko' ? '구분' : 'Category'}</th>
+                        <th style={{ padding: '12px 8px' }}>{lang === 'ko' ? '목적' : 'Description'}</th>
+                        <th style={{ padding: '12px 8px' }}>{lang === 'ko' ? '추가요금 (KRW)' : 'Surcharge (KRW)'}</th>
+                        <th style={{ padding: '12px 8px' }}>{lang === 'ko' ? '추가요금 (USD)' : 'Surcharge (USD)'}</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>야간 요금 (Night Service)</td>
+                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>{lang === 'ko' ? '야간 요금' : 'Night Service'}</td>
                         <td style={{ padding: '12px 8px', color: '#666' }}>22:00~06:00</td>
                         <td style={{ padding: '12px 8px' }}>KRW 50,000</td>
                         <td style={{ padding: '12px 8px' }}>40</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>긴급 요청 (Urgent Request)</td>
-                        <td style={{ padding: '12px 8px', color: '#666' }}>서비스 시작 24시간 이내 요청</td>
+                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>{lang === 'ko' ? '긴급 요청' : 'Urgent Request'}</td>
+                        <td style={{ padding: '12px 8px', color: '#666' }}>{lang === 'ko' ? '서비스 시작 24시간 이내 요청' : 'Request within 24 hours of service start'}</td>
                         <td style={{ padding: '12px 8px' }}>KRW 50,000</td>
                         <td style={{ padding: '12px 8px' }}>40</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>초긴급 요청 (Super Urgent)</td>
-                        <td style={{ padding: '12px 8px', color: '#666' }}>서비스 시작 6시간 이내 요청</td>
+                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>{lang === 'ko' ? '초긴급 요청' : 'Super Urgent Request'}</td>
+                        <td style={{ padding: '12px 8px', color: '#666' }}>{lang === 'ko' ? '서비스 시작 6시간 이내 요청' : 'Request within 6 hours of service start'}</td>
                         <td style={{ padding: '12px 8px' }}>KRW 60,000</td>
                         <td style={{ padding: '12px 8px' }}>48</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>주말/공휴일 (Weekend/Holiday)</td>
+                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>{lang === 'ko' ? '주말/공휴일' : 'Weekend/Holiday'}</td>
                         <td style={{ padding: '12px 8px', color: '#666' }}></td>
                         <td style={{ padding: '12px 8px' }}>KRW 25,000</td>
                         <td style={{ padding: '12px 8px' }}>20</td>
@@ -1443,7 +1513,12 @@ Beyond the Gate Automated System`;
                       </div>
                       {vehicleUsd > 0 && (
                         <div className="sky-quote-accordion-row">
-                          <span>Vehicle Fee ({formData.vehicleType === 'g90' ? 'G90' : formData.vehicleType === 'staria' ? 'Staria' : formData.vehicleType === 'sprinter' ? 'Sprinter' : formData.vehicleType})</span>
+                          <span>Vehicle Fee ({
+                            formData.vehicleType === 'g90' ? 'G90' : 
+                            formData.vehicleType === 'staria' ? 'Staria' : 
+                            formData.vehicleType === 'sprinter' ? 'Benz Sprinter' : 
+                            String(formData.vehicleType).replace(/Venz/i, 'Benz')
+                          })</span>
                           <span>USD {vehicleUsd.toFixed(2)}</span>
                         </div>
                       )}
@@ -1640,7 +1715,12 @@ Beyond the Gate Automated System`;
                   </div>
                   {vehicleUsd > 0 && (
                     <div className="sky-quote-row">
-                      <span>Vehicle Fee ({formData.vehicleType === 'g90' ? 'G90' : formData.vehicleType === 'staria' ? 'Staria' : formData.vehicleType === 'sprinter' ? 'Sprinter' : formData.vehicleType}):</span>
+                      <span>Vehicle Fee ({
+                        formData.vehicleType === 'g90' ? 'G90' : 
+                        formData.vehicleType === 'staria' ? 'Staria' : 
+                        formData.vehicleType === 'sprinter' ? 'Benz Sprinter' : 
+                        String(formData.vehicleType).replace(/Venz/i, 'Benz')
+                      }):</span>
                       <span>USD {vehicleUsd.toFixed(2)}</span>
                     </div>
                   )}
