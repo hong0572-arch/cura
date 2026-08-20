@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { track } from '@vercel/analytics';
 
 export default function Success() {
   const [searchParams] = useSearchParams();
@@ -28,6 +29,7 @@ export default function Success() {
 
         if (isSuccess) {
           setStatus('success');
+          track('Payment Success', { gateway: gateway || 'unknown', amount: amount });
           // Update Firebase Status to 결제 완료
           const { doc, updateDoc } = await import('firebase/firestore');
           const { db } = await import('../firebase');
@@ -36,6 +38,7 @@ export default function Success() {
           });
         } else {
           setStatus('error');
+          track('Payment Failed', { gateway: gateway || 'unknown', amount: amount, reason: 'confirmation_failed' });
         }
       } catch (error) {
         console.error(error);

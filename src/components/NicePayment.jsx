@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { track } from '@vercel/analytics';
 
 export default function NicePayment() {
   const location = useLocation();
@@ -49,6 +50,7 @@ export default function NicePayment() {
     }
 
     try {
+      track('Payment Initiated', { method: 'NicePay', amount: orderDetails.amount });
       window.AUTHNICE.requestPay({
         clientId: clientId,
         method: 'card',

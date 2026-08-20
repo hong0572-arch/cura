@@ -1,4 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { track } from '@vercel/analytics';
+import { useEffect } from 'react';
 
 export default function Fail() {
   const [searchParams] = useSearchParams();
@@ -6,6 +8,10 @@ export default function Fail() {
 
   const code = searchParams.get('code');
   const message = searchParams.get('message');
+
+  useEffect(() => {
+    track('Payment Failed', { code: code || 'unknown', message: message || 'unknown' });
+  }, [code, message]);
 
   return (
     <div style={{ textAlign: 'center', padding: '50px' }}>

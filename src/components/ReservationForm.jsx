@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, CheckCircle2, ShieldCheck, CreditCard, Loader2, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { track } from '@vercel/analytics';
 
 const getInitialDatetimeLocal = () => {
   const d = new Date();
@@ -273,6 +274,12 @@ Beyond the Gate Automated System`;
           text: emailBody
         })
       }).catch(err => console.error("Email send error:", err));
+
+      track('Reservation Submitted', {
+        serviceType: formData.serviceType,
+        vehicleType: vehicleType,
+        totalUsd: prices.totalUsd
+      });
 
       setStatus('success');
     }, 2000);

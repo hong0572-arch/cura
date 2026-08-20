@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { useLocation, useNavigate } from 'react-router-dom';
+import { track } from '@vercel/analytics';
 
 // Note: Replace with your actual Client ID or use environment variables
 // Vite uses import.meta.env.VITE_PAYPAL_CLIENT_ID
@@ -24,6 +25,7 @@ export default function PaypalPayment() {
 
     const createOrder = async (data, actions) => {
         try {
+            track('Payment Initiated', { method: 'PayPal', amount: orderDetails.amount });
             const response = await fetch("/api/orders", {
                 method: "POST",
                 headers: {
