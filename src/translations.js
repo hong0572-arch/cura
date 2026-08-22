@@ -167,6 +167,46 @@ export const translations = {
             desc: "최종 탑승구에서 고객님의 편안하고 안전한 탑승을 확인하고 배웅해 드리며 환승 의전 서비스를 마무리합니다."
           }
         ]
+      },
+      diagrams: {
+        arrival: {
+          badge: "ARRIVAL SERVICE",
+          title: "입국 에스코트 서비스 과정",
+          desc: "도착 항공기 브릿지에서부터 심사·수하물·통관·차량 탑승까지 전 구간을 동행합니다.\n장시간 비행으로 피로한 고객의 복잡한 입국 절차를 전담 에스코트가 대신 처리하여, 고객이 여유롭게 다음 일정으로 이동할 수 있도록 지원합니다.",
+          steps: [
+            { title: "에어브릿지 영접", desc: "항공기 도착 시 맞이" },
+            { title: "입국심사 동행", desc: "심사대까지 에스코트" },
+            { title: "수하물 수령", desc: "빠른 수하물 안내" },
+            { title: "세관 통관", desc: "통관 절차 대행" },
+            { title: "VIP 주차장 이동", desc: "전용 주차장으로 안내" }
+          ],
+          footer: "각 단계에서 발생할 수 있는 지연과 불편을 사전에 예방하며, 고객이 여유롭고 품격 있는 입국 경험을 누릴 수 있도록 지원합니다."
+        },
+        departure: {
+          badge: "DEPARTURE SERVICE",
+          title: "출국 에스코트 서비스 과정",
+          desc: "공항 도착 순간부터 최종 탑승 확인까지, 전담 에스코트가 모든 절차를 동행합니다.\n사전에 항공편 정보와 고객 선호도를 파악하여 가장 효율적이고 편안한 동선을 설계합니다.",
+          steps: [
+            { title: "공항도착장소 영접", desc: "전용 하차 구역 안내" },
+            { title: "항공사 체크인", desc: "신속한 발권 지원" },
+            { title: "보안지원", desc: "Fast Track 등 안내" },
+            { title: "출국동행", desc: "출국심사/환전/라운지 이동" },
+            { title: "게이트 이동 탑승확인", desc: "최종 탑승 에스코트" }
+          ],
+          footer: "각 단계에서 발생할 수 있는 지연과 불편을 사전에 예방하며, 고객이 여유롭고 품격 있는 출국 경험을 누릴 수 있도록 지원합니다."
+        },
+        transfer: {
+          badge: "TRANSFER SERVICE",
+          title: "환승 의전 서비스 프로세스",
+          desc: "서로 다른 항공편 사이의 가장 부드럽고 지체 없는 환승 안내 서비스",
+          steps: [
+            { title: "사전 준비 (Pre-Arrival)", desc: "최적의 환승 경로 계획" },
+            { title: "도착 게이트 영접", desc: "성함 피켓 마중 및 안내" },
+            { title: "원스톱 환승 지원", desc: "환승 터미널 이동/에스코트" },
+            { title: "탑승 인도 및 종료", desc: "최종 탑승 확인 및 배웅" }
+          ],
+          footer: "고객님의 도착 및 출발 항공편 정보를 면밀히 확인하여, 공항 내 가장 효율적인 동선으로 다음 출발 게이트까지 안전하게 모십니다."
+        }
       }
     },
     fleet: {
@@ -701,6 +741,46 @@ export const translations = {
             desc: "Verifying boarding times at the connecting gate and seeing you off safely onto your next flight."
           }
         ]
+      },
+      diagrams: {
+        arrival: {
+          badge: "ARRIVAL SERVICE",
+          title: "Arrival Meet & Assist Flow",
+          desc: "We accompany you from the aircraft bridge through immigration, baggage claim, customs, and vehicle boarding.\nOur dedicated escorts handle the complex arrival procedures for fatigued travelers, allowing you to relax and proceed smoothly to your next destination.",
+          steps: [
+            { title: "Airbridge Greeting", desc: "Welcome upon aircraft arrival" },
+            { title: "Immigration Escort", desc: "Escort to the immigration desk" },
+            { title: "Baggage Claim", desc: "Prompt baggage assistance" },
+            { title: "Customs Clearance", desc: "Customs procedure support" },
+            { title: "VIP Parking Move", desc: "Guidance to exclusive parking" }
+          ],
+          footer: "We proactively prevent delays and inconveniences at each step, ensuring a relaxed and elegant arrival experience."
+        },
+        departure: {
+          badge: "DEPARTURE SERVICE",
+          title: "Departure Meet & Assist Flow",
+          desc: "From airport arrival to final boarding confirmation, our dedicated escort accompanies you through every procedure.\nWe design the most efficient and comfortable route based on prior flight information and customer preferences.",
+          steps: [
+            { title: "Curbside Greeting", desc: "Guidance at drop-off zone" },
+            { title: "Airline Check-in", desc: "Expedited ticketing support" },
+            { title: "Security Support", desc: "Fast Track guidance" },
+            { title: "Departure Escort", desc: "Immigration/Exchange/Lounge" },
+            { title: "Boarding Confirmation", desc: "Final boarding escort" }
+          ],
+          footer: "We proactively prevent delays and inconveniences at each step, ensuring a relaxed and elegant departure experience."
+        },
+        transfer: {
+          badge: "TRANSFER SERVICE",
+          title: "Transfer Meet & Assist Flow",
+          desc: "The smoothest, delay-free transfer guidance service between connecting flights",
+          steps: [
+            { title: "Pre-Arrival", desc: "Optimal transfer route planning" },
+            { title: "Arrival Gate Greeting", desc: "Nameplate welcome and guidance" },
+            { title: "One-stop Transfer", desc: "Transfer terminal escort" },
+            { title: "Boarding Handover", desc: "Final boarding confirmation" }
+          ],
+          footer: "We thoroughly check your arrival and departure flight details to guide you safely to your next gate via the most efficient route within the airport."
+        }
       }
     },
     fleet: {
