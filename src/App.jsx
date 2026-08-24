@@ -310,7 +310,7 @@ function App() {
           <Route path="/book-vehicle" element={<VehicleReservation t={t} settings={settings} lang={lang} />} />
           <Route path="/terms" element={<Terms t={t} />} />
           <Route path="/privacy" element={<Privacy t={t} />} />
-          <Route path="/blog" element={<Blog t={t} />} />
+          <Route path="/blog" element={<Blog t={t} lang={lang} />} />
           <Route path="/business" element={<BusinessProposal t={t} />} />
         </Routes>
       </main>

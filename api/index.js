@@ -316,6 +316,23 @@ app.get('/api/cron', async (req, res) => {
     const titleMatch = content.match(/^#+\s+(.*)$/m);
     const title = titleMatch ? titleMatch[1] : `프리미엄 공항 의전 서비스 가이드 - ${new Date().toLocaleDateString()}`;
 
+    // 영어 번역 추가
+    let titleEn = '';
+    let contentEn = '';
+    try {
+      const enPrompt = `Translate the following blog post into professional English. Keep the markdown formatting exactly as it is.\n\nTitle: ${title}\n\nContent:\n${content}`;
+      const enResponse = await ai.models.generateContent({
+        model: 'gemini-3.5-flash-lite',
+        contents: enPrompt,
+      });
+      const enContentFull = enResponse.text;
+      const enTitleMatch = enContentFull.match(/^#+\s+(.*)$/m) || enContentFull.match(/Title:\s*(.*)/i);
+      titleEn = enTitleMatch ? enTitleMatch[1].trim() : `Premium Airport VIP Service Guide - ${new Date().toLocaleDateString()}`;
+      contentEn = enContentFull.replace(/^#+\s+(.*)$/m, '').replace(/Title:\s*(.*)/i, '').trim();
+    } catch (translateError) {
+      console.error('Translation failed:', translateError);
+    }
+
     // 이미지 생성 (메인 이미지, 보조 이미지)
     let mainImageUrl = '';
     let subImageUrl = '';
@@ -346,6 +363,8 @@ app.get('/api/cron', async (req, res) => {
     const docRef = await addDoc(collection(db, "blog_posts"), {
       title,
       content,
+      titleEn,
+      contentEn,
       mainImageUrl,
       subImageUrl,
       createdAt: serverTimestamp(),

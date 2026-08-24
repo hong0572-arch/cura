@@ -3,7 +3,7 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import ReactMarkdown from 'react-markdown';
 
-function Blog({ t }) {
+function Blog({ t, lang }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -77,7 +77,7 @@ function Blog({ t }) {
                   
                   {/* Remove the # prefix if it's there in the title since we render it explicitly */}
                   <h2 style={{ marginBottom: '25px', color: 'var(--text-primary)', fontSize: '1.8rem', lineHeight: '1.4', fontWeight: 'bold' }}>
-                    {post.title.replace(/^#+\s*/, '')}
+                    {lang === 'en' && post.titleEn ? post.titleEn.replace(/^#+\s*/, '') : post.title.replace(/^#+\s*/, '')}
                   </h2>
                   
                   <div style={{ 
@@ -86,7 +86,9 @@ function Blog({ t }) {
                     fontSize: '1.05rem',
                   }}>
                     <ReactMarkdown>
-                      {post.content.replace(/^#+\s+(.*)$/m, '') /* Remove the title from body */}
+                      {lang === 'en' && post.contentEn 
+                        ? post.contentEn.replace(/^#+\s+(.*)$/m, '') 
+                        : post.content.replace(/^#+\s+(.*)$/m, '')}
                     </ReactMarkdown>
                   </div>
 
