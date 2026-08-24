@@ -26,15 +26,32 @@ import ReviewSystem from './components/ReviewSystem';
 import Chatbot from './components/Chatbot';
 import BookingWizard from './components/BookingWizard';
 
+import SEOMeta from './components/SEOMeta';
 import { translations as defaultTranslations } from './translations';
 
 function App() {
   const location = useLocation();
-  const [lang, setLang] = useState('ko');
+  const searchParams = new URLSearchParams(location.search);
+  const langFromUrl = searchParams.get('lang') === 'en' ? 'en' : 'ko';
+
+  const [lang, setLangState] = useState(langFromUrl);
   const [selectedVehicle, setSelectedVehicle] = useState('none');
   const [termsOpen, setTermsOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardData, setWizardData] = useState(null);
+
+  useEffect(() => {
+    if (langFromUrl !== lang) {
+      setLangState(langFromUrl);
+    }
+  }, [langFromUrl]);
+
+  const setLang = (newLang) => {
+    setLangState(newLang);
+    const newParams = new URLSearchParams(window.location.search);
+    newParams.set('lang', newLang);
+    window.history.pushState({}, '', `${window.location.pathname}?${newParams.toString()}`);
+  };
 
   const defaultImages = {
     heroBg: '/luxury_airport_vip.jpg',
@@ -261,6 +278,7 @@ function App() {
   // Render standard Customer Screen
   return (
     <>
+      <SEOMeta lang={lang} translations={content || defaultTranslations} />
       <Navbar lang={lang} setLang={setLang} t={t} />
 
       <main>

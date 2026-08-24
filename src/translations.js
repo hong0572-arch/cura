@@ -571,6 +571,11 @@ export const translations = {
       successDesc: "보내주신 제안을 꼼꼼히 검토한 후 담당자가 연락드리겠습니다. 감사합니다.",
       newProposalBtn: "새로운 제안 작성하기",
       error: "오류가 발생했습니다. 나중에 다시 시도해주세요."
+    },
+    seo: {
+      title: "Beyond the Gate | 프리미엄 인천공항 VIP 의전 서비스",
+      description: "Beyond the Gate(CAS)가 제공하는 최고의 인천공항 VIP 의전 및 제네시스 에스코트 차량 쇼퍼 서비스.",
+      keywords: "인천공항 의전, 공항 의전 서비스, VIP 의전, 차량 의전, 제네시스 G90 의전"
     }
   },
   en: {
@@ -1145,6 +1150,11 @@ export const translations = {
       successDesc: "Our team will review your proposal and get back to you shortly. Thank you.",
       newProposalBtn: "Write a new proposal",
       error: "An error occurred. Please try again later."
+    },
+    seo: {
+      title: "Beyond the Gate | Incheon Airport VIP Meet & Assist",
+      description: "Premium Incheon Airport VIP Meet & Assist and Chauffeur Services provided by Beyond the Gate(CAS).",
+      keywords: "Incheon airport VIP meet and greet, Incheon airport chauffeur, Seoul airport transfer, fast track Incheon, Airport VIP service"
     }
   }
 };
