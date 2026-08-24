@@ -44,7 +44,9 @@ function Blog({ t, lang }) {
           Beyond The Gate <span style={{ color: '#d4af37' }}>Blog</span>
         </h1>
         <p style={{ color: '#f0f0f0', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', fontWeight: '300', wordBreak: 'keep-all' }}>
-          최상위 VIP를 위한 프리미엄 공항 의전 서비스의 모든 것과 글로벌 모빌리티 트렌드를 만나보세요.
+          {lang === 'en'
+            ? 'Discover everything about premium airport VIP services and global mobility trends.'
+            : '최상위 VIP를 위한 프리미엄 공항 의전 서비스의 모든 것과 글로벌 모빌리티 트렌드를 만나보세요.'}
         </p>
       </div>
 
