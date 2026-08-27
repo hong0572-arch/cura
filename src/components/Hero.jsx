@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, PlaneLanding, PlaneTakeoff, ArrowRightLeft, Calendar, Users, Minus, Plus, Plane } from 'lucide-react';
+import { ChevronDown, PlaneLanding, PlaneTakeoff, ArrowRightLeft, Calendar, Users, Minus, Plus, Plane, Mail } from 'lucide-react';
 
 const DEFAULT_AIRPORTS = [
   { city: 'Seoul', name: 'Incheon Intl', code: 'ICN' }, 
@@ -63,6 +63,10 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
   }, []);
 
   const handleCheckPrice = () => {
+    if (!formData.email || !formData.email.includes('@')) {
+      alert(t?.hero?.emailRequired || 'Please enter a valid email address to proceed.');
+      return;
+    }
     onOpenWizard({
       ...formData,
       passengers: formData.adults + formData.children
@@ -241,6 +245,27 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* 5. Email */}
+              <div className="search-input-box no-border" style={{ cursor: 'text' }}>
+                <div className="input-text-area" style={{ width: '100%', paddingRight: '12px' }}>
+                  <input 
+                    type="email"
+                    placeholder="Email Address *"
+                    value={formData.email}
+                    onChange={(e) => updateForm('email', e.target.value)}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      outline: 'none',
+                      width: '100%',
+                      color: '#333',
+                      fontSize: '0.95rem'
+                    }}
+                  />
+                </div>
+                <Mail className="input-icon" size={16} />
               </div>
 
             </div>
