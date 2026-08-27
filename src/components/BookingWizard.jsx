@@ -85,8 +85,8 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     transferFlightTime: '',
 
     // Step 4: Passenger Details
-    firstName: '',
-    lastName: '',
+    firstName: initialData?.firstName || '',
+    lastName: initialData?.lastName || '',
     dobMonth: '',
     dobDay: '',
     dobYear: '',
@@ -96,9 +96,9 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
 
     // Step 5: Contact
     sameAsPrimary: true,
-    contactFirst: '',
-    contactLast: '',
-    contactEmail: '',
+    contactFirst: initialData?.firstName || '',
+    contactLast: initialData?.lastName || '',
+    contactEmail: initialData?.email || '',
     contactPhone: '',
     vehicleType: 'none',
     transferAddress: '',

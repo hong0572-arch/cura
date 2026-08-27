@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, PlaneLanding, PlaneTakeoff, ArrowRightLeft, Calendar, Users, Minus, Plus, Plane, Mail } from 'lucide-react';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
 
 const DEFAULT_AIRPORTS = [
   { city: 'Seoul', name: 'Incheon Intl', code: 'ICN' }, 
@@ -248,8 +250,8 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
               </div>
 
               {/* 5. Email */}
-              <div className="search-input-box no-border" style={{ cursor: 'text' }}>
-                <div className="input-text-area" style={{ width: '100%', paddingRight: '12px' }}>
+              <div className="search-input-box no-border" style={{ cursor: 'text', paddingRight: '8px' }}>
+                <div className="input-text-area" style={{ width: '100%' }}>
                   <input 
                     type="email"
                     placeholder="Email Address *"
@@ -265,7 +267,39 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
                     }}
                   />
                 </div>
-                <Mail className="input-icon" size={16} />
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const result = await signInWithPopup(auth, googleProvider);
+                      const user = result.user;
+                      if (user && user.email) {
+                        updateForm('email', user.email);
+                        if (user.displayName) {
+                          const nameParts = user.displayName.split(' ');
+                          updateForm('firstName', nameParts[0] || '');
+                          updateForm('lastName', nameParts.slice(1).join(' ') || '');
+                        }
+                      }
+                    } catch (error) {
+                      console.error("Google sign in failed", error);
+                    }
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%'
+                  }}
+                  title="Auto-fill with Google"
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '20px', height: '20px' }} />
+                </button>
               </div>
 
             </div>
