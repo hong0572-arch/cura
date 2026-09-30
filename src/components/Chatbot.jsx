@@ -86,29 +86,14 @@ IMPORTANT GUIDANCE:
 1. ALWAYS keep your responses very concise and short (1-2 sentences max). Avoid long paragraphs.
 2. If the user asks about booking, making a reservation, or pricing, naturally guide them to use our reservation page by providing this link formatted exactly as markdown: "[Book](/)" (or "[예약하기](/)" if in Korean).
 3. ALWAYS try to answer the user's questions using the Knowledge Base. 
-4. [CRITICAL RULE] IF the user provides an email address or phone number in the chat, YOU MUST EXPLICITLY CALL THE "sendAdminNotification" TOOL IMMEDIATELY. DO NOT just say "I will contact you". YOU MUST CALL THE TOOL FIRST!
 
 Here is the company Knowledge Base to use for answering questions:
 ${chatbotConfig.knowledgeBase || ''}
       `.trim();
 
-      const sendAdminNotificationDeclaration = {
-        name: 'sendAdminNotification',
-        description: 'Send an email to the administrator when a user leaves their contact information (phone number or email address).',
-        parameters: {
-          type: 'object',
-          properties: {
-            contactInfo: { type: 'string', description: 'The phone number or email address provided by the user.' },
-            userContext: { type: 'string', description: 'A brief summary of what the user is asking about or needs help with.' }
-          },
-          required: ['contactInfo']
-        }
-      };
-
       const payload = {
         model: 'gemini-2.5-flash',
-        input: userMessage,
-        tools: [{ functionDeclarations: [sendAdminNotificationDeclaration] }]
+        input: userMessage
       };
 
       if (messages.length > 2 && window.lastInteractionId) {
@@ -124,47 +109,7 @@ ${chatbotConfig.knowledgeBase || ''}
         window.lastInteractionId = interaction.id;
       }
 
-      const lastStep = interaction.steps?.at(-1) || {};
-      const functionCalls = lastStep.functionCalls || [];
-
-      let botReply = interaction.output_text || interaction.text;
-
-      if (functionCalls.length > 0) {
-        const call = functionCalls[0];
-        if (call.name === 'sendAdminNotification') {
-          const { contactInfo, userContext } = call.args || {};
-
-          try {
-            // 이메일 전송 대신, 확실하게 파이어베이스 'inquiries' 컬렉션에 곧바로 저장
-            await addDoc(collection(db, "inquiries"), {
-              contactInfo: contactInfo,
-              userContext: userContext || '연락처만 남김',
-              createdAt: serverTimestamp(),
-              status: "new" // 관리자가 아직 확인 안 한 상태
-            });
-
-            // AI에게 저장이 완료되었음을 알리고 답변 유도
-            const toolResponsePayload = {
-              model: 'gemini-3.5-flash-lite',
-              previous_interaction_id: interaction.id,
-              input: [{
-                functionResponse: {
-                  id: call.id,
-                  name: call.name,
-                  response: { status: 'OK', result: '성공적으로 관리자 시스템에 저장되었습니다. 고객에게 곧 연락드리겠다고 친절히 안내해주세요.' }
-                }
-              }]
-            };
-            interaction = await ai.interactions.create(toolResponsePayload);
-            botReply = interaction.output_text || interaction.text;
-          } catch (e) {
-            console.error('파이어베이스 저장 실패:', e);
-            botReply = "죄송합니다. 일시적인 시스템 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
-          }
-        }
-      }
-
-      botReply = botReply || fallbackMessage;
+      let botReply = interaction.output_text || interaction.text || fallbackMessage;
 
       setMessages(prev => [...prev, { text: botReply, isBot: true }]);
     } catch (error) {
