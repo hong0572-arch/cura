@@ -101,7 +101,7 @@ ${chatbotConfig.knowledgeBase || ''}
       historyContents.push({ role: 'user', parts: [{ text: userMessage }] });
 
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-3.5-flash-lite',
         contents: historyContents,
         config: {
           systemInstruction: systemInstruction
