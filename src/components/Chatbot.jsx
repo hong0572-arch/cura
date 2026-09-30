@@ -11,6 +11,8 @@ export default function Chatbot({ settings, lang }) {
   const [messages, setMessages] = useState([{ text: lang === 'ko' ? '안녕하세요! 저는 여러분의 안내를 도울 Q라고 합니다. 무엇을 도와드릴까요?' : "Hello! I'm Q, your virtual assistant. How can I help you today?", isBot: true }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isIdentified, setIsIdentified] = useState(false);
+  const [userInfo, setUserInfo] = useState({ name: '', contact: '' });
 
   const messagesEndRef = useRef(null);
 
@@ -44,7 +46,7 @@ export default function Chatbot({ settings, lang }) {
     // --- [추가] 무조건 대화 기록 저장 ---
     try {
       await addDoc(collection(db, "inquiries"), {
-        contactInfo: '일반 대화 기록 (익명)',
+        contactInfo: `${userInfo.name} (${userInfo.contact})`,
         userContext: userMessage,
         createdAt: serverTimestamp(),
         status: "new"
@@ -91,7 +93,6 @@ ${chatbotConfig.knowledgeBase || ''}
       `.trim();
 
       const sendAdminNotificationDeclaration = {
-        type: 'function',
         name: 'sendAdminNotification',
         description: 'Send an email to the administrator when a user leaves their contact information (phone number or email address).',
         parameters: {
@@ -105,9 +106,9 @@ ${chatbotConfig.knowledgeBase || ''}
       };
 
       const payload = {
-        model: 'gemini-3.5-flash-lite',
+        model: 'gemini-2.5-flash',
         input: userMessage,
-        tools: [sendAdminNotificationDeclaration]
+        tools: [{ functionDeclarations: [sendAdminNotificationDeclaration] }]
       };
 
       if (messages.length > 2 && window.lastInteractionId) {
@@ -311,41 +312,75 @@ ${chatbotConfig.knowledgeBase || ''}
             <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={handleSend} style={{ display: 'flex', borderTop: '1px solid var(--border-subtle)', padding: '8px', backgroundColor: 'var(--bg-secondary)' }}>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              disabled={isLoading}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '24px',
-                outline: 'none',
-                background: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                marginRight: '8px'
-              }}
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              style={{
-                padding: '0 20px',
-                backgroundColor: (isLoading || !input.trim()) ? 'var(--text-muted)' : 'var(--gold-primary)',
-                border: 'none',
-                borderRadius: '24px',
-                color: 'var(--bg-secondary)',
-                cursor: (isLoading || !input.trim()) ? 'not-allowed' : 'pointer',
-                fontWeight: '600',
-                transition: 'background-color 0.2s'
-              }}
-            >
-              Send
-            </button>
-          </form>
+          {isIdentified ? (
+            <form onSubmit={handleSend} style={{ display: 'flex', borderTop: '1px solid var(--border-subtle)', padding: '8px', backgroundColor: 'var(--bg-secondary)' }}>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                disabled={isLoading}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '24px',
+                  outline: 'none',
+                  background: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  marginRight: '8px'
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                style={{
+                  padding: '0 20px',
+                  backgroundColor: (isLoading || !input.trim()) ? 'var(--text-muted)' : 'var(--gold-primary)',
+                  border: 'none',
+                  borderRadius: '24px',
+                  color: 'var(--bg-secondary)',
+                  cursor: (isLoading || !input.trim()) ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  transition: 'background-color 0.2s'
+                }}
+              >
+                Send
+              </button>
+            </form>
+          ) : (
+            <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px', backgroundColor: 'var(--bg-secondary)' }}>
+              <p style={{ fontSize: '0.85rem', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                {lang === 'ko' ? '상담을 위해 이름과 연락처를 남겨주세요.' : 'Please leave your contact info to start chatting.'}
+              </p>
+              <input
+                type="text"
+                placeholder={lang === 'ko' ? '이름' : 'Name'}
+                value={userInfo.name}
+                onChange={e => setUserInfo(prev => ({...prev, name: e.target.value}))}
+                style={{ width: '100%', padding: '10px', marginBottom: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }}
+              />
+              <input
+                type="text"
+                placeholder={lang === 'ko' ? '연락처 (이메일 또는 전화번호)' : 'Email or Phone'}
+                value={userInfo.contact}
+                onChange={e => setUserInfo(prev => ({...prev, contact: e.target.value}))}
+                style={{ width: '100%', padding: '10px', marginBottom: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }}
+              />
+              <button
+                onClick={() => {
+                  if(userInfo.name.trim() && userInfo.contact.trim()) {
+                    setIsIdentified(true);
+                  } else {
+                    alert(lang === 'ko' ? '이름과 연락처를 모두 입력해주세요.' : 'Please fill in both name and contact info.');
+                  }
+                }}
+                style={{ width: '100%', padding: '10px', backgroundColor: 'var(--gold-primary)', color: 'var(--bg-secondary)', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                {lang === 'ko' ? '대화 시작하기' : 'Start Chat'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>
