@@ -91,25 +91,24 @@ Here is the company Knowledge Base to use for answering questions:
 ${chatbotConfig.knowledgeBase || ''}
       `.trim();
 
-      const payload = {
-        model: 'gemini-2.5-flash',
-        input: userMessage
-      };
+      const historyContents = messages
+        .filter(m => !m.text.includes('안녕하세요!') && !m.text.includes('Hello! I\'m Q'))
+        .map(m => ({
+          role: m.isBot ? 'model' : 'user',
+          parts: [{ text: m.text }]
+        }));
+      
+      historyContents.push({ role: 'user', parts: [{ text: userMessage }] });
 
-      if (messages.length > 2 && window.lastInteractionId) {
-        payload.previous_interaction_id = window.lastInteractionId;
-      } else {
-        // First turn: Inject system instruction into the prompt
-        payload.input = `[System Instructions]\n${systemInstruction}\n\n[User Message]\n${userMessage}`;
-      }
+      const response = await ai.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: historyContents,
+        config: {
+          systemInstruction: systemInstruction
+        }
+      });
 
-      let interaction = await ai.interactions.create(payload);
-
-      if (interaction.id) {
-        window.lastInteractionId = interaction.id;
-      }
-
-      let botReply = interaction.output_text || interaction.text || fallbackMessage;
+      let botReply = response.text || fallbackMessage;
 
       setMessages(prev => [...prev, { text: botReply, isBot: true }]);
     } catch (error) {
