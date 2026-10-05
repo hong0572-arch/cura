@@ -116,7 +116,8 @@ async function main() {
       .replace('</head>', `    ${head}\n  </head>`)
       .replace('<div id="root"></div>', `<div id="root">${html}</div>\n    ${dataScript}`)
 
-    // cleanUrls: /about → about.html, /en → en.html, /en/about → en/about.html
+    // vercel.json rewrites: /about → about.html, /en → en.html, /en/about → en/about.html
+    // (공개 페이지를 추가하면 vercel.json rewrites 에도 추가할 것)
     const file = url === '/' ? 'index.html' : `${url.slice(1)}.html`
     const out = path.join(dist, file)
     await fs.mkdir(path.dirname(out), { recursive: true })

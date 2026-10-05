@@ -1,5 +1,4 @@
 {
-  "cleanUrls": true,
   "crons": [
     {
       "path": "/api/cron",
@@ -10,7 +9,10 @@
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     }
   ],
@@ -18,6 +20,58 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
+    },
+    {
+      "source": "/en",
+      "destination": "/en.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/about.html"
+    },
+    {
+      "source": "/en/about",
+      "destination": "/en/about.html"
+    },
+    {
+      "source": "/book-vehicle",
+      "destination": "/book-vehicle.html"
+    },
+    {
+      "source": "/en/book-vehicle",
+      "destination": "/en/book-vehicle.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog.html"
+    },
+    {
+      "source": "/en/blog",
+      "destination": "/en/blog.html"
+    },
+    {
+      "source": "/business",
+      "destination": "/business.html"
+    },
+    {
+      "source": "/en/business",
+      "destination": "/en/business.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/en/terms",
+      "destination": "/en/terms.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/en/privacy",
+      "destination": "/en/privacy.html"
     },
     {
       "source": "/(.*)",

@@ -29,7 +29,7 @@
 - `npm run build` = vite build → SSR 빌드(`src/entry-server.jsx`) → `scripts/prerender.mjs`. 공개 페이지(PAGES 목록)를 `dist/*.html`로 미리 렌더링하고 `sitemap.xml`을 생성한다. 빌드 시 Firestore `siteData/main`(공개)을 읽어 HTML과 `window.__SITE_DATA__`에 싣는다 → 관리자 화면에서 문구를 바꾸면 **재배포해야** 검색엔진용 HTML에 반영된다(방문자 화면은 즉시 갱신).
 - 공개 페이지를 추가하면 `scripts/prerender.mjs`의 PAGES, `SEOMeta.jsx`의 PAGE_META, App 라우트를 함께 갱신한다.
 - 사전 렌더링되는 컴포넌트는 렌더 중에 `window`/`document`/`Date.now()`/난수를 쓰지 않는다(하이드레이션 불일치). 브라우저 API는 effect·이벤트 핸들러 안에서만.
-- `vercel.json`: `cleanUrls`로 `/about` → `about.html`, 나머지 경로는 `spa.html`(빈 셸)로 rewrite.
+- `vercel.json`: 공개 페이지마다 rewrite(`/about` → `/about.html`)를 명시하고, 나머지 경로는 `spa.html`(빈 셸)로 보낸다. **`cleanUrls`는 쓰지 않는다** — 켜면 `/api/*`·`/payment` rewrite가 404가 된다(2026-10 운영 장애).
 - 이미지: `public/`의 png/jpg는 `node scripts/optimize-images.mjs`로 WebP를 만들고 코드에서는 `.webp`를 쓴다(Firestore 경로는 `optimizedImage()`가 변환).
 - 관리자 화면·예약 위저드는 `React.lazy`로 분리돼 있다. 방문자 첫 화면 번들에 무거운 라이브러리를 추가하지 않는다.
 
