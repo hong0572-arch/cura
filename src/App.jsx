@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { db, auth } from './firebase';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import CoreValues from './components/CoreValues';
@@ -58,8 +59,8 @@ function App() {
     fleetBg: '/luxury_fleet.png',
   };
 
+  // Gemini API 키는 서버 환경변수(GEMINI_API_KEY)로만 관리한다
   const defaultChatbot = {
-    apiKey: import.meta.env.VITE_CHATBOT_API_KEY || '',
     systemPrompt: 'You are a VIP concierge for Beyond The Gate, a premium black car service in Korea. Be polite and helpful.',
     knowledgeBase: 'We provide airport transfers in luxury vehicles (Genesis G90, Mercedes Sprinter).',
     fallbackMessage: 'Please leave your email or call us directly, and a human agent will assist you.',
@@ -153,11 +154,8 @@ function App() {
           if (data.settings) {
             // Ensure chatbot settings exist even if data.settings is from an older save
             const mergedSettings = { ...data.settings };
-            if (!mergedSettings.chatbot || !mergedSettings.chatbot.apiKey) {
-              mergedSettings.chatbot = {
-                ...(mergedSettings.chatbot || {}),
-                ...defaultChatbot,
-              };
+            if (!mergedSettings.chatbot) {
+              mergedSettings.chatbot = { ...defaultChatbot };
             }
             setSettings(mergedSettings);
           }
@@ -173,9 +171,24 @@ function App() {
 
   // --- Admin Routing States ---
   const [view, setView] = useState('user'); // user | admin
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return sessionStorage.getItem('btg_admin_logged_in') === 'true';
-  });
+  // 'checking' | 'signedOut' | 'notAdmin' | 'admin'
+  const [adminState, setAdminState] = useState('checking');
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, async (user) => {
+      if (!user || user.isAnonymous || !user.email) {
+        setAdminState('signedOut');
+        return;
+      }
+      try {
+        // admins/{uid} 문서는 본인만 읽을 수 있다 (firestore.rules)
+        const snap = await getDoc(doc(db, 'admins', user.uid));
+        setAdminState(snap.exists() ? 'admin' : 'notAdmin');
+      } catch {
+        setAdminState('notAdmin');
+      }
+    });
+  }, []);
 
   // Listen to hash changes for Admin View Access
   useEffect(() => {
@@ -194,15 +207,24 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const handleAdminLogin = () => {
-    setIsLoggedIn(true);
-    sessionStorage.setItem('btg_admin_logged_in', 'true');
+  const handleAdminLogout = async () => {
+    await signOut(auth);
+    window.location.hash = ''; // Back to main
   };
 
-  const handleAdminLogout = () => {
-    setIsLoggedIn(false);
-    sessionStorage.removeItem('btg_admin_logged_in');
-    window.location.hash = ''; // Back to main
+  // 공개 문서(siteData)에 비밀값이 남지 않도록 저장 전에 제거한다
+  const stripSecrets = (s) => {
+    if (!s) return s;
+    const clean = { ...s };
+    if (clean.system) {
+      clean.system = { ...clean.system };
+      delete clean.system.adminPassword;
+    }
+    if (clean.chatbot) {
+      clean.chatbot = { ...clean.chatbot };
+      delete clean.chatbot.apiKey;
+    }
+    return clean;
   };
 
   const handleSaveAdminData = async (newContent, newImages, newSettings) => {
@@ -213,11 +235,12 @@ function App() {
     }
 
     try {
+      // merge 없이 전체 덮어쓰기 — 예전에 저장된 비밀값 필드까지 확실히 지운다
       await setDoc(doc(db, 'siteData', 'main'), {
         content: newContent,
         images: newImages,
-        settings: newSettings || settings
-      }, { merge: true });
+        settings: stripSecrets(newSettings || settings)
+      });
       // Only log or show non-intrusive alert since AdminDashboard has its own feedback
     } catch (error) {
       console.error('Error saving to Firestore:', error);
@@ -235,7 +258,7 @@ function App() {
         await setDoc(doc(db, 'siteData', 'main'), {
           content: defaultTranslations,
           images: defaultImages,
-          settings: defaultSettings
+          settings: stripSecrets(defaultSettings)
         });
         window.location.hash = '';
         alert('Reset completed successfully!');
@@ -254,11 +277,13 @@ function App() {
 
   // Render Admin Screen if active
   if (view === 'admin') {
-    if (!isLoggedIn) {
+    if (adminState === 'checking') {
+      return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff' }}>Loading...</div>;
+    }
+    if (adminState !== 'admin') {
       return (
         <AdminLogin
-          adminPassword={settings?.system?.adminPassword || 'admin1234'}
-          onLoginSuccess={handleAdminLogin}
+          notAuthorized={adminState === 'notAdmin'}
           onCancel={() => { window.location.hash = ''; }}
         />
       );
@@ -271,6 +296,7 @@ function App() {
         onSave={handleSaveAdminData}
         onReset={handleResetDefaults}
         onPreview={() => { window.location.hash = ''; }}
+        onLogout={handleAdminLogout}
       />
     );
   }

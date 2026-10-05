@@ -2,52 +2,40 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics';
 
+// 결제 상태는 서버가 PG사 승인 확인 후 기록한다. 이 페이지는 조회만 한다.
 export default function Success() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('processing');
   const gateway = searchParams.get('gateway');
-  
+  const orderId = searchParams.get('orderId');
+  const [status, setStatus] = useState(orderId ? 'processing' : 'error');
+  const [payment, setPayment] = useState(null);
+
   useEffect(() => {
-    const confirmPayment = async () => {
-      const paymentKey = searchParams.get('paymentKey');
-      const orderId = searchParams.get('orderId');
-      const amount = searchParams.get('amount');
-
-      try {
-        let isSuccess = false;
-        if (gateway === 'paypal' || gateway === 'nicepay') {
-          isSuccess = true;
-        } else {
-          const response = await fetch('/confirm/toss', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paymentKey, orderId, amount }),
-          });
-          isSuccess = response.ok;
-        }
-
-        if (isSuccess) {
+    if (!orderId) return;
+    fetch(`/api/reservations/${encodeURIComponent(orderId)}/status`)
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then(data => {
+        if (data.paid) {
+          setPayment(data);
           setStatus('success');
-          track('Payment Success', { gateway: gateway || 'unknown', amount: amount });
-          // Update Firebase Status to 결제 완료
-          const { doc, updateDoc } = await import('firebase/firestore');
-          const { db } = await import('../firebase');
-          await updateDoc(doc(db, "reservations", orderId), {
-            status: '결제 완료'
-          });
+          track('Payment Success', { gateway: gateway || 'unknown', amount: data.amount });
         } else {
           setStatus('error');
-          track('Payment Failed', { gateway: gateway || 'unknown', amount: amount, reason: 'confirmation_failed' });
+          track('Payment Failed', { gateway: gateway || 'unknown', reason: 'not_paid' });
         }
-      } catch (error) {
+      })
+      .catch(error => {
         console.error(error);
         setStatus('error');
-      }
-    };
+      });
+  }, [orderId, gateway]);
 
-    confirmPayment();
-  }, [searchParams]);
+  const amountLabel = payment
+    ? (payment.currency === 'USD'
+      ? `$${Number(payment.amount).toFixed(2)} USD`
+      : `${Number(payment.amount).toLocaleString()}원`)
+    : '';
 
   return (
     <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -55,9 +43,9 @@ export default function Success() {
       {status === 'success' && (
         <>
           <h2>🎉 결제가 성공적으로 완료되었습니다!</h2>
-          <p>주문번호: {searchParams.get('orderId')}</p>
-          <p>결제금액: {gateway === 'paypal' ? '$' : ''}{Number(searchParams.get('amount')).toLocaleString()}{gateway === 'paypal' ? ' USD' : '원'}</p>
-          <button 
+          <p>주문번호: {orderId}</p>
+          <p>결제금액: {amountLabel}</p>
+          <button
             onClick={() => navigate('/')}
             style={{ padding: '10px 20px', marginTop: '20px', cursor: 'pointer' }}
           >
@@ -68,7 +56,7 @@ export default function Success() {
       {status === 'error' && (
         <>
           <h2>❌ 결제 승인에 실패했습니다.</h2>
-          <button 
+          <button
             onClick={() => navigate('/')}
             style={{ padding: '10px 20px', marginTop: '20px', cursor: 'pointer' }}
           >

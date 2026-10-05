@@ -1,0 +1,93 @@
+rules_version = '2';
+
+// Beyond the Gate — Firestore 보안 규칙
+// Firebase 콘솔 → Firestore Database → 규칙(Rules)에 이 내용을 붙여넣고 게시한다.
+//
+// 원칙
+// - 예약(reservations)은 서버(api/index.js, firebase-admin)만 쓴다. 브라우저는 관리자만 읽기/삭제 가능.
+// - 관리자 = Firebase Authentication 로그인 + admins/{uid} 문서가 있는 사용자.
+// - 방문자가 쓰는 컬렉션(문의·리뷰·제휴제안)은 "생성"만 허용하고 필드·길이를 제한한다.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function shortString(field, max) {
+      return request.resource.data[field] is string
+        && request.resource.data[field].size() <= max;
+    }
+
+    // 관리자 목록 — 콘솔에서만 추가/삭제. 본인 문서만 읽을 수 있음(로그인 후 권한 확인용).
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // 사이트 문구·이미지·가격 설정 — 누구나 읽기, 관리자만 수정
+    match /siteData/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 예약·결제 정보(개인정보 포함) — 관리자만 접근. 고객 쓰기는 서버 API를 통해서만.
+    match /reservations/{id} {
+      allow read, update, delete: if isAdmin();
+      allow create: if false;
+    }
+
+    // 챗봇 문의 기록
+    match /inquiries/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['contactInfo', 'userContext', 'createdAt', 'status'])
+        && shortString('contactInfo', 300)
+        && shortString('userContext', 2000)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.status == 'new';
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 고객 리뷰 — 누구나 읽기, 작성은 형식 검증
+    match /reviews/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['name', 'rating', 'text', 'createdAt'])
+        && shortString('name', 100)
+        && shortString('text', 2000)
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && shortString('createdAt', 40);
+      allow update, delete: if isAdmin();
+    }
+
+    // 비즈니스 제휴 제안
+    match /businessProposals/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['companyName', 'contactName', 'email', 'phone', 'proposalType', 'message', 'createdAt', 'status'])
+        && shortString('companyName', 200)
+        && shortString('contactName', 100)
+        && shortString('email', 200)
+        && shortString('phone', 40)
+        && shortString('proposalType', 50)
+        && shortString('message', 5000)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.status == 'new';
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 블로그 — 누구나 읽기, 작성은 서버(크론)와 관리자만
+    match /blog_posts/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 그 외 모든 문서는 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { 
-  Save, Eye, RotateCcw, Layout, FileText, 
+import {
+  Save, Eye, RotateCcw, Layout, FileText,
   HelpCircle, Image, Settings, Sparkles, Check,
-  Car, Plane, Calendar, Calculator, ShieldAlert, 
+  Car, Plane, Calendar, Calculator, ShieldAlert,
   Award, Lock, Activity, Navigation, FileSpreadsheet,
   Users
 } from 'lucide-react';
@@ -13,7 +13,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Set worker source for pdfjs using unpkg/cdnjs
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
-export default function AdminDashboard({ data, images, settings, onSave, onReset, onPreview }) {
+export default function AdminDashboard({ data, images, settings, onSave, onReset, onPreview, onLogout }) {
   const [activeTab, setActiveTab] = useState('hero');
   const [editData, setEditData] = useState(JSON.parse(JSON.stringify(data)));
   const [editImages, setEditImages] = useState({ ...images });
@@ -70,7 +70,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      
+
       let extractedText = `\n\n[Document: ${file.name}]\n`;
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -226,12 +226,12 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     setEditData(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
       const newIndex = direction === 'up' ? index - 1 : index + 1;
-      
+
       if (newIndex >= 0 && newIndex < copy.ko.faq.items.length) {
         const tempKo = copy.ko.faq.items[index];
         copy.ko.faq.items[index] = copy.ko.faq.items[newIndex];
         copy.ko.faq.items[newIndex] = tempKo;
-        
+
         const tempEn = copy.en.faq.items[index];
         copy.en.faq.items[index] = copy.en.faq.items[newIndex];
         copy.en.faq.items[newIndex] = tempEn;
@@ -577,6 +577,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
             <Eye size={16} style={{ marginRight: '8px' }} />
             View Site
           </button>
+          <button type="button" onClick={onLogout} className="btn-premium secondary preview-btn" style={{ marginTop: '8px' }}>
+            Sign Out
+          </button>
         </div>
       </aside>
 
@@ -588,7 +591,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
               <h2>Edit Section: {tabs.find(t => t.id === activeTab)?.label}</h2>
               <p>Translate or update website texts and assets below. Changes will apply immediately on save.</p>
             </div>
-            
+
             <button type="submit" className="btn-premium primary save-btn">
               <Save size={18} style={{ marginRight: '8px' }} />
               Save Changes
@@ -596,14 +599,14 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           </header>
 
           <div className="admin-scroll-body">
-            
+
             {/* Tab: Branding & Hero */}
             {activeTab === 'hero' && (
               <div className="tab-section">
                 <h3>Core Brand Slogans</h3>
                 {renderField('Brand Name', 'brand')}
                 {renderField('Sub Branding Label', 'brand_sub')}
-                
+
                 <div className="divider"></div>
                 <h3>Hero Section Copy</h3>
                 {renderField('Hero Title (Use \\n for breakline)', 'hero.title', true, 3)}
@@ -647,9 +650,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 <div className="divider"></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h3 style={{ margin: 0 }}>Office Locations (사무실 주소 및 추가 사무실 관리)</h3>
-                  <button 
-                    type="button" 
-                    onClick={handleAddOffice} 
+                  <button
+                    type="button"
+                    onClick={handleAddOffice}
                     className="btn-premium secondary"
                     style={{ padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer' }}
                   >
@@ -1064,9 +1067,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 <div className="divider"></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h3 style={{ margin: 0 }}>Frequently Asked Questions Accordions</h3>
-                  <button 
-                    type="button" 
-                    onClick={handleAddFaq} 
+                  <button
+                    type="button"
+                    onClick={handleAddFaq}
                     className="btn-premium secondary"
                     style={{ padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer' }}
                   >
@@ -1238,24 +1241,24 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
               <div className="tab-section">
                 <h3>Website Background Images</h3>
                 <p>Upload a new image directly from your computer, or paste a valid image URL.</p>
-                
+
                 <div className="array-card glass-panel" style={{ marginTop: '20px' }}>
                   <div className="form-field">
                     <label>Hero Section Background Image</label>
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                      <input 
-                        type="text" 
-                        value={editImages.heroBg || ''} 
+                      <input
+                        type="text"
+                        value={editImages.heroBg || ''}
                         onChange={(e) => handleImageChange('heroBg', e.target.value)}
                         placeholder="/hero-bg.jpg"
                         style={{ flex: 1 }}
                       />
                       <label className="btn-premium secondary" style={{ cursor: 'pointer', padding: '10px 16px', margin: 0, display: 'flex', alignItems: 'center' }}>
                         {uploading.heroBg ? 'Uploading...' : 'Upload File'}
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          style={{ display: 'none' }} 
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
                           onChange={(e) => handleImageUpload(e, 'heroBg')}
                           disabled={uploading.heroBg}
                         />
@@ -1272,19 +1275,19 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <div className="form-field">
                     <label>Chauffeur Showcase Image</label>
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                      <input 
-                        type="text" 
-                        value={editImages.fleetBg || ''} 
+                      <input
+                        type="text"
+                        value={editImages.fleetBg || ''}
                         onChange={(e) => handleImageChange('fleetBg', e.target.value)}
                         placeholder="/luxury_fleet.png"
                         style={{ flex: 1 }}
                       />
                       <label className="btn-premium secondary" style={{ cursor: 'pointer', padding: '10px 16px', margin: 0, display: 'flex', alignItems: 'center' }}>
                         {uploading.fleetBg ? 'Uploading...' : 'Upload File'}
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          style={{ display: 'none' }} 
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
                           onChange={(e) => handleImageUpload(e, 'fleetBg')}
                           disabled={uploading.fleetBg}
                         />
@@ -1299,24 +1302,17 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 <div className="divider"></div>
                 <h3>System Preferences</h3>
                 <p>Manage persistence variables and system initialization defaults.</p>
-                <div className="form-field" style={{ marginTop: '20px' }}>
-                  <label>Admin Access Passcode</label>
-                  <input 
-                    type="password" 
-                    value={editSettings?.system?.adminPassword || ''} 
-                    onChange={e => handleSettingChange('system', e.target.value, 'adminPassword')}
-                    placeholder="Leave blank for default (admin1234)"
-                  />
-                  <p className="field-hint">The passcode required to access this dashboard.</p>
-                </div>
+                <p className="field-hint" style={{ marginTop: '20px' }}>
+                  Administrator accounts are managed in Firebase Console → Authentication, and access is granted by adding the user's UID to the <code>admins</code> collection.
+                </p>
                 <div className="array-card glass-panel reset-card" style={{ marginTop: '20px' }}>
                   <div className="reset-info">
                     <h4>Reset Website to Original Config</h4>
                     <p>This action clears all custom translations and images stored in <code>localStorage</code>, reverting the entire portal to its default state. This action is irreversible.</p>
                   </div>
-                  <button 
-                    type="button" 
-                    onClick={onReset} 
+                  <button
+                    type="button"
+                    onClick={onReset}
                     className="btn-premium secondary reset-action-btn"
                   >
                     <RotateCcw size={16} style={{ marginRight: '8px' }} />
@@ -1332,21 +1328,14 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 <h3>Chatbot & AI Configuration</h3>
                 <p>Configure the Gemini-powered AI chatbot. The chatbot will automatically answer customer inquiries based on the Knowledge Base you provide.</p>
 
-                <div className="form-field" style={{ marginTop: '20px' }}>
-                  <label>Google Gemini API Key</label>
-                  <input 
-                    type="password" 
-                    value={editSettings?.chatbot?.apiKey || ''} 
-                    onChange={e => handleSettingChange('chatbot', e.target.value, 'apiKey')}
-                    placeholder="AIzaSy..."
-                  />
-                  <small style={{ color: 'var(--text-muted)' }}>Get your API key from Google AI Studio. Note: As this is a frontend app, the key will be exposed to the client. Use with caution.</small>
-                </div>
+                <p className="field-hint" style={{ marginTop: '20px' }}>
+                  The Gemini API key is stored only as a server environment variable (<code>GEMINI_API_KEY</code>) and is never exposed to visitors.
+                </p>
 
                 <div className="form-field">
                   <label>System Prompt (Bot Persona)</label>
-                  <textarea 
-                    value={editSettings?.chatbot?.systemPrompt || ''} 
+                  <textarea
+                    value={editSettings?.chatbot?.systemPrompt || ''}
                     onChange={e => handleSettingChange('chatbot', e.target.value, 'systemPrompt')}
                     rows={4}
                   />
@@ -1365,8 +1354,8 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                         id="pdf-upload"
                         style={{ display: 'none' }}
                       />
-                      <label 
-                        htmlFor="pdf-upload" 
+                      <label
+                        htmlFor="pdf-upload"
                         className={`btn-premium secondary ${isExtractingPdf ? 'disabled' : ''}`}
                         style={{ padding: '6px 12px', fontSize: '0.8rem', cursor: isExtractingPdf ? 'wait' : 'pointer' }}
                       >
@@ -1374,8 +1363,8 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                       </label>
                     </div>
                   </div>
-                  <textarea 
-                    value={editSettings?.chatbot?.knowledgeBase || ''} 
+                  <textarea
+                    value={editSettings?.chatbot?.knowledgeBase || ''}
                     onChange={e => handleSettingChange('chatbot', e.target.value, 'knowledgeBase')}
                     rows={12}
                     placeholder="Paste FAQs, pricing, refund policies here..."
@@ -1385,9 +1374,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
 
                 <div className="form-field">
                   <label>Fallback Message</label>
-                  <input 
-                    type="text" 
-                    value={editSettings?.chatbot?.fallbackMessage || ''} 
+                  <input
+                    type="text"
+                    value={editSettings?.chatbot?.fallbackMessage || ''}
                     onChange={e => handleSettingChange('chatbot', e.target.value, 'fallbackMessage')}
                   />
                   <small style={{ color: 'var(--text-muted)' }}>The message shown if the AI encounters an error or cannot answer.</small>
@@ -1417,7 +1406,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                             <td style={{ padding: '12px', fontWeight: 'bold', color: 'var(--gold-primary)' }}>{inq.contactInfo}</td>
                             <td style={{ padding: '12px', fontSize: '0.9rem' }}>{inq.userContext}</td>
                             <td style={{ padding: '12px' }}>
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => handleDeleteInquiry(inq.id)}
                                 style={{ padding: '6px 12px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
@@ -1444,7 +1433,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     + Add Airport
                   </button>
                 </div>
-                
+
                 {(editSettings.airports || []).map((airport, aIndex) => (
                   <div key={aIndex} className="array-card glass-panel" style={{ marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -1559,9 +1548,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     Reservations will be sent to this email address.
                   </p>
                   <div className="form-field">
-                    <input 
-                      type="email" 
-                      value={editSettings.companyEmail || ''} 
+                    <input
+                      type="email"
+                      value={editSettings.companyEmail || ''}
                       onChange={(e) => handleSettingChange('companyEmail', e.target.value)}
                       placeholder="e.g. company@beyondthegate.vip"
                       required
@@ -1577,9 +1566,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     Used for converting USD values to KRW.
                   </p>
                   <div className="form-field">
-                    <input 
-                      type="number" 
-                      value={editSettings.exchangeRate || 0} 
+                    <input
+                      type="number"
+                      value={editSettings.exchangeRate || 0}
                       onChange={(e) => handleSettingChange('exchangeRate', parseInt(e.target.value) || 0)}
                       min="0"
                     />
@@ -1588,7 +1577,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
 
                 <div className="divider"></div>
                 <h3>Meet & Assist Service Base Fees</h3>
-                
+
                 {/* Arrival & Departure Escort */}
                 <div className="form-row-2">
                   <div className="form-field-pair">
@@ -1596,18 +1585,18 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     <div className="form-row-2" style={{ marginTop: '8px' }}>
                       <div className="form-field">
                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>USD Price</label>
-                        <input 
-                          type="number" 
-                          value={editSettings.servicePrices?.arrival?.usd || 0} 
+                        <input
+                          type="number"
+                          value={editSettings.servicePrices?.arrival?.usd || 0}
                           onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'arrival', 'usd')}
                           min="0"
                         />
                       </div>
                       <div className="form-field">
                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>KRW Price</label>
-                        <input 
-                          type="number" 
-                          value={editSettings.servicePrices?.arrival?.krw || 0} 
+                        <input
+                          type="number"
+                          value={editSettings.servicePrices?.arrival?.krw || 0}
                           onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'arrival', 'krw')}
                           min="0"
                         />
@@ -1620,18 +1609,18 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     <div className="form-row-2" style={{ marginTop: '8px' }}>
                       <div className="form-field">
                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>USD Price</label>
-                        <input 
-                          type="number" 
-                          value={editSettings.servicePrices?.departure?.usd || 0} 
+                        <input
+                          type="number"
+                          value={editSettings.servicePrices?.departure?.usd || 0}
                           onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'departure', 'usd')}
                           min="0"
                         />
                       </div>
                       <div className="form-field">
                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>KRW Price</label>
-                        <input 
-                          type="number" 
-                          value={editSettings.servicePrices?.departure?.krw || 0} 
+                        <input
+                          type="number"
+                          value={editSettings.servicePrices?.departure?.krw || 0}
                           onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'departure', 'krw')}
                           min="0"
                         />
@@ -1647,18 +1636,18 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     <div className="form-row-2" style={{ marginTop: '8px' }}>
                       <div className="form-field">
                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>USD Price</label>
-                        <input 
-                          type="number" 
-                          value={editSettings.servicePrices?.transfer?.usd || 0} 
+                        <input
+                          type="number"
+                          value={editSettings.servicePrices?.transfer?.usd || 0}
                           onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'transfer', 'usd')}
                           min="0"
                         />
                       </div>
                       <div className="form-field">
                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>KRW Price</label>
-                        <input 
-                          type="number" 
-                          value={editSettings.servicePrices?.transfer?.krw || 0} 
+                        <input
+                          type="number"
+                          value={editSettings.servicePrices?.transfer?.krw || 0}
                           onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'transfer', 'krw')}
                           min="0"
                         />
@@ -1671,18 +1660,18 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     <div className="form-row-2" style={{ marginTop: '8px' }}>
                       <div className="form-field">
                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>USD Price</label>
-                        <input 
-                          type="number" 
-                          value={editSettings.servicePrices?.picketing?.usd || 0} 
+                        <input
+                          type="number"
+                          value={editSettings.servicePrices?.picketing?.usd || 0}
                           onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'picketing', 'usd')}
                           min="0"
                         />
                       </div>
                       <div className="form-field">
                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>KRW Price</label>
-                        <input 
-                          type="number" 
-                          value={editSettings.servicePrices?.picketing?.krw || 0} 
+                        <input
+                          type="number"
+                          value={editSettings.servicePrices?.picketing?.krw || 0}
                           onChange={(e) => handleSettingChange('servicePrices', parseInt(e.target.value) || 0, 'picketing', 'krw')}
                           min="0"
                         />
@@ -1698,9 +1687,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     <label className="field-main-label">Extra Passenger Surcharge (USD)</label>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per passenger beyond 2 passengers</p>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.extraPassengerFeeUsd || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.extraPassengerFeeUsd || 0}
                         onChange={(e) => handleSettingChange('extraPassengerFeeUsd', parseInt(e.target.value) || 0)}
                         min="0"
                       />
@@ -1710,24 +1699,24 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     <label className="field-main-label">Extra Luggage Surcharge (USD)</label>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per checked bag beyond allowed</p>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.extraLuggageFeeUsd || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.extraLuggageFeeUsd || 0}
                         onChange={(e) => handleSettingChange('extraLuggageFeeUsd', parseInt(e.target.value) || 0)}
                         min="0"
                       />
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="form-row-2" style={{ marginTop: '1rem' }}>
                   <div className="form-field-pair">
                     <label className="field-main-label">Porter Fee Base (USD)</label>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Applied when bags &ge; 5</p>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.porterFeeUsd || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.porterFeeUsd || 0}
                         onChange={(e) => handleSettingChange('porterFeeUsd', parseInt(e.target.value) || 0)}
                         min="0"
                       />
@@ -1737,9 +1726,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     <label className="field-main-label">Night Surcharge (USD)</label>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Flights between 22:00 - 06:00</p>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.nightSurchargeUsd || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.nightSurchargeUsd || 0}
                         onChange={(e) => handleSettingChange('nightSurchargeUsd', parseInt(e.target.value) || 0)}
                         min="0"
                       />
@@ -1751,9 +1740,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <div className="form-field-pair">
                     <label className="field-main-label">Urgent Surcharge &lt; 6h (USD)</label>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.urgentSurcharge6hUsd || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.urgentSurcharge6hUsd || 0}
                         onChange={(e) => handleSettingChange('urgentSurcharge6hUsd', parseInt(e.target.value) || 0)}
                         min="0"
                       />
@@ -1762,9 +1751,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <div className="form-field-pair">
                     <label className="field-main-label">Urgent Surcharge &lt; 24h (USD)</label>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.urgentSurcharge24hUsd || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.urgentSurcharge24hUsd || 0}
                         onChange={(e) => handleSettingChange('urgentSurcharge24hUsd', parseInt(e.target.value) || 0)}
                         min="0"
                       />
@@ -1776,9 +1765,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <div className="form-field-pair">
                     <label className="field-main-label">Weekend Surcharge (USD)</label>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.weekendSurchargeUsd || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.weekendSurchargeUsd || 0}
                         onChange={(e) => handleSettingChange('weekendSurchargeUsd', parseInt(e.target.value) || 0)}
                         min="0"
                       />
@@ -1793,9 +1782,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <div className="form-field-pair">
                     <label className="field-main-label">Staria Minivan price (USD)</label>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.vehiclePricesUsd?.staria || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.vehiclePricesUsd?.staria || 0}
                         onChange={(e) => handleSettingChange('vehiclePricesUsd', parseInt(e.target.value) || 0, 'staria')}
                         min="0"
                       />
@@ -1804,9 +1793,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <div className="form-field-pair">
                     <label className="field-main-label">Genesis G90 Sedan price (USD)</label>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.vehiclePricesUsd?.g90 || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.vehiclePricesUsd?.g90 || 0}
                         onChange={(e) => handleSettingChange('vehiclePricesUsd', parseInt(e.target.value) || 0, 'g90')}
                         min="0"
                       />
@@ -1818,9 +1807,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   <div className="form-field-pair">
                     <label className="field-main-label">Benz Sprinter Large Van price (USD)</label>
                     <div className="form-field">
-                      <input 
-                        type="number" 
-                        value={editSettings.vehiclePricesUsd?.sprinter || 0} 
+                      <input
+                        type="number"
+                        value={editSettings.vehiclePricesUsd?.sprinter || 0}
                         onChange={(e) => handleSettingChange('vehiclePricesUsd', parseInt(e.target.value) || 0, 'sprinter')}
                         min="0"
                       />
@@ -1842,9 +1831,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                     </p>
                   </div>
                   {reservations.length > 0 && (
-                    <button 
-                      type="button" 
-                      onClick={handleClearReservations} 
+                    <button
+                      type="button"
+                      onClick={handleClearReservations}
                       className="btn-premium secondary"
                       style={{ borderColor: '#ef4444', color: '#ef4444' }}
                     >
@@ -1907,9 +1896,9 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>≈ {res.totalKrw?.toLocaleString()} KRW</span>
                             </td>
                             <td style={{ padding: '16px' }}>
-                              <span style={{ 
-                                padding: '4px 8px', 
-                                borderRadius: '4px', 
+                              <span style={{
+                                padding: '4px 8px',
+                                borderRadius: '4px',
                                 fontSize: '0.8rem',
                                 backgroundColor: res.status === '결제 완료' ? 'rgba(74, 222, 128, 0.2)' : res.status === '결제 대기중' ? 'rgba(250, 204, 21, 0.2)' : 'rgba(239, 68, 68, 0.2)',
                                 color: res.status === '결제 완료' ? '#4ade80' : res.status === '결제 대기중' ? '#facc15' : '#ef4444',
@@ -2165,7 +2154,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           z-index: 10;
         }
 
-        .form-field input, 
+        .form-field input,
         .form-field textarea,
         .form-field-nested input,
         .form-field-nested textarea {
@@ -2180,7 +2169,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
           width: 100%;
         }
 
-        .form-field input:focus, 
+        .form-field input:focus,
         .form-field textarea:focus,
         .form-field-nested input:focus,
         .form-field-nested textarea:focus {

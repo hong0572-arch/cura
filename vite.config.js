@@ -6,8 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:4242',
-      '/confirm/toss': 'http://localhost:4242'
+      '/api': 'http://localhost:4242'
     }
   }
 })

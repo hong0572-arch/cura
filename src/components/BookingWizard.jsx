@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, ChevronLeft, CreditCard, ChevronDown, ChevronUp, Minus, Plus, Luggage, PlaneTakeoff, Search, Ticket, UploadCloud, Plane, User, UserPlus, Trash2, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { generateProposalHtml } from '../utils/emailTemplate';
+import { computeQuote } from '../utils/pricing';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../firebase';
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
 
 const libraries = ['places'];
-const orderId = ""; // 임시로 빈 문자열 할당
 
 const COUNTRY_CODES = [
   { code: '+82', flag: '🇰🇷', name: 'South Korea' },
@@ -35,7 +34,11 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   const [selectedPayment, setSelectedPayment] = useState('nicepay');
   const [isQuoteOpen, setIsQuoteOpen] = useState(true);
   const hasSentProposal = useRef(false);
-  const [bookingId] = useState(() => `BTG-2026-${Math.floor(100000 + Math.random() * 900000)}`);
+  const newBookingId = () => `BTG-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+  const [bookingId, setBookingId] = useState(newBookingId);
+  // 이 예약을 수정·결제할 수 있는 고객 전용 토큰 (서버가 첫 저장 시 등록)
+  const [bookingToken] = useState(() => crypto.randomUUID());
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const getTodayString = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -111,88 +114,56 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     }
   };
 
-  // Firebase Sync for Tracking Abandoned Reservations
+  // 예약 진행 상황을 서버에 저장 (이탈 추적용). 상태·금액은 서버가 결정한다.
+  const syncReservation = async () => {
+    const res = await fetch(`/api/reservations/${bookingId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: bookingToken, step, formData }),
+    });
+    if (res.status === 409) {
+      // 다른 예약과 번호가 겹친 경우 새 번호로 다시 저장
+      setBookingId(newBookingId());
+      return false;
+    }
+    return res.ok;
+  };
+
   useEffect(() => {
-    const syncToFirebase = async () => {
+    const timeoutId = setTimeout(async () => {
       try {
-        const { doc, setDoc } = await import('firebase/firestore');
-        const { db } = await import('../firebase');
-
-        let status = '작성 중';
-        if (step === 6) status = '결제 대기중';
-        else if (step > 3) status = '중도 중단됨 (이탈)';
-
-        await setDoc(doc(db, "reservations", bookingId), {
-          id: bookingId,
-          ...formData,
-          step,
-          status,
-          dateSubmitted: new Date().toLocaleString(),
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
+        const ok = await syncReservation();
+        // 결제 단계 진입 시 견적서 메일 1회 발송 (서버가 내용 생성, 중복 발송 방지)
+        if (ok && step === 6 && !hasSentProposal.current && formData.email) {
+          hasSentProposal.current = true;
+          fetch(`/api/reservations/${bookingId}/proposal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: bookingToken }),
+          }).catch(err => {
+            console.error('Error sending proposal email:', err);
+            hasSentProposal.current = false;
+          });
+        }
       } catch (e) {
-        console.error("Firebase sync error:", e);
+        console.error('Reservation sync error:', e);
       }
-    };
-
-    const timeoutId = setTimeout(syncToFirebase, 1000);
+    }, 1000);
     return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, formData, bookingId]);
 
-  // Price Calculation Integration
-  const exRate = settings?.exchangeRate || 1350;
-
-  const serviceTypeKey = ['arrival', 'departure', 'transfer', 'picketing'].includes(formData.serviceType) ? formData.serviceType : 'arrival';
+  // Price Calculation — 서버(api/index.js)와 같은 함수로 계산하고, 실제 결제 금액은 서버가 확정한다.
+  const quote = computeQuote(formData, settings);
   const currentAirport = settings?.airports?.find(a => a.code === formData.airport) || null;
-
-  // Base prices based on selected airport or fallback
-  let defaultBaseUsd = 250;
-  if (serviceTypeKey === 'departure') defaultBaseUsd = 270;
-  if (serviceTypeKey === 'transfer') defaultBaseUsd = 340;
-  if (serviceTypeKey === 'picketing') defaultBaseUsd = 140;
-
-  const baseFeeUsd = currentAirport?.services?.[serviceTypeKey]?.usd ?? settings?.servicePrices?.[serviceTypeKey]?.usd ?? defaultBaseUsd;
-  const baseFeeKrw = baseFeeUsd * exRate; // calculating from USD
-
-  // Vehicle pricing
-  let vehicleUsd = 0;
-  const currentVehicle = currentAirport?.vehicles?.find(v => v.id === formData.vehicleType) || null;
-
-  if (formData.vehicleType === 'staria') {
-    vehicleUsd = settings?.vehiclePricesUsd?.staria || 130;
-  } else if (formData.vehicleType === 'g90') {
-    vehicleUsd = settings?.vehiclePricesUsd?.g90 || 200;
-  } else if (formData.vehicleType === 'sprinter') {
-    vehicleUsd = settings?.vehiclePricesUsd?.sprinter || 200;
-  } else if (currentVehicle) {
-    vehicleUsd = currentVehicle.priceUsd;
-  }
-
-  // Exception for DEP + G90 (Total should be 450. Base 270 + Vehicle 180 = 450)
-  if (serviceTypeKey === 'departure' && formData.vehicleType === 'g90' && vehicleUsd === 200) {
-    vehicleUsd = 180;
-  }
-
-  let vehicleKrw = vehicleUsd * exRate;
-
-  // Extra passenger charges
-  const extraPassCount = Math.max(0, formData.passengers - 2);
-  const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 120);
-
-  // Luggage & Porter calculation
-  let extraLugUsd = 0;
-  let porterUsd = 0;
-  const totalBags = formData.luggageCount;
-
-  if (totalBags >= 9) {
-    porterUsd = (settings?.porterFeeUsd || 110) * 2;
-  } else if (totalBags >= 5) {
-    porterUsd = settings?.porterFeeUsd || 110;
-  } else {
-    const allowedLuggage = Math.max(2, formData.passengers);
-    const extraBags = Math.max(0, totalBags - allowedLuggage);
-    extraLugUsd = extraBags * (settings?.extraLuggageFeeUsd || 40);
-  }
+  const { baseFeeUsd, vehicleUsd, extraPassUsd, extraLugUsd, porterUsd, surcharges } = quote;
+  const baseTotalUsd = quote.subtotalUsd;
+  const paypalFeeUsd = quote.paypalFeeUsd;
+  const paypalTotalUsd = quote.paypalTotalUsd;
+  const nicepayTotalKrw = quote.nicepayTotalKrw;
+  const selectedTotalLabel = selectedPayment === 'paypal'
+    ? `USD ${paypalTotalUsd.toFixed(2)}`
+    : `₩${nicepayTotalKrw.toLocaleString()}`;
 
   const formatTimeAmPm = (timeStr) => {
     if (!timeStr) return '';
@@ -203,52 +174,6 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     return `${displayHour.toString().padStart(2, '0')}:${m} ${ampm}`;
   };
 
-  const calculateSurcharges = () => {
-    let nightFeeKrw = 0, nightFeeUsd = 0;
-    let urgentFeeKrw = 0, urgentFeeUsd = 0;
-    let weekendFeeKrw = 0, weekendFeeUsd = 0;
-
-    if (formData.date && formData.flightTime) {
-      const flightDateStr = `${formData.date}T${formData.flightTime}`;
-      const flightDate = new Date(flightDateStr);
-      const now = new Date();
-
-      const hour = flightDate.getHours();
-      if (hour >= 22 || hour < 6) {
-        nightFeeUsd = settings?.nightSurchargeUsd || 40;
-        nightFeeKrw = nightFeeUsd * exRate;
-      }
-
-      const diffMs = flightDate - now;
-      const diffHours = diffMs / (1000 * 60 * 60);
-
-      if (diffHours >= 0 && diffHours <= 6) {
-        urgentFeeUsd = settings?.urgentSurcharge6hUsd || 48;
-        urgentFeeKrw = urgentFeeUsd * exRate;
-      } else if (diffHours > 6 && diffHours <= 24) {
-        urgentFeeUsd = settings?.urgentSurcharge24hUsd || 40;
-        urgentFeeKrw = urgentFeeUsd * exRate;
-      }
-
-      const day = flightDate.getDay();
-      if (day === 0 || day === 6) {
-        weekendFeeUsd = settings?.weekendSurchargeUsd || 40;
-        weekendFeeKrw = weekendFeeUsd * exRate;
-      }
-    }
-    return { nightFeeKrw, nightFeeUsd, urgentFeeKrw, urgentFeeUsd, weekendFeeKrw, weekendFeeUsd };
-  };
-
-  const surcharges = calculateSurcharges();
-  const baseTotalUsd = baseFeeUsd + vehicleUsd + extraPassUsd + extraLugUsd + porterUsd + surcharges.nightFeeUsd + surcharges.urgentFeeUsd + surcharges.weekendFeeUsd;
-  const baseTotalKrw = baseFeeKrw + vehicleKrw + Math.round((extraPassUsd + extraLugUsd + porterUsd) * exRate) + surcharges.nightFeeKrw + surcharges.urgentFeeKrw + surcharges.weekendFeeKrw;
-
-  const ccFeeUsd = Math.round(baseTotalUsd * 0.04 * 100) / 100;
-  const ccFeeKrw = Math.round(baseTotalKrw * 0.04);
-
-  const totalUsd = baseTotalUsd + ccFeeUsd;
-  const totalKrw = baseTotalKrw + ccFeeKrw;
-
   const steps = [
     { id: 1, name: t?.wizard?.steps?.step1 || 'Select service' },
     { id: 2, name: t?.wizard?.steps?.step2 || 'Additional services' },
@@ -257,40 +182,6 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     { id: 5, name: t?.wizard?.steps?.step5 || 'Contact information' },
     { id: 6, name: t?.wizard?.steps?.step6 || 'Payment details' }
   ];
-  // Trigger automated proposal email when reaching step 6 (Payment Details)
-  useEffect(() => {
-    if (step === 6 && !hasSentProposal.current && formData.email) {
-      hasSentProposal.current = true; // Set immediately to prevent strict mode double-fire
-
-      const emailHtml = generateProposalHtml(formData, t, {
-        totalUsd, ccFeeUsd, baseFeeUsd, totalKrw, vehicleUsd, extraPassUsd, extraLugUsd, porterUsd, surcharges, bookingId
-      });
-
-      const emailSubject = `Your personalised VIP airport service proposal`;
-
-      fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerEmail: formData.email,
-          subject: emailSubject,
-          html: emailHtml,
-          text: `Your personalised VIP airport service proposal has been generated.\n\nPlease view this email in an HTML compatible client to see the full proposal details.`
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            console.log('Automated proposal email sent successfully.');
-          }
-        })
-        .catch(err => {
-          console.error("Error sending proposal email:", err);
-          hasSentProposal.current = false; // Revert if failed
-        });
-    }
-  }, [step, formData, t, totalUsd, ccFeeUsd, baseFeeUsd]);
-
   const handleNext = () => {
     if (step === 2) {
       if (formData.vehicleType !== 'none' && (!formData.transferAddress || formData.transferAddress.trim() === '')) {
@@ -331,107 +222,29 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     else setStep(prev => prev - 1);
   };
 
-  const handlePayment = (method) => {
-
-    const newReservation = {
-      id: bookingId,
-      dateSubmitted: new Date().toLocaleString(),
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      phone: formData.phone,
-      serviceType: formData.serviceType,
-      date: formData.date,
-      flight: `${formData.airline} ${formData.flightNumber}`,
-      vehicleType: formData.vehicleType,
-      transferAddress: formData.transferAddress,
-      passengers: formData.passengers,
-      luggage: formData.luggageCount,
-      specialRequests: formData.specialRequests,
-      msg: '',
-      totalUsd: totalUsd,
-      totalKrw: totalKrw
-    };
-
-    const existingRes = localStorage.getItem('btg_reservations');
-    const resList = existingRes ? JSON.parse(existingRes) : [];
-    resList.unshift(newReservation);
-    localStorage.setItem('btg_reservations', JSON.stringify(resList));
-
-    const targetEmail = settings?.companyEmail || 'support@beyondthegate.vip';
-    const emailSubject = `New Reservation Request - ${bookingId}`;
-    const emailBody = `A new reservation request has been submitted with the details below:
-
-[Reservation Details]
-- Reference Ticket ID: ${bookingId}
-- Service Date & Time: ${formData.date}
-- Service Type: ${formData.serviceType.toUpperCase()}
-- Flight: ${newReservation.flight}
-
-[Client Info]
-- Name: ${newReservation.name}
-- Email: ${formData.email}
-- Phone: ${formData.phone}
-- Special Requests: ${formData.specialRequests || 'None'}
-
-[Service Configuration]
-- Selected Chauffeur Vehicle: ${formData.vehicleType.toUpperCase()}
-${formData.vehicleType !== 'none' ? `- Transfer Address: ${formData.transferAddress || 'Not provided'}\n` : ''}- Passengers Count: ${formData.passengers}
-- Checked Luggage Count: ${formData.luggageCount}
-
-[Pricing Breakdown]
-- Base Assist Fee: $${baseFeeUsd}
-- Chauffeur Vehicle Fee: $${vehicleUsd}
-- Extra Passenger Surcharge: $${extraPassUsd}
-- Extra Baggage Surcharge: $${extraLugUsd}
-${porterUsd > 0 ? `- Porter Service: $${porterUsd}\n` : ''}${surcharges.nightFeeUsd > 0 ? `- Night Service Surcharge: $${surcharges.nightFeeUsd}\n` : ''}${surcharges.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${surcharges.urgentFeeUsd}\n` : ''}${surcharges.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${surcharges.weekendFeeUsd}\n` : ''}- Credit Card Surcharge (4%): $${ccFeeUsd}
---------------------------------------------------
-- Estimated Total Cost: $${totalUsd} (≈ ${totalKrw.toLocaleString()} KRW)
-
-Sincerely,
-Beyond the Gate Automated System`;
-
-    fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        adminEmail: targetEmail,
-        subject: emailSubject,
-        text: emailBody
-      })
-    }).catch(err => console.error("Email send error:", err));
-
-    import('firebase/firestore').then(({ doc, updateDoc }) => {
-      import('../firebase').then(({ db }) => {
-        updateDoc(doc(db, "reservations", bookingId), {
-          status: '결제 대기중'
-        }).catch(e => console.error("Firebase payment update error:", e));
+  const handlePayment = async (method) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      // 최신 입력값을 먼저 저장한 뒤 서버에 결제 금액 확정을 요청
+      if (!(await syncReservation())) throw new Error('sync failed');
+      const res = await fetch(`/api/reservations/${bookingId}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: bookingToken, method }),
       });
-    });
+      if (!res.ok) throw new Error(`submit failed (${res.status})`);
+      const checkout = await res.json();
 
-    alert(t?.wizard?.common?.successMsg || `Thank you! Your reservation (${bookingId}) has been received successfully. Our VIP manager will contact you shortly.`);
-
-    if (method === 'nicepay' || method === 'card' || method === 'domestic') {
-      navigate('/payment', {
-        state: {
-          orderId: bookingId,
-          orderName: `VIP ${formData.serviceType} in ICN`,
-          amount: totalKrw,
-          customerName: newReservation.name,
-          customerEmail: formData.email,
-          customerMobilePhone: formData.phone
-        }
+      navigate(checkout.method === 'paypal' ? '/payment/paypal' : '/payment', {
+        state: { orderId: bookingId, token: bookingToken, checkout }
       });
-    } else {
-      navigate('/payment/paypal', {
-        state: {
-          orderId: bookingId,
-          orderName: `VIP ${formData.serviceType} in ICN`,
-          amount: totalUsd,
-          customerName: newReservation.name,
-          customerEmail: formData.email,
-          customerMobilePhone: formData.phone
-        }
-      });
+    } catch (err) {
+      console.error('Reservation submit error:', err);
+      alert(lang === 'ko'
+        ? '예약 저장 중 문제가 발생했습니다. 잠시 후 다시 시도하시거나 고객센터로 연락해 주세요.'
+        : 'Something went wrong while saving your reservation. Please try again or contact us.');
+      setIsSubmitting(false);
     }
   };
 
@@ -1471,7 +1284,7 @@ Beyond the Gate Automated System`;
             <div className="step-panel">
               {/* Order ID Top Bar */}
               <div className="sky-order-header mb-24">
-                <h2 className="sky-order-id-title">{t?.wizard?.step6?.orderId || 'Order ID'}: {""}</h2>
+                <h2 className="sky-order-id-title">{t?.wizard?.step6?.orderId || 'Order ID'}: {bookingId}</h2>
                 <span className="sky-unpaid-badge">
                   <span className="sky-dollar-icon">$</span> {t?.wizard?.step6?.unpaid || 'UNPAID'}
                 </span>
@@ -1544,13 +1357,15 @@ Beyond the Gate Automated System`;
                           <span>USD {surcharges.weekendFeeUsd.toFixed(2)}</span>
                         </div>
                       )}
-                      <div className="sky-quote-accordion-row">
-                        <span>CC Fee (4%)</span>
-                        <span>USD {ccFeeUsd.toFixed(2)}</span>
-                      </div>
+                      {selectedPayment === 'paypal' && (
+                        <div className="sky-quote-accordion-row">
+                          <span>{t?.wizard?.step6?.paypalFee || 'PayPal Fee (4%)'}</span>
+                          <span>USD {paypalFeeUsd.toFixed(2)}</span>
+                        </div>
+                      )}
                       <div className="sky-quote-accordion-total mt-16 pt-12">
                         <strong>{t?.wizard?.step6?.total || 'Total'}:</strong>
-                        <strong className="sky-quote-total-val">USD {totalUsd.toFixed(2)}</strong>
+                        <strong className="sky-quote-total-val">{selectedTotalLabel}</strong>
                       </div>
                     </div>
                   )}
@@ -1598,6 +1413,7 @@ Beyond the Gate Automated System`;
                   type="button"
                   onClick={() => handlePayment(selectedPayment)}
                   className="btn-sky-submit-payment mb-16"
+                  disabled={isSubmitting}
                 >
                   {t?.wizard?.step6?.submitPayment || 'Submit payment'}
                 </button>
@@ -1626,12 +1442,12 @@ Beyond the Gate Automated System`;
                 <div className="sky-invoice-box">
                   <div className="sky-invoice-row mb-12">
                     <div className="sky-invoice-left">
-                      <span className="sky-inv-code">INV{orderId.substring(3) || '639065'}</span>
+                      <span className="sky-inv-code">INV{bookingId.substring(3)}</span>
                       <span className="sky-unpaid-badge sm">
                         <span className="sky-dollar-icon">$</span> {t?.wizard?.step6?.unpaid || 'UNPAID'}
                       </span>
                     </div>
-                    <span className="sky-inv-amount">USD {totalUsd.toFixed(2)}</span>
+                    <span className="sky-inv-amount">{selectedTotalLabel}</span>
                   </div>
 
                   <p className="sky-inv-desc mb-16">
@@ -1640,7 +1456,7 @@ Beyond the Gate Automated System`;
 
                   <div className="sky-invoice-total pt-12">
                     <span>{t?.wizard?.step6?.total || 'Total'}:</span>
-                    <strong>USD {totalUsd.toFixed(2)}</strong>
+                    <strong>{selectedTotalLabel}</strong>
                   </div>
                 </div>
               </div>
@@ -1757,11 +1573,11 @@ Beyond the Gate Automated System`;
                 </div>
 
                 <div className="sky-total-row mt-20">
-                  <span className="sky-total-label">{t?.wizard?.step6?.total || 'Total'}:</span>
-                  <span className="sky-total-amount">USD {totalUsd.toFixed(2)}</span>
+                  <span className="sky-total-label">{t?.wizard?.sidebar?.totalKrwCard || 'Korean card (KRW)'}:</span>
+                  <span className="sky-total-amount">₩{nicepayTotalKrw.toLocaleString()}</span>
                 </div>
                 <div className="sky-fee-note mb-20">
-                  {t?.wizard?.sidebar?.feeNote || 'incl. transaction fee Credit Card Fee USD'} {ccFeeUsd.toFixed(2)}
+                  {t?.wizard?.sidebar?.totalPaypal || 'PayPal (USD, incl. 4% fee)'}: USD {paypalTotalUsd.toFixed(2)}
                 </div>
 
                 <button onClick={handleNext} className="btn-sky-book-now">
