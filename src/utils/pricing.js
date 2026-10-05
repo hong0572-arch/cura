@@ -117,3 +117,62 @@ export function computeQuote(formData, settings, now = new Date()) {
     nicepayTotalKrw: subtotalKrw,
   };
 }
+
+// --- 차량 단독 예약(/book-vehicle) ---
+// Google 지도는 한국 내 자동차 경로를 제공하지 않으므로, 두 지점의 직선거리에
+// 도로 보정 계수를 곱해 예상 주행거리를 구한다(서버가 Places API 좌표로 계산).
+export const VEHICLE_ROAD_FACTOR = 1.25;
+export const VEHICLE_TYPES = ['staria', 'g90', 'sprinter'];
+
+export function haversineKm(a, b) {
+  const R = 6371;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+// 100km 초과는 별도 협의(null)
+function vehicleRateUsd(type, distanceKm) {
+  if (distanceKm > 100) return null;
+  const tiers = {
+    staria: [110, 130, 140, 140],
+    g90: [200, 220, 240, 260],
+    sprinter: [200, 240, 260, 280],
+  }[type] || [110, 110, 110, 110];
+  if (distanceKm <= 50) return tiers[0];
+  if (distanceKm <= 70) return tiers[1];
+  if (distanceKm <= 90) return tiers[2];
+  return tiers[3];
+}
+
+export function computeVehicleQuote(form, distanceKm, settings) {
+  const exRate = settings?.exchangeRate || 1350;
+  const km = Math.ceil(distanceKm);
+  const vehicleUsd = vehicleRateUsd(form.vehicleType, km);
+  const passengers = Math.max(1, parseInt(form.passengers, 10) || 1);
+  const luggage = Math.max(0, parseInt(form.luggage, 10) || 0);
+  const extraPassCount = Math.max(0, passengers - 4);
+  const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 50);
+  const extraLugCount = Math.max(0, luggage - 4);
+  const extraLugUsd = extraLugCount * (settings?.extraLuggageFeeUsd || 20);
+
+  if (vehicleUsd === null) {
+    return { exRate, distanceKm: km, negotiable: true };
+  }
+  const totalUsd = round2(vehicleUsd + extraPassUsd + extraLugUsd);
+  return {
+    exRate,
+    distanceKm: km,
+    negotiable: false,
+    vehicleUsd,
+    extraPassCount,
+    extraPassUsd,
+    extraLugCount,
+    extraLugUsd,
+    totalUsd,
+    totalKrw: Math.round(totalUsd * exRate),
+  };
+}

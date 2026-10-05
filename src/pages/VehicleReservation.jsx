@@ -50,8 +50,10 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
     paymentMethod: 'nicepay', // NicePay included now
   });
 
-  const [distanceInfo, setDistanceInfo] = useState({ distanceText: '', distanceValue: 0 }); // value in meters
+  // 거리·요금은 서버가 계산한다 (/api/vehicle-quote)
+  const [quote, setQuote] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const autocompleteRef = useRef(null);
 
   const handleChange = (e) => {
@@ -65,14 +67,14 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
     } else {
       setFormData(prev => ({ ...prev, serviceType: type, pickupLocation: '', dropoffLocation: airportsList[0].id }));
     }
-    setDistanceInfo({ distanceText: '', distanceValue: 0 });
+    setQuote(null);
   };
 
   const handlePlaceChanged = () => {
     if (autocompleteRef.current !== null) {
       const place = autocompleteRef.current.getPlace();
       const fieldToUpdate = formData.serviceType === 'arrival' ? 'dropoffLocation' : 'pickupLocation';
-      
+
       let displayAddress = '';
       if (place && place.name) {
         const address = place.formatted_address ? ` (${place.formatted_address})` : '';
@@ -87,86 +89,52 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
 
       if (displayAddress) {
         setFormData(prev => ({ ...prev, [fieldToUpdate]: displayAddress }));
-        calculateDistance(
-          formData.serviceType === 'arrival' ? formData.pickupLocation : displayAddress,
-          formData.serviceType === 'arrival' ? displayAddress : formData.dropoffLocation
-        );
       }
     }
   };
 
-  const calculateDistance = (origin, destination) => {
-    if (!origin || !destination || !window.google) return;
-    setIsCalculating(true);
-    const service = new window.google.maps.DistanceMatrixService();
-    service.getDistanceMatrix(
-      {
-        origins: [origin],
-        destinations: [destination],
-        travelMode: 'DRIVING',
-      },
-      (response, status) => {
-        setIsCalculating(false);
-        if (status === 'OK' && response.rows[0].elements[0].status === 'OK') {
-          const element = response.rows[0].elements[0];
-          setDistanceInfo({
-            distanceText: element.distance.text,
-            distanceValue: element.distance.value,
-          });
-        }
+  // 출발지·도착지·차량·인원이 바뀌면 서버에 견적 요청 (입력 중에는 잠시 대기)
+  const { pickupLocation, dropoffLocation, vehicleType, passengers, luggage } = formData;
+  useEffect(() => {
+    if (pickupLocation.trim().length < 3 || dropoffLocation.trim().length < 3) return;
+    let cancelled = false;
+    const timeoutId = setTimeout(async () => {
+      setIsCalculating(true);
+      try {
+        const res = await fetch('/api/vehicle-quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pickupLocation, dropoffLocation, vehicleType, passengers, luggage }),
+        });
+        const data = res.ok ? await res.json() : null;
+        if (!cancelled) setQuote(data);
+      } catch (err) {
+        console.error('Vehicle quote error:', err);
+        if (!cancelled) setQuote(null);
+      } finally {
+        if (!cancelled) setIsCalculating(false);
       }
-    );
-  };
+    }, 700);
+    return () => { cancelled = true; clearTimeout(timeoutId); };
+  }, [pickupLocation, dropoffLocation, vehicleType, passengers, luggage]);
 
-  const handleManualDistanceTrigger = () => {
-    if (formData.pickupLocation && formData.dropoffLocation) {
-      calculateDistance(formData.pickupLocation, formData.dropoffLocation);
-    }
-  };
-
-  const getVehiclePrice = (type, distanceKm) => {
-    if (distanceKm > 100) return 'TBD'; // 협의
-    if (type === 'staria') {
-      if (distanceKm <= 50) return 110;
-      if (distanceKm <= 70) return 130;
-      if (distanceKm <= 90) return 140;
-      return 140; // <= 100
-    }
-    if (type === 'g90') {
-      if (distanceKm <= 50) return 200;
-      if (distanceKm <= 70) return 220;
-      if (distanceKm <= 90) return 240;
-      return 260; // <= 100
-    }
-    if (type === 'sprinter') {
-      if (distanceKm <= 50) return 200;
-      if (distanceKm <= 70) return 240;
-      if (distanceKm <= 90) return 260;
-      return 280; // <= 100
-    }
-    return 110;
-  };
-
-  const exRate = settings?.exchangeRate || 1350;
-  const distanceKm = Math.ceil(distanceInfo.distanceValue / 1000);
-  const vehicleUsd = getVehiclePrice(formData.vehicleType, distanceKm);
-
-  // Passenger / Luggage surcharges
-  const extraPassCount = Math.max(0, formData.passengers - 4);
-  const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 50);
-  const extraLugCount = Math.max(0, formData.luggage - 4);
-  const extraLugUsd = extraLugCount * (settings?.extraLuggageFeeUsd || 20);
+  const exRate = quote?.exRate || settings?.exchangeRate || 1350;
+  const distanceKm = quote?.distanceKm ?? 0;
+  const vehicleUsd = quote && !quote.negotiable ? quote.vehicleUsd : 0;
+  const extraPassUsd = quote?.extraPassUsd || 0;
+  const extraLugUsd = quote?.extraLugUsd || 0;
 
   const isKrw = formData.paymentMethod === 'nicepay';
-  const isNegotiable = vehicleUsd === 'TBD';
-  const totalUsd = isNegotiable ? 'TBD' : (vehicleUsd + extraPassUsd + extraLugUsd);
-  const totalKrw = isNegotiable ? 'TBD' : Math.round(totalUsd * exRate);
-  
-  const formattedTotal = isNegotiable 
-    ? (isKo ? '협의 문의' : 'Contact Us')
-    : (isKrw ? `₩${totalKrw.toLocaleString()}` : `$${totalUsd.toFixed(2)}`);
+  const isNegotiable = Boolean(quote?.negotiable);
+  const hasQuote = Boolean(quote) && !isNegotiable;
 
-  const handleSubmit = (e) => {
+  const formattedTotal = isNegotiable
+    ? (isKo ? '협의 문의' : 'Contact Us')
+    : !hasQuote
+      ? (isKo ? '출발지·도착지를 입력하세요' : 'Enter pickup & drop-off')
+      : (isKrw ? `₩${quote.totalKrw.toLocaleString()}` : `$${quote.totalUsd.toFixed(2)}`);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.date || !formData.time || !formData.name || !formData.email || !formData.phone || !formData.pickupLocation || !formData.dropoffLocation) {
@@ -179,20 +147,33 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
       return;
     }
 
-    const orderId = 'VEH' + Math.floor(Math.random() * 1000000);
-    const paymentPath = formData.paymentMethod === 'nicepay' ? '/payment' : '/payment/paypal';
-    const finalAmount = formData.paymentMethod === 'nicepay' ? totalKrw : totalUsd;
+    if (!hasQuote || isSubmitting) {
+      alert(isKo ? '요금 계산이 끝난 뒤 다시 시도해 주세요.' : 'Please wait until the price is calculated.');
+      return;
+    }
 
-    navigate(paymentPath, { 
-      state: {
-        orderId,
-        orderName: `Vehicle Reservation: ${formData.vehicleType.toUpperCase()} (Dist: ${distanceInfo.distanceText || 'N/A'})`,
-        amount: finalAmount,
-        customerName: formData.name,
-        customerEmail: formData.email,
-        customerMobilePhone: formData.phone
-      }
-    });
+    setIsSubmitting(true);
+    try {
+      const orderId = `BTG-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+      const token = crypto.randomUUID();
+      // 금액은 서버가 다시 계산해 확정한다
+      const res = await fetch(`/api/vehicle-reservations/${orderId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, method: formData.paymentMethod, form: formData }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const checkout = await res.json();
+      navigate(checkout.method === 'paypal' ? '/payment/paypal' : '/payment', {
+        state: { orderId, token, checkout }
+      });
+    } catch (err) {
+      console.error('Vehicle reservation error:', err);
+      alert(isKo
+        ? '예약 저장 중 문제가 발생했습니다. 잠시 후 다시 시도하시거나 고객센터로 연락해 주세요.'
+        : 'Something went wrong while saving your reservation. Please try again or contact us.');
+      setIsSubmitting(false);
+    }
   };
 
   if (loadError) return <div className="vr-page-wrapper"><div className="vr-container">{isKo ? '지도를 불러오는 중 오류가 발생했습니다.' : 'Error loading maps'}</div></div>;
@@ -201,7 +182,7 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
   return (
     <div className="vr-page-wrapper">
       <div className="vr-container">
-        
+
         <button onClick={() => navigate(-1)} className="vr-back-btn">
           <ChevronLeft size={20} style={{ marginRight: '4px' }}/> {isKo ? '뒤로가기' : 'Back'}
         </button>
@@ -228,7 +209,7 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
         </div>
 
         <form onSubmit={handleSubmit} className="vr-form-card">
-          
+
           {/* Service Type & Vehicle */}
           <div className="vr-section">
             <h3 className="vr-section-title">{isKo ? '이동 정보' : 'Transfer Details'}</h3>
@@ -236,15 +217,15 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
               <div>
                 <label className="vr-label">{isKo ? '서비스 유형' : 'Service Type'}</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`vr-type-btn ${formData.serviceType === 'arrival' ? 'active' : ''}`}
                     onClick={() => handleServiceTypeChange('arrival')}
                   >
                     <PlaneLanding size={18} /> {isKo ? '입국 (Arrival)' : 'Arrival'}
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`vr-type-btn ${formData.serviceType === 'departure' ? 'active' : ''}`}
                     onClick={() => handleServiceTypeChange('departure')}
                   >
@@ -255,9 +236,9 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
 
               <div>
                 <label className="vr-label">{isKo ? '차량 선택' : 'Vehicle'}</label>
-                <select 
-                  name="vehicleType" 
-                  value={formData.vehicleType} 
+                <select
+                  name="vehicleType"
+                  value={formData.vehicleType}
                   onChange={handleChange}
                   className="vr-input"
                 >
@@ -274,10 +255,10 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
                   {formData.serviceType === 'arrival' ? <PlaneLanding size={16} /> : <Building size={16} />} {isKo ? '출발지' : 'Pick-up Location'}
                 </label>
                 {formData.serviceType === 'arrival' ? (
-                  <select 
-                    name="pickupLocation" 
-                    value={formData.pickupLocation} 
-                    onChange={(e) => { handleChange(e); handleManualDistanceTrigger(); }}
+                  <select
+                    name="pickupLocation"
+                    value={formData.pickupLocation}
+                    onChange={handleChange}
                     className="vr-input"
                   >
                     {airportsList.map(apt => (
@@ -289,15 +270,14 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
                     onLoad={(autocomplete) => { autocompleteRef.current = autocomplete; }}
                     onPlaceChanged={handlePlaceChanged}
                   >
-                    <input 
-                      type="text" 
-                      name="pickupLocation" 
-                      value={formData.pickupLocation} 
-                      onChange={handleChange} 
-                      onBlur={handleManualDistanceTrigger}
-                      required 
-                      placeholder={isKo ? "호텔 이름 또는 주소" : "Hotel Name or Address"} 
-                      className="vr-input" 
+                    <input
+                      type="text"
+                      name="pickupLocation"
+                      value={formData.pickupLocation}
+                      onChange={handleChange}
+                      required
+                      placeholder={isKo ? "호텔 이름 또는 주소" : "Hotel Name or Address"}
+                      className="vr-input"
                     />
                   </Autocomplete>
                 )}
@@ -307,10 +287,10 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
                   {formData.serviceType === 'arrival' ? <Building size={16} /> : <PlaneTakeoff size={16} />} {isKo ? '도착지' : 'Drop-off Location'}
                 </label>
                 {formData.serviceType === 'departure' ? (
-                  <select 
-                    name="dropoffLocation" 
-                    value={formData.dropoffLocation} 
-                    onChange={(e) => { handleChange(e); handleManualDistanceTrigger(); }}
+                  <select
+                    name="dropoffLocation"
+                    value={formData.dropoffLocation}
+                    onChange={handleChange}
                     className="vr-input"
                   >
                     {airportsList.map(apt => (
@@ -322,25 +302,24 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
                     onLoad={(autocomplete) => { autocompleteRef.current = autocomplete; }}
                     onPlaceChanged={handlePlaceChanged}
                   >
-                    <input 
-                      type="text" 
-                      name="dropoffLocation" 
-                      value={formData.dropoffLocation} 
-                      onChange={handleChange} 
-                      onBlur={handleManualDistanceTrigger}
-                      required 
-                      placeholder={isKo ? "호텔 이름 또는 주소" : "Hotel Name or Address"} 
-                      className="vr-input" 
+                    <input
+                      type="text"
+                      name="dropoffLocation"
+                      value={formData.dropoffLocation}
+                      onChange={handleChange}
+                      required
+                      placeholder={isKo ? "호텔 이름 또는 주소" : "Hotel Name or Address"}
+                      className="vr-input"
                     />
                   </Autocomplete>
                 )}
               </div>
             </div>
-            
-            {distanceInfo.distanceText && (
+
+            {(quote || isCalculating) && (
               <div style={{ marginTop: '12px', fontSize: '14px', color: '#666', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <RouteIcon size={16} color="#b5912a" />
-                <span>{isKo ? '예상 거리:' : 'Estimated Distance:'} <strong>{distanceInfo.distanceText}</strong></span>
+                <span>{isKo ? '예상 거리:' : 'Estimated Distance:'} <strong>{quote ? `${distanceKm} km` : '-'}</strong></span>
                 {isCalculating && <span style={{ fontStyle: 'italic', fontSize: '12px' }}>({isKo ? '계산 중...' : 'calculating...'})</span>}
               </div>
             )}
@@ -393,18 +372,18 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
           <div className="vr-section">
             <h3 className="vr-section-title">{isKo ? '결제 수단' : 'Payment Method'}</h3>
             <div className="vr-grid-2">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={`vr-pay-btn ${formData.paymentMethod === 'nicepay' ? 'active' : ''}`}
                 onClick={() => setFormData({...formData, paymentMethod: 'nicepay'})}
               >
                 <div className="vr-pay-title">
-                  <CreditCard size={20} /> NicePay 
+                  <CreditCard size={20} /> NicePay
                 </div>
                 <div className="vr-pay-desc">{isKo ? '국내 카드 / 원화(KRW) 결제' : 'Domestic Cards / KRW'}</div>
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={`vr-pay-btn ${formData.paymentMethod === 'paypal' ? 'active' : ''}`}
                 onClick={() => setFormData({...formData, paymentMethod: 'paypal'})}
               >
@@ -423,16 +402,16 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
             <div className="vr-summary-box">
               <div className="vr-summary-row">
                 <span>{isKo ? `차량 기본 요금 (거리: ${distanceKm}km)` : `Vehicle Rate (Distance: ${distanceKm}km)`}</span>
-                <span>{isNegotiable ? (isKo ? 'TBD (협의)' : 'TBD') : (isKrw ? `₩${Math.round(vehicleUsd * exRate).toLocaleString()}` : `$${vehicleUsd.toFixed(2)}`)}</span>
+                <span>{isNegotiable ? (isKo ? 'TBD (협의)' : 'TBD') : !hasQuote ? '-' : (isKrw ? `₩${Math.round(vehicleUsd * exRate).toLocaleString()}` : `$${vehicleUsd.toFixed(2)}`)}</span>
               </div>
-              
+
               {(extraPassUsd > 0 || extraLugUsd > 0) && (
                 <div className="vr-summary-row">
                   <span>{isKo ? '인원/수하물 추가 요금' : 'Pax/Luggage Surcharge'}</span>
                   <span>{isKrw ? `₩${Math.round((extraPassUsd + extraLugUsd) * exRate).toLocaleString()}` : `$${(extraPassUsd + extraLugUsd).toFixed(2)}`}</span>
                 </div>
               )}
-              
+
               <div className="vr-summary-total">
                 <span>{isKo ? '총 결제 금액' : 'Total Amount'}</span>
                 <span className="vr-total-val">
@@ -442,9 +421,9 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
             </div>
           </div>
 
-          <button type="submit" className="vr-submit-btn" style={{ background: isNegotiable ? '#555' : '' }}>
-            {isNegotiable 
-              ? (isKo ? '고객센터 문의하기 (협의 필요)' : 'Contact Us for Quote (협의)') 
+          <button type="submit" className="vr-submit-btn" disabled={isSubmitting} style={{ background: isNegotiable ? '#555' : '' }}>
+            {isNegotiable
+              ? (isKo ? '고객센터 문의하기 (협의 필요)' : 'Contact Us for Quote (협의)')
               : (isKo ? '결제 진행하기' : 'Proceed to Payment')}
           </button>
         </form>
