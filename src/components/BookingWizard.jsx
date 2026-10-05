@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Check, ChevronLeft, CreditCard, ChevronDown, ChevronUp, Minus, Plus, Luggage, PlaneTakeoff, Search, Ticket, UploadCloud, Plane, User, UserPlus, Trash2, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { computeQuote } from '../utils/pricing';
+import { localizePath } from '../utils/locale';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../firebase';
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
@@ -505,7 +506,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
 
               <div className="sky-addon-card mb-24">
                 <div className="sky-addon-img-wrap">
-                  <img src="/luggage_assistance.jpg" alt="Luggage Assistance" className="sky-addon-img" />
+                  <img src="/luggage_assistance.webp" alt="Luggage Assistance" className="sky-addon-img" />
                 </div>
                 <div className="sky-addon-content">
                   <h3 className="sky-addon-title">{t?.wizard?.step2?.luggageTitle || 'Luggage Assistance'}</h3>
@@ -539,7 +540,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
               {formData.serviceType !== 'transfer' && (
                 <div className="sky-addon-card mb-24">
                   <div className="sky-addon-img-wrap">
-                    <img src="/luxury_fleet.png" alt="Chauffeur Vehicle" className="sky-addon-img" />
+                    <img src="/luxury_fleet.webp" alt="Chauffeur Vehicle" className="sky-addon-img" />
                   </div>
                   <div className="sky-addon-content">
                     <h3 className="sky-addon-title">{t?.wizard?.step2?.vehicleTitle || 'Chauffeur Vehicle'}</h3>
@@ -572,7 +573,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                     {formData.vehicleType !== 'none' && (
                       <div className="sky-form-group mt-16" style={{ width: '100%' }}>
                         <label className="sky-form-label">
-                          {formData.serviceType === 'arrival' 
+                          {formData.serviceType === 'arrival'
                             ? (t?.wizard?.step2?.dropoffAddress || 'Drop-off Address (Hotel/Destination)')
                             : (t?.wizard?.step2?.pickupAddress || 'Pick-up Address (Origin/Hotel)')}
                           {' '}*
@@ -999,9 +1000,9 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                       onChange={(e) => updateForm('email', e.target.value)}
                       className="sky-text-input"
                     />
-                    <button 
-                      type="button" 
-                      className="btn-sky-social mt-8" 
+                    <button
+                      type="button"
+                      className="btn-sky-social mt-8"
                       style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: '500', marginTop: '12px' }}
                       onClick={async () => {
                         try {
@@ -1313,9 +1314,9 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                       {vehicleUsd > 0 && (
                         <div className="sky-quote-accordion-row">
                           <span>Vehicle Fee ({
-                            formData.vehicleType === 'g90' ? 'G90' : 
-                            formData.vehicleType === 'staria' ? 'Staria' : 
-                            formData.vehicleType === 'sprinter' ? 'Benz Sprinter' : 
+                            formData.vehicleType === 'g90' ? 'G90' :
+                            formData.vehicleType === 'staria' ? 'Staria' :
+                            formData.vehicleType === 'sprinter' ? 'Benz Sprinter' :
                             String(formData.vehicleType).replace(/Venz/i, 'Benz')
                           })</span>
                           <span>USD {vehicleUsd.toFixed(2)}</span>
@@ -1419,7 +1420,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                 </button>
 
                 <div className="sky-terms-text text-center mt-24">
-                  {t?.wizard?.step6?.termsNote?.replace('SkyVip', 'Beyond the Gate') || 'By clicking "Submit payment" I acknowledge that I agree with Beyond the Gate'} <a href="/terms" target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.termsLink || 'Terms & Conditions'}</a> & <a href="/privacy" target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.privacyLink || 'Privacy Policy'}</a>
+                  {t?.wizard?.step6?.termsNote?.replace('SkyVip', 'Beyond the Gate') || 'By clicking "Submit payment" I acknowledge that I agree with Beyond the Gate'} <a href={localizePath('/terms', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.termsLink || 'Terms & Conditions'}</a> & <a href={localizePath('/privacy', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.privacyLink || 'Privacy Policy'}</a>
                 </div>
               </div>
 
@@ -1477,8 +1478,8 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
 
               <div className="sky-contact-item mb-12">
                 <span className="sky-contact-emoji">☎️</span>
-                <a href={`tel:${(t?.footer?.phone_val || '+82212345678').replace(/[^+\d]/g, '')}`} className="sky-contact-link">
-                  {t?.footer?.phone_val || '+82 (0)2-1234-5678'}
+                <a href={`tel:${(t?.footer?.phone_val || '+821028533998').replace(/[^+\d]/g, '').replace(/^\+820/, '+82')}`} className="sky-contact-link">
+                  {t?.footer?.phone_val || '+82 10-2853-3998'}
                 </a>
               </div>
 
@@ -1490,7 +1491,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
               </div>
 
               <a
-                href={`https://wa.me/${(t?.footer?.phone_val || '+82212345678').replace(/[^+\d]/g, '')}`}
+                href={`https://wa.me/${(t?.footer?.phone_val || '+821028533998').replace(/[^+\d]/g, '').replace(/^\+/, '').replace(/^820/, '82')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-sky-whatsapp"
@@ -1522,9 +1523,9 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                   {vehicleUsd > 0 && (
                     <div className="sky-quote-row">
                       <span>Vehicle Fee ({
-                        formData.vehicleType === 'g90' ? 'G90' : 
-                        formData.vehicleType === 'staria' ? 'Staria' : 
-                        formData.vehicleType === 'sprinter' ? 'Benz Sprinter' : 
+                        formData.vehicleType === 'g90' ? 'G90' :
+                        formData.vehicleType === 'staria' ? 'Staria' :
+                        formData.vehicleType === 'sprinter' ? 'Benz Sprinter' :
                         String(formData.vehicleType).replace(/Venz/i, 'Benz')
                       }):</span>
                       <span>USD {vehicleUsd.toFixed(2)}</span>
@@ -1585,7 +1586,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                 </button>
 
                 <div className="sky-terms-text text-center mt-24">
-                  {t?.wizard?.sidebar?.termsAck?.replace('SkyVip', 'Beyond the Gate') || 'By clicking the button I acknowledge that I agree with Beyond the Gate'} <a href="/terms" target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.termsLink || 'Terms & Conditions'}</a> & <a href="/privacy" target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.privacyLink || 'Privacy Policy'}</a>.
+                  {t?.wizard?.sidebar?.termsAck?.replace('SkyVip', 'Beyond the Gate') || 'By clicking the button I acknowledge that I agree with Beyond the Gate'} <a href={localizePath('/terms', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.termsLink || 'Terms & Conditions'}</a> & <a href={localizePath('/privacy', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.privacyLink || 'Privacy Policy'}</a>.
                 </div>
               </div>
 

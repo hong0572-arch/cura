@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Menu, X, Globe } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { localizePath, stripLocale } from '../utils/locale';
 
 export default function Navbar({ lang, setLang, t }) {
   const navigate = useNavigate();
@@ -36,13 +37,13 @@ export default function Navbar({ lang, setLang, t }) {
 
   const handleNavClick = (item) => {
     setMobileMenuOpen(false);
-    
+
     // Default to '/' if no path is provided
     const targetPath = item.path || '/';
 
-    if (location.pathname !== targetPath) {
+    if (stripLocale(location.pathname) !== targetPath) {
       // If we are on a different page, navigate first
-      navigate(`${targetPath}#${item.id}`);
+      navigate(localizePath(`${targetPath}#${item.id}`, lang));
     } else {
       // If we are already on the target page, scroll to element
       const element = document.getElementById(item.id);
@@ -50,7 +51,7 @@ export default function Navbar({ lang, setLang, t }) {
         const offset = 80;
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - offset;
-        
+
         window.scrollTo({
           top: offsetPosition,
           behavior: 'smooth'
@@ -63,20 +64,25 @@ export default function Navbar({ lang, setLang, t }) {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-container">
         {/* Brand Logo */}
-        <div className="nav-brand" onClick={() => navigate('/')}>
-          <img src="/logo.png" alt="Beyond the Gate Logo" className="brand-logo-img" />
-        </div>
+        <a
+          href={localizePath('/', lang)}
+          className="nav-brand"
+          onClick={(e) => { e.preventDefault(); navigate(localizePath('/', lang)); }}
+        >
+          <img src="/logo.webp" alt="Beyond the Gate" className="brand-logo-img" width="160" height="48" />
+        </a>
 
         {/* Desktop Navigation Links */}
         <div className="nav-links-desktop">
           {navItems.map((item) => (
-            <button
+            <a
               key={item.id}
-              onClick={() => handleNavClick(item)}
+              href={localizePath(item.path === '/' ? `/#${item.id}` : item.path, lang)}
+              onClick={(e) => { e.preventDefault(); handleNavClick(item); }}
               className="nav-link-btn"
             >
               {item.label}
-            </button>
+            </a>
           ))}
         </div>
 
@@ -94,8 +100,8 @@ export default function Navbar({ lang, setLang, t }) {
             <Globe size={18} />
             <span className="lang-text-mobile">{lang === 'ko' ? 'EN' : 'KO'}</span>
           </button>
-          
-          <button 
+
+          <button
             className="mobile-menu-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle Menu"
@@ -109,18 +115,26 @@ export default function Navbar({ lang, setLang, t }) {
       <div className={`nav-menu-mobile ${mobileMenuOpen ? 'open' : ''}`}>
         <div className="mobile-links-container">
           {navItems.map((item) => (
-            <button
+            <a
               key={item.id}
-              onClick={() => handleNavClick(item)}
+              href={localizePath(item.path === '/' ? `/#${item.id}` : item.path, lang)}
+              onClick={(e) => { e.preventDefault(); handleNavClick(item); }}
               className="mobile-nav-link-btn"
             >
               {item.label}
-            </button>
+            </a>
           ))}
         </div>
       </div>
 
       <style>{`
+        a.nav-link-btn, a.mobile-nav-link-btn, a.nav-brand {
+          text-decoration: none;
+          display: inline-block;
+        }
+        a.mobile-nav-link-btn {
+          display: block;
+        }
         .navbar {
           position: fixed;
           top: 0;
@@ -131,7 +145,7 @@ export default function Navbar({ lang, setLang, t }) {
           transition: var(--transition-smooth);
           border-bottom: 1px solid transparent;
         }
-        
+
         .navbar.scrolled {
           background: rgba(4, 9, 20, 0.85);
           backdrop-filter: blur(20px);
@@ -377,7 +391,7 @@ export default function Navbar({ lang, setLang, t }) {
             display: flex;
           }
         }
-        
+
         @media (max-width: 480px) {
           .brand-logo-img {
             height: 28px;

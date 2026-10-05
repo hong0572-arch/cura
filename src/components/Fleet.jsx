@@ -1,6 +1,7 @@
 import React from 'react';
 import { Users, Briefcase, ChevronRight, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { langFromPath, localizePath } from '../utils/locale';
 
 export default function Fleet({ t, onSelectVehicle, customImage }) {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
       iconColor: '#c5a880',
       pax: 4,
       bags: 4,
-      bg: '/staria.jpg'
+      bg: '/staria.webp'
     },
     {
       id: 'g90',
@@ -32,7 +33,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
   ];
 
   const handleSelect = (vehicleId) => {
-    navigate(`/book-vehicle?vehicle=${vehicleId}`);
+    navigate(localizePath(`/book-vehicle?vehicle=${vehicleId}`, langFromPath(window.location.pathname)));
   };
 
   return (
@@ -47,7 +48,7 @@ export default function Fleet({ t, onSelectVehicle, customImage }) {
         {/* Hero Visual Showcase */}
         <div className="fleet-hero-banner">
           <div className="fleet-hero-overlay"></div>
-          <div className="fleet-hero-img" style={{ backgroundImage: `url(${customImage || '/luxury_fleet.png'})` }}></div>
+          <div className="fleet-hero-img" style={{ backgroundImage: `url(${customImage || '/luxury_fleet.webp'})` }}></div>
           <div className="fleet-hero-content">
             <h3 className="font-serif">{t.fleet.hero_title || 'The Beyond Premium Standard'}</h3>
             <p>{t.fleet.hero_desc || 'Every vehicle in our fleet is meticulously maintained and driven by professional, English-speaking VIP chauffeurs.'}</p>

@@ -14,7 +14,7 @@ export default function Team({ t }) {
           <p>{t.team.subtitle}</p>
         </div>
 
-        <div className="image-card" style={{ backgroundImage: `url('/team_ceo.png')`, minHeight: '500px', maxWidth: '800px', margin: '0 auto' }}>
+        <div className="image-card" style={{ backgroundImage: `url('/team_ceo.webp')`, minHeight: '500px', maxWidth: '800px', margin: '0 auto' }}>
           <div className="image-card-overlay"></div>
           
           <div className="image-card-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'flex-end' }}>

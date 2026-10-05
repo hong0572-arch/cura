@@ -89,7 +89,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
 
   return (
     <section id="hero" className="hero-section">
-      <div className="hero-bg-image" style={{ backgroundImage: `url(${customImage || '/luxury_airport_vip.png'})` }}></div>
+      <div className="hero-bg-image" style={{ backgroundImage: `url(${customImage || '/luxury_airport_vip.webp'})` }}></div>
       <div className="hero-overlay"></div>
 
       <div className="container hero-container">

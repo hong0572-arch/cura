@@ -183,7 +183,7 @@ export default function BusinessProposal({ t }) {
         .business-page {
           padding-top: 100px;
           min-height: 100vh;
-          background: linear-gradient(rgba(4, 9, 20, 0.6), rgba(4, 9, 20, 0.85)), url('/luxury_fleet.png') center/cover fixed;
+          background: linear-gradient(rgba(4, 9, 20, 0.6), rgba(4, 9, 20, 0.85)), url('/luxury_fleet.webp') center/cover fixed;
           color: #fff;
           padding-bottom: 60px;
           position: relative;

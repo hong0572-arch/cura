@@ -2,6 +2,7 @@ import { db } from '../firebase'; // 경로가 다르면 '../firebase' 로 맞�
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { localizePath } from '../utils/locale';
 
 
 export default function Chatbot({ settings, lang }) {
@@ -160,7 +161,7 @@ export default function Chatbot({ settings, lang }) {
                       <span
                         key={index}
                         onClick={() => {
-                          navigate(match[2]);
+                          navigate(match[2].startsWith('/') ? localizePath(match[2], lang) : match[2]);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         style={{

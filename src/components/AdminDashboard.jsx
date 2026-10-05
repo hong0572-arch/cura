@@ -6,8 +6,11 @@ import {
   Award, Lock, Activity, Navigation, FileSpreadsheet,
   Users
 } from 'lucide-react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { app } from '../firebase';
+
+// Storage는 관리자 화면에서만 쓰므로 여기서 초기화한다 (방문자용 번들에서 제외)
+const storage = getStorage(app);
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Set worker source for pdfjs using unpkg/cdnjs
