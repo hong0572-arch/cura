@@ -6,7 +6,7 @@ import nodemailer from 'nodemailer';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { GoogleGenAI } from "@google/genai";
-import { computeQuote } from '../src/utils/pricing.js';
+import { computeQuote, computeVehicleQuote, haversineKm, VEHICLE_ROAD_FACTOR, VEHICLE_TYPES } from '../src/utils/pricing.js';
 import { generateProposalHtml } from '../src/utils/emailTemplate.js';
 
 dotenv.config();
@@ -122,8 +122,8 @@ function checkoutPayload(id, data) {
     method: data.paymentMethod,
     amount: data.amount,
     currency: data.currency,
-    orderName: `VIP ${data.serviceType || 'service'} in ${data.airport || 'ICN'}`,
-    customerName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+    orderName: data.orderName || `VIP ${data.serviceType || 'service'} in ${data.airport || 'ICN'}`,
+    customerName: data.name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
     customerEmail: data.email || '',
     customerMobilePhone: data.phone || '',
     status: data.status,
@@ -264,6 +264,8 @@ app.post('/api/reservations/:id/submit', async (req, res) => {
       currency,
       totalUsd: quote.paypalTotalUsd,
       totalKrw: quote.nicepayTotalKrw,
+      name: `${r.data.firstName || ''} ${r.data.lastName || ''}`.trim(),
+      flight: `${r.data.airline || ''} ${r.data.flightNumber || ''}`.trim(),
       status: STATUS_PENDING,
       step: 6,
       updatedAt: new Date().toISOString(),
@@ -352,6 +354,152 @@ async function markPaid(ref, payment) {
     updatedAt: new Date().toISOString(),
   });
 }
+
+// --- Vehicle-only reservations (/book-vehicle) ---
+// 거리는 서버가 Google Places 좌표로 계산한다(한국은 Google 자동차 경로 미지원).
+const MAPS_SERVER_KEY = process.env.GOOGLE_MAPS_SERVER_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY;
+const placeCache = new Map();
+
+async function placeLocation(text) {
+  const key = text.trim().toLowerCase();
+  if (placeCache.has(key)) return placeCache.get(key);
+  if (!MAPS_SERVER_KEY) throw new Error('Maps key is not configured');
+  const params = new URLSearchParams({
+    input: text, inputtype: 'textquery', fields: 'geometry', key: MAPS_SERVER_KEY,
+  });
+  const res = await fetch(`https://maps.googleapis.com/maps/api/place/findplacefromtext/json?${params}`);
+  const data = await res.json();
+  const loc = data.candidates?.[0]?.geometry?.location || null;
+  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+    throw new Error(`Places error: ${data.status}`);
+  }
+  if (placeCache.size > 500) placeCache.clear();
+  placeCache.set(key, loc);
+  return loc;
+}
+
+function sanitizeVehicleForm(input = {}) {
+  const str = (v, max) => String(v ?? '').trim().slice(0, max);
+  return {
+    serviceType: input.serviceType === 'departure' ? 'departure' : 'arrival',
+    vehicleType: VEHICLE_TYPES.includes(input.vehicleType) ? input.vehicleType : 'staria',
+    pickupLocation: str(input.pickupLocation, 300),
+    dropoffLocation: str(input.dropoffLocation, 300),
+    date: str(input.date, 10),
+    time: str(input.time, 5),
+    passengers: Math.min(50, Math.max(1, parseInt(input.passengers, 10) || 1)),
+    luggage: Math.min(100, Math.max(0, parseInt(input.luggage, 10) || 0)),
+    name: str(input.name, 100),
+    email: str(input.email, 200),
+    phone: str(input.phone, 40),
+  };
+}
+
+async function quoteVehicle(form) {
+  if (!form.pickupLocation || !form.dropoffLocation) return { error: 'Missing locations', code: 400 };
+  const [from, to] = await Promise.all([placeLocation(form.pickupLocation), placeLocation(form.dropoffLocation)]);
+  if (!from || !to) return { error: 'Location not found', code: 422 };
+  const distanceKm = haversineKm(from, to) * VEHICLE_ROAD_FACTOR;
+  const settings = await loadSettings();
+  return { quote: computeVehicleQuote(form, distanceKm, settings) };
+}
+
+// 화면 표시용 견적 (예약 생성 없음)
+app.post('/api/vehicle-quote', async (req, res) => {
+  try {
+    const result = await quoteVehicle(sanitizeVehicleForm(req.body));
+    if (result.error) return res.status(result.code).json({ error: result.error });
+    res.status(200).json(result.quote);
+  } catch (error) {
+    console.error('Vehicle quote failed:', error);
+    res.status(500).json({ error: 'Failed to calculate quote' });
+  }
+});
+
+// 차량 예약 생성 + 결제 금액 확정
+app.post('/api/vehicle-reservations/:id', async (req, res) => {
+  const { id } = req.params;
+  const { token } = req.body;
+  const method = req.body.method === 'paypal' ? 'paypal' : 'nicepay';
+  if (!BOOKING_ID_RE.test(id) || !TOKEN_RE.test(token || '')) {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
+  const form = sanitizeVehicleForm(req.body.form);
+  if (!form.date || !form.time || !form.name || !form.email || !form.phone) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const result = await quoteVehicle(form);
+    if (result.error) return res.status(result.code).json({ error: result.error });
+    const quote = result.quote;
+    if (quote.negotiable) return res.status(400).json({ error: 'Custom quote required', negotiable: true });
+
+    const amount = method === 'paypal' ? quote.totalUsd : quote.totalKrw;
+    const currency = method === 'paypal' ? 'USD' : 'KRW';
+    const now = new Date().toISOString();
+    const orderName = `Vehicle ${form.vehicleType.toUpperCase()} (${quote.distanceKm}km)`;
+    const data = {
+      id,
+      kind: 'vehicle',
+      ...form,
+      date: `${form.date}T${form.time}`,
+      luggageCount: form.luggage,
+      transferAddress: form.serviceType === 'arrival' ? form.dropoffLocation : form.pickupLocation,
+      orderName,
+      quote: { ...quote, lockedAt: now },
+      paymentMethod: method,
+      amount,
+      currency,
+      totalUsd: quote.totalUsd,
+      totalKrw: quote.totalKrw,
+      status: STATUS_PENDING,
+      step: 6,
+      accessToken: token,
+      dateSubmitted: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+      updatedAt: now,
+    };
+
+    const ref = db.collection('reservations').doc(id);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (snap.exists) {
+        const err = new Error('conflict'); err.code = 409; throw err;
+      }
+      tx.set(ref, data);
+    });
+
+    const text = `A new vehicle reservation has been submitted:
+
+- Reference Ticket ID: ${id}
+- Service: ${form.serviceType.toUpperCase()} / ${form.vehicleType.toUpperCase()}
+- Date & Time: ${form.date} ${form.time}
+- Pickup: ${form.pickupLocation}
+- Drop-off: ${form.dropoffLocation}
+- Estimated Distance: ${quote.distanceKm} km
+- Passengers / Luggage: ${form.passengers} / ${form.luggage}
+
+- Name: ${form.name}
+- Email: ${form.email}
+- Phone: ${form.phone}
+
+- Vehicle Rate: $${quote.vehicleUsd}
+- Extra Pax/Luggage: $${quote.extraPassUsd + quote.extraLugUsd}
+- Payment Method: ${method === 'paypal' ? 'PayPal (USD)' : 'NICEPAY (KRW)'}
+- Amount to Charge: ${currency === 'USD' ? `$${amount.toFixed(2)} USD` : `₩${amount.toLocaleString()}`}
+
+Beyond the Gate Automated System`;
+    adminRecipients()
+      .then(({ primary }) => sendAdminMail(`New Vehicle Reservation - ${id}`, text, primary))
+      .catch(err => console.error('Admin notification failed:', err));
+
+    res.status(200).json(checkoutPayload(id, data));
+  } catch (error) {
+    if (error.code === 409) return res.status(409).json({ error: 'Reservation id conflict' });
+    console.error('Vehicle reservation failed:', error);
+    res.status(500).json({ error: 'Failed to create reservation' });
+  }
+});
 
 // --- Nicepay Integration ---
 // 테스트 시 NICEPAY_API_BASE=https://sandbox-api.nicepay.co.kr
@@ -467,7 +615,7 @@ app.post('/api/orders', async (req, res) => {
         {
           reference_id: orderId,
           custom_id: orderId,
-          description: `VIP ${r.data.serviceType || 'service'} in ${r.data.airport || 'ICN'}`.slice(0, 127),
+          description: (r.data.orderName || `VIP ${r.data.serviceType || 'service'} in ${r.data.airport || 'ICN'}`).slice(0, 127),
           amount: {
             currency_code: "USD",
             value: r.data.amount.toFixed(2),
@@ -597,7 +745,7 @@ async function postToThreads(text) {
       text: text,
       access_token: accessToken
     });
-    
+
     const createResp = await fetch(`${createContainerUrl}?${createParams.toString()}`, { method: 'POST' });
     const createData = await createResp.json();
 
@@ -638,9 +786,9 @@ app.get('/api/cron', async (req, res) => {
   }
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
+
     // beyondthegate.kr SEO/GEO 최적화를 위한 공항 의전 서비스 주제의 블로그 글 생성
-    const prompt = `당신은 프리미엄 공항 의전 및 블랙카 서비스 전문가입니다. 
+    const prompt = `당신은 프리미엄 공항 의전 및 블랙카 서비스 전문가입니다.
 목적: 'beyondthegate.kr' 웹사이트가 '인천공항 의전 서비스', 'VIP 공항 픽업', '인천공항 콜밴', '프리미엄 리무진', '김포/제주 등 국내 공항 의전', '중국 공항 픽업 및 글로벌 의전', '외국인 바이어 의전' 등의 키워드 검색 결과(SEO/GEO)에서 최상단에 노출되도록 하는 것입니다.
 위 목적을 달성하기 위해, 독자에게 유용하고 흥미로우며 전문적인 정보가 담긴 블로그 포스팅을 1개 작성해주세요.
 
@@ -651,14 +799,14 @@ app.get('/api/cron', async (req, res) => {
 4. 타겟 독자는 중요한 비즈니스 출장자, VIP, 안전하고 편안한 이동을 원하는 가족 단위 여행객입니다.
 5. 본문은 Markdown 형식(소제목, 글머리 기호, 굵은 글씨 등 활용)으로 가독성 좋게 작성하세요.
 6. 단순히 홍보만 하는 것이 아니라 실제 공항 이용 팁, 국가별/공항별 의전 서비스의 필요성 등 가치 있는 정보를 포함하세요.`;
-    
+
     const response = await ai.models.generateContent({
       model: 'gemini-3.5-flash-lite',
       contents: prompt,
     });
-    
+
     const content = response.text;
-    
+
     // 제목 추출 (첫 번째 # 또는 ## 라인을 제목으로 사용)
     const titleMatch = content.match(/^#+\s+(.*)$/m);
     const title = titleMatch ? titleMatch[1] : `프리미엄 공항 의전 서비스 가이드 - ${new Date().toLocaleDateString()}`;
@@ -683,7 +831,7 @@ app.get('/api/cron', async (req, res) => {
     // 이미지 생성 (메인 이미지, 보조 이미지)
     let mainImageUrl = '';
     let subImageUrl = '';
-    
+
     try {
       const mainImageResp = await ai.models.generateImages({
         model: 'imagen-3.0-generate-001',
@@ -721,7 +869,7 @@ app.get('/api/cron', async (req, res) => {
 
     // --- Threads 자동 포스팅 ---
     try {
-      const threadsPrompt = `다음은 방금 작성된 블로그 포스팅 내용입니다. 이 내용을 바탕으로 Threads(스레드)에 올릴 짧고 매력적인 홍보글을 작성해주세요. 
+      const threadsPrompt = `다음은 방금 작성된 블로그 포스팅 내용입니다. 이 내용을 바탕으로 Threads(스레드)에 올릴 짧고 매력적인 홍보글을 작성해주세요.
 필수 조건:
 1. 300자 이내로 핵심만 간결하게 작성
 2. 관련된 해시태그 3~5개 포함
@@ -735,7 +883,7 @@ ${content.substring(0, 500)}...`;
         model: 'gemini-3.5-flash-lite',
         contents: threadsPrompt,
       });
-      
+
       const threadsText = threadsResponse.text;
       await postToThreads(threadsText);
     } catch (threadsError) {
