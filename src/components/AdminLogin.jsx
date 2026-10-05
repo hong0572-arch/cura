@@ -1,20 +1,30 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Lock, AlertCircle, ArrowLeft } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase';
 
-export default function AdminLogin({ adminPassword = 'admin1234', onLoginSuccess, onCancel }) {
+// 관리자 인증은 Firebase Authentication으로 하고,
+// 실제 데이터 접근 권한은 Firestore 보안 규칙(admins/{uid})이 결정한다.
+export default function AdminLogin({ onCancel, notAuthorized = false }) {
+  const [email, setEmail] = useState('');
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (passcode === adminPassword) {
+    setSubmitting(true);
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), passcode);
       setError(false);
-      onLoginSuccess();
-    } else {
+    } catch (err) {
+      console.error('Admin sign-in failed:', err.code);
       setError(true);
       setShake(true);
       setTimeout(() => setShake(false), 500);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -26,29 +36,48 @@ export default function AdminLogin({ adminPassword = 'admin1234', onLoginSuccess
             <Lock size={32} className="lock-icon" />
           </div>
           <h2 className="font-serif">Admin Portal</h2>
-          <p>Please enter the administrator passcode to access editing privileges.</p>
+          <p>Sign in with your administrator account to access editing privileges.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="input-group">
-            <input 
-              type="password" 
-              placeholder="••••••••" 
+            <input
+              type="email"
+              placeholder="admin@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={error ? 'error-input' : ''}
+              autoComplete="username"
+              autoFocus
+              required
+            />
+          </div>
+          <div className="input-group">
+            <input
+              type="password"
+              placeholder="••••••••"
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
               className={error ? 'error-input' : ''}
-              autoFocus
+              autoComplete="current-password"
+              required
             />
             {error && (
               <div className="error-message">
                 <AlertCircle size={14} />
-                <span>Incorrect passcode. Please try again.</span>
+                <span>Incorrect email or password. Please try again.</span>
+              </div>
+            )}
+            {notAuthorized && !error && (
+              <div className="error-message">
+                <AlertCircle size={14} />
+                <span>This account does not have administrator access.</span>
               </div>
             )}
           </div>
 
           <div className="login-actions">
-            <button type="submit" className="btn-premium primary login-btn">
+            <button type="submit" className="btn-premium primary login-btn" disabled={submitting}>
               Authenticate
             </button>
             <button type="button" onClick={onCancel} className="btn-premium secondary cancel-btn">

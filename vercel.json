@@ -11,10 +11,6 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/confirm/toss",
-      "destination": "/api/index.js"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

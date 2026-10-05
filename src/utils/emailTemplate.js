@@ -1,18 +1,28 @@
-export const generateProposalHtml = (formData, t, pricing) => {
-  const { 
-    serviceType, date, passengers, firstName, lastName
-  } = formData;
-  
-  const { 
-    totalUsd, ccFeeUsd, baseFeeUsd, totalKrw, vehicleUsd, 
-    extraPassUsd, extraLugUsd, porterUsd, surcharges, bookingId 
-  } = pricing;
-  const estimatedTotal = totalUsd;
-  const subtotal = totalUsd - ccFeeUsd;
+// 서버(api/index.js)에서만 호출된다. 고객 입력값은 모두 escapeHtml을 거친다.
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
 
-  const airportName = 'Incheon International Airport (ICN)';
+const AIRPORT_NAMES = {
+  ICN: 'Incheon International Airport (ICN)',
+  GMP: 'Gimpo International Airport (GMP)',
+};
+
+export const generateProposalHtml = (rawFormData, quote, bookingId) => {
+  const formData = Object.fromEntries(
+    Object.entries(rawFormData).map(([k, v]) => [k, typeof v === 'string' ? escapeHtml(v) : v])
+  );
+  const { date, passengers, firstName, lastName } = formData;
+  const serviceType = quote.serviceType;
+
+  const {
+    baseFeeUsd, vehicleUsd, extraPassUsd, extraLugUsd, porterUsd, surcharges,
+    subtotalUsd, paypalFeeUsd, paypalTotalUsd, nicepayTotalKrw
+  } = quote;
+
+  const airportName = AIRPORT_NAMES[rawFormData.airport] || `${escapeHtml(rawFormData.airport)} Airport`;
   const serviceName = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
-  const refCode = `BTG-Q-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const refCode = escapeHtml(bookingId);
   
   // Format the inclusions based on service type
   let inclusions = [];
@@ -144,22 +154,20 @@ export const generateProposalHtml = (formData, t, pricing) => {
           <!-- 03. Pricing -->
           <div class="section-title">03 · YOUR VIP PACKAGE</div>
           <div class="pricing-box">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 15px; color: #4a5568;">
-              <div>VIP Service — ${passengers} ${passengers > 1 ? 'adults' : 'adult'}</div>
-              <div>$${subtotal.toFixed(2)}</div>
-            </div>
-            <div style="font-size: 12px; color: #a0aec0; margin-bottom: 16px;">$${subtotal.toFixed(2)}</div>
-            
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 15px; color: #4a5568;">
-              <div>Credit Card Fee (4%)</div>
-              <div>$${ccFeeUsd.toFixed(2)}</div>
+              <div>VIP Service — ${passengers} ${passengers > 1 ? 'adults' : 'adult'}</div>
+              <div>$${subtotalUsd.toFixed(2)}</div>
             </div>
-            
-            <div style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid #1a202c; font-size: 18px; font-weight: bold; color: #1a202c;">
-              <div>Estimated total</div>
-              <div>$${estimatedTotal.toFixed(2)}</div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid #1a202c; font-size: 16px; font-weight: bold; color: #1a202c;">
+              <div>Total · Korean card (KRW)</div>
+              <div>₩${nicepayTotalKrw.toLocaleString()}</div>
             </div>
-            
+            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 16px; font-weight: bold; color: #1a202c;">
+              <div>Total · PayPal (USD, incl. 4% fee $${paypalFeeUsd.toFixed(2)})</div>
+              <div>$${paypalTotalUsd.toFixed(2)}</div>
+            </div>
+
             <div class="price-note">
               Children aged 0–7 travel complimentary. Final total is confirmed at secure checkout.
             </div>
@@ -189,9 +197,10 @@ export const generateProposalHtml = (formData, t, pricing) => {
 - Chauffeur Vehicle Fee: $${vehicleUsd || 0}
 - Extra Passenger Surcharge: $${extraPassUsd || 0}
 - Extra Baggage Surcharge: $${extraLugUsd || 0}
-${porterUsd > 0 ? `- Porter Service: $${porterUsd}\n` : ''}${surcharges?.nightFeeUsd > 0 ? `- Night Service Surcharge: $${surcharges.nightFeeUsd}\n` : ''}${surcharges?.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${surcharges.urgentFeeUsd}\n` : ''}${surcharges?.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${surcharges.weekendFeeUsd}\n` : ''}- Credit Card Surcharge (4%): $${ccFeeUsd}
---------------------------------------------------
-- Estimated Total Cost: $${estimatedTotal} (≈ ${totalKrw ? totalKrw.toLocaleString() : 0} KRW)
+${porterUsd > 0 ? `- Porter Service: $${porterUsd}\n` : ''}${surcharges?.nightFeeUsd > 0 ? `- Night Service Surcharge: $${surcharges.nightFeeUsd}\n` : ''}${surcharges?.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${surcharges.urgentFeeUsd}\n` : ''}${surcharges?.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${surcharges.weekendFeeUsd}\n` : ''}--------------------------------------------------
+- Subtotal: $${subtotalUsd.toFixed(2)}
+- Total (Korean card, KRW): ₩${nicepayTotalKrw.toLocaleString()}
+- Total (PayPal, USD, incl. 4% fee): $${paypalTotalUsd.toFixed(2)}
             </pre>
           </div>
           

@@ -1,7 +1,6 @@
 import { db } from '../firebase'; // 경로가 다르면 '../firebase' 로 맞추어 주세요.
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -56,65 +55,27 @@ export default function Chatbot({ settings, lang }) {
 
 
     const chatbotConfig = settings?.chatbot || {};
-    const apiKey = chatbotConfig.apiKey;
     const fallbackMessage = lang === 'ko'
       ? '감사합니다. 자세한 안내를 위해 이메일이나 전화번호 등 연락처를 남겨주시면 담당자가 신속히 답변해 드리겠습니다.'
       : (chatbotConfig.fallbackMessage || 'Thank you for your message. Please leave your contact information for a detailed response.');
 
-    if (!apiKey) {
-      setTimeout(() => {
-        setMessages(prev => [...prev, { text: fallbackMessage, isBot: true }]);
-        setIsLoading(false);
-      }, 1000);
-      return;
-    }
-
+    // Gemini 호출은 서버(/api/chat)에서만 한다 — API 키를 브라우저에 노출하지 않기 위함
     try {
-      const ai = new GoogleGenAI({
-        apiKey: apiKey,
-        apiVersion: 'v1'
-      });
-
-      const languageInstruction = 'IMPORTANT: Always reply in the exact language the user uses (e.g., if the user asks in English, reply in English; if Korean, reply in Korean).';
-
-      const systemInstruction = `
-Your name is 'Q'. Always refer to yourself as 'Q' when interacting with users.
-${chatbotConfig.systemPrompt || 'You are a helpful assistant.'}
-${languageInstruction}
-
-IMPORTANT GUIDANCE:
-1. ALWAYS keep your responses very concise and short (1-2 sentences max). Avoid long paragraphs.
-2. If the user asks about booking, making a reservation, or pricing, naturally guide them to use our reservation page by providing this link formatted exactly as markdown: "[Book](/)" (or "[예약하기](/)" if in Korean).
-3. ALWAYS try to answer the user's questions using the Knowledge Base. 
-
-Here is the company Knowledge Base to use for answering questions:
-${chatbotConfig.knowledgeBase || ''}
-      `.trim();
-
-      const historyContents = messages
+      const history = messages
         .filter(m => !m.text.includes('안녕하세요!') && !m.text.includes('Hello! I\'m Q'))
-        .map(m => ({
-          role: m.isBot ? 'model' : 'user',
-          parts: [{ text: m.text }]
-        }));
-      
-      historyContents.push({ role: 'user', parts: [{ text: userMessage }] });
+        .map(m => ({ text: m.text, isBot: m.isBot }));
+      history.push({ text: userMessage, isBot: false });
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash-lite',
-        contents: historyContents,
-        config: {
-          systemInstruction: systemInstruction
-        }
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history, lang }),
       });
-
-      let botReply = response.text || fallbackMessage;
-
-      setMessages(prev => [...prev, { text: botReply, isBot: true }]);
+      const data = res.ok ? await res.json() : null;
+      setMessages(prev => [...prev, { text: data?.reply || fallbackMessage, isBot: true }]);
     } catch (error) {
-      console.error("Gemini API Error:", error);
-      const errorMsg = `Error: ${error.message || 'API request failed'}. Please check your API key and network.`;
-      setMessages(prev => [...prev, { text: errorMsg, isBot: true }]);
+      console.error("Chatbot API Error:", error);
+      setMessages(prev => [...prev, { text: fallbackMessage, isBot: true }]);
     } finally {
       setIsLoading(false);
     }

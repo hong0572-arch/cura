@@ -1,161 +1,427 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import crypto from 'node:crypto';
 import nodemailer from 'nodemailer';
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { GoogleGenAI } from "@google/genai";
+import { computeQuote } from '../src/utils/pricing.js';
+import { generateProposalHtml } from '../src/utils/emailTemplate.js';
 
 dotenv.config();
 
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyBWKmsDjCZcWOXHrmDCv8hrdPFhMCqBk2s",
-  authDomain: "cura-1969a.firebaseapp.com",
-  projectId: "cura-1969a",
-  storageBucket: "cura-1969a.firebasestorage.app",
-  messagingSenderId: "630189967071",
-  appId: "1:630189967071:web:69a1eff6a28688b23ccb6a",
-};
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
+// --- Firebase Admin ---
+// 서버는 서비스 계정으로 Firestore에 접근한다(보안 규칙의 영향을 받지 않음).
+// Vercel 환경변수 FIREBASE_SERVICE_ACCOUNT 에 서비스 계정 JSON 전체를 넣는다.
+if (!getApps().length) {
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    : null;
+  initializeApp(serviceAccount
+    ? { credential: cert(serviceAccount) }
+    : { projectId: 'cura-1969a' });
+}
+const db = getFirestore();
 
 const app = express();
 const port = process.env.PORT || 4242;
 
-app.use(cors());
+const ALLOWED_ORIGINS = [
+  'https://beyondthegate.kr',
+  'https://www.beyondthegate.kr',
+  'https://servicebycura.com',
+  'https://www.servicebycura.com',
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // 같은 출처 요청(origin 없음), 운영 도메인, 로컬/Vercel 프리뷰만 허용
+    if (!origin || ALLOWED_ORIGINS.includes(origin)
+      || /^http:\/\/localhost:\d+$/.test(origin)
+      || /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
+}));
 // URL-encoded body parser is required because Nicepay POSTs form data
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+app.use(express.json({ limit: '100kb' }));
 
-// 자동 이메일 발송 API
-app.post('/api/send-email', async (req, res) => {
-  const { customerEmail, adminEmail, subject, text, html } = req.body;
+// --- Helpers ---
+const STATUS_DRAFT = '작성 중';
+const STATUS_ABANDONED = '중도 중단됨 (이탈)';
+const STATUS_PENDING = '결제 대기중';
+const STATUS_PAID = '결제 완료';
+const STATUS_REVIEW = '결제 확인 필요';
+
+const BOOKING_ID_RE = /^BTG-\d{4}-\d{6}$/;
+const TOKEN_RE = /^[A-Za-z0-9-]{20,64}$/;
+
+let settingsCache = { value: null, at: 0 };
+async function loadSettings() {
+  if (settingsCache.value && Date.now() - settingsCache.at < 60_000) return settingsCache.value;
+  const snap = await db.doc('siteData/main').get();
+  const settings = snap.exists ? (snap.data().settings || {}) : {};
+  settingsCache = { value: settings, at: Date.now() };
+  return settings;
+}
+
+function tokensMatch(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
+// 예약 문서를 읽고 고객 토큰을 검증한다(token을 넘긴 경우). 실패하면 { error, code } 반환.
+async function loadReservation(id, token) {
+  if (!BOOKING_ID_RE.test(id || '')) return { error: 'Invalid reservation id', code: 400 };
+  const ref = db.collection('reservations').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) return { error: 'Reservation not found', code: 404 };
+  const data = snap.data();
+  if (token !== undefined && !tokensMatch(token, data.accessToken)) {
+    return { error: 'Forbidden', code: 403 };
+  }
+  return { ref, data };
+}
+
+// 고객이 입력할 수 있는 필드만 허용 (status, 금액, 결제정보 등은 서버만 기록)
+const STRING_FIELDS = {
+  airport: 10, serviceType: 20, date: 10, email: 200, package: 30,
+  airline: 100, flightNumber: 20, flightTime: 5,
+  transferAirline: 100, transferFlightNumber: 20, transferFlightTime: 5,
+  firstName: 100, lastName: 100, dobMonth: 2, dobDay: 2, dobYear: 4,
+  travelClass: 30, phone: 40,
+  contactFirst: 100, contactLast: 100, contactEmail: 200, contactPhone: 40,
+  vehicleType: 30, transferAddress: 500, specialRequests: 2000,
+};
+const BOOLEAN_FIELDS = ['addTransfer', 'wheelchair', 'sameAsPrimary'];
+
+function sanitizeFormData(input = {}) {
+  const out = {};
+  for (const [key, max] of Object.entries(STRING_FIELDS)) {
+    if (input[key] !== undefined && input[key] !== null) out[key] = String(input[key]).slice(0, max);
+  }
+  for (const key of BOOLEAN_FIELDS) {
+    if (input[key] !== undefined) out[key] = Boolean(input[key]);
+  }
+  if (input.passengers !== undefined) out.passengers = Math.min(50, Math.max(1, parseInt(input.passengers, 10) || 1));
+  if (input.luggageCount !== undefined) out.luggageCount = Math.min(100, Math.max(0, parseInt(input.luggageCount, 10) || 0));
+  return out;
+}
+
+function draftStatus(step) {
+  if (step === 6) return STATUS_PENDING;
+  if (step > 3) return STATUS_ABANDONED;
+  return STATUS_DRAFT;
+}
+
+function checkoutPayload(id, data) {
+  return {
+    orderId: id,
+    method: data.paymentMethod,
+    amount: data.amount,
+    currency: data.currency,
+    orderName: `VIP ${data.serviceType || 'service'} in ${data.airport || 'ICN'}`,
+    customerName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+    customerEmail: data.email || '',
+    customerMobilePhone: data.phone || '',
+    status: data.status,
+  };
+}
+
+function getTransporter() {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
+  if (!user || !pass) throw new Error('SMTP credentials are not configured');
+  return { user, transporter: nodemailer.createTransport({ service: 'gmail', auth: { user, pass } }) };
+}
 
-  if (!user || !pass) {
-    return res.status(500).json({ error: 'SMTP credentials are not configured in server/.env' });
-  }
+async function adminRecipients() {
+  const settings = await loadSettings().catch(() => ({}));
+  const list = [
+    settings.companyEmail,
+    ...(process.env.ADMIN_EMAILS || '').split(','),
+    'support@beyondthegate.vip',
+    'cura@beyondthegate.kr',
+  ].map(e => (e || '').trim().toLowerCase()).filter(Boolean);
+  return { primary: list[0], allowed: new Set(list) };
+}
+
+async function sendAdminMail(subject, text, to) {
+  const { user, transporter } = getTransporter();
+  await transporter.sendMail({
+    from: `"BTG System" <${user}>`,
+    to,
+    subject: `[Admin] ${subject}`,
+    text,
+  });
+}
+
+// 관리자 알림 메일 API — 수신자는 서버가 허용한 관리자 주소로만 제한한다.
+// (이전에는 임의의 수신자·HTML을 받아 스팸/피싱 발송에 악용될 수 있었음)
+app.post('/api/send-email', async (req, res) => {
+  const subject = String(req.body.subject || '').slice(0, 200);
+  const text = String(req.body.text || '').slice(0, 10000);
+  if (!subject || !text) return res.status(400).json({ error: 'subject and text are required' });
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail', // 기본적으로 Gmail을 사용하도록 설정
-      auth: {
-        user,
-        pass,
-      },
-    });
-
-    // 1. 관리자에게 알림 메일 발송
-    if (adminEmail) {
-      await transporter.sendMail({
-        from: `"BTG System" <${user}>`,
-        to: adminEmail,
-        subject: `[Admin] ${subject}`,
-        text: text,
-      });
-    }
-
-    // 2. 고객에게 확인 메일 발송
-    if (customerEmail) {
-      const mailOptions = {
-        from: `"Beyond The Gate" <${user}>`,
-        to: customerEmail,
-        subject: `[Beyond The Gate] ${subject}`,
-      };
-
-      if (html) {
-        mailOptions.html = html;
-      } else {
-        mailOptions.text = `안녕하세요. Beyond The Gate 예약 시스템입니다.\n\n고객님의 예약이 성공적으로 접수되었습니다. 예약 내역은 아래와 같습니다.\n\n${text}`;
-      }
-
-      await transporter.sendMail(mailOptions);
-    }
-
-    res.status(200).json({ success: true, message: 'Emails sent successfully' });
+    const { primary, allowed } = await adminRecipients();
+    const requested = String(req.body.adminEmail || '').trim().toLowerCase();
+    const to = allowed.has(requested) ? requested : primary;
+    await sendAdminMail(subject, text, to);
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error('Email sending failed:', error);
     res.status(500).json({ error: 'Failed to send email' });
   }
 });
 
-// 토스페이먼츠 결제 승인 API
-app.post('/confirm/toss', async (req, res) => {
-  const { paymentKey, orderId, amount } = req.body;
-  const secretKey = process.env.TOSS_SECRET_KEY;
+// --- Reservations ---
 
-  if (!secretKey) {
-    return res.status(500).json({ error: 'Toss Secret Key is missing' });
+// 예약 위저드 진행 상황 저장 (이탈 추적용). 첫 저장 시 고객 토큰을 등록한다.
+app.post('/api/reservations/:id', async (req, res) => {
+  const { id } = req.params;
+  const { token, step, formData } = req.body;
+  if (!BOOKING_ID_RE.test(id) || !TOKEN_RE.test(token || '')) {
+    return res.status(400).json({ error: 'Invalid request' });
   }
-
-  const encryptedSecretKey = Buffer.from(`${secretKey}:`).toString('base64');
+  const stepNum = Math.min(6, Math.max(1, parseInt(step, 10) || 1));
 
   try {
-    const response = await fetch('https://api.tosspayments.com/v1/payments/confirm', {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${encryptedSecretKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ paymentKey, orderId, amount }),
+    const ref = db.collection('reservations').doc(id);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (snap.exists) {
+        const data = snap.data();
+        if (!tokensMatch(token, data.accessToken) || data.status === STATUS_PAID) {
+          const err = new Error('conflict'); err.code = 409; throw err;
+        }
+      }
+      tx.set(ref, {
+        id,
+        ...sanitizeFormData(formData),
+        step: stepNum,
+        status: draftStatus(stepNum),
+        updatedAt: new Date().toISOString(),
+        ...(snap.exists ? {} : {
+          accessToken: token,
+          dateSubmitted: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
+        }),
+      }, { merge: true });
     });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      return res.status(response.status).json(data);
-    }
-    
-    res.status(200).json(data);
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Toss Payments Confirm Error:', error);
-    res.status(500).json({ error: 'Payment confirmation failed' });
+    if (error.code === 409) return res.status(409).json({ error: 'Reservation id conflict' });
+    console.error('Reservation sync failed:', error);
+    res.status(500).json({ error: 'Failed to save reservation' });
   }
 });
 
+// 결제 단계 진입 시 고객에게 견적서 메일 1회 발송 (내용은 서버가 생성)
+app.post('/api/reservations/:id/proposal', async (req, res) => {
+  try {
+    const r = await loadReservation(req.params.id, String(req.body.token || ''));
+    if (r.error) return res.status(r.code).json({ error: r.error });
+    if (r.data.proposalSentAt) return res.status(200).json({ success: true, alreadySent: true });
+    if (!r.data.email) return res.status(400).json({ error: 'Missing email' });
+
+    const settings = await loadSettings();
+    const quote = computeQuote(r.data, settings);
+    const { user, transporter } = getTransporter();
+    await transporter.sendMail({
+      from: `"Beyond The Gate" <${user}>`,
+      to: r.data.email,
+      subject: '[Beyond The Gate] Your personalised VIP airport service proposal',
+      html: generateProposalHtml(r.data, quote, req.params.id),
+      text: 'Your personalised VIP airport service proposal has been generated.\n\nPlease view this email in an HTML compatible client to see the full proposal details.',
+    });
+    await r.ref.update({ proposalSentAt: new Date().toISOString() });
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Proposal email failed:', error);
+    res.status(500).json({ error: 'Failed to send proposal' });
+  }
+});
+
+// 결제 요청: 서버가 금액을 계산·확정(lock)하고 결제 페이지에 필요한 정보를 돌려준다.
+app.post('/api/reservations/:id/submit', async (req, res) => {
+  const method = req.body.method === 'paypal' ? 'paypal' : 'nicepay';
+  try {
+    const r = await loadReservation(req.params.id, String(req.body.token || ''));
+    if (r.error) return res.status(r.code).json({ error: r.error });
+    if (r.data.status === STATUS_PAID) return res.status(409).json({ error: 'Already paid' });
+
+    const settings = await loadSettings();
+    const quote = computeQuote(r.data, settings);
+    const amount = method === 'paypal' ? quote.paypalTotalUsd : quote.nicepayTotalKrw;
+    const currency = method === 'paypal' ? 'USD' : 'KRW';
+
+    const update = {
+      quote: { ...quote, lockedAt: new Date().toISOString() },
+      paymentMethod: method,
+      amount,
+      currency,
+      totalUsd: quote.paypalTotalUsd,
+      totalKrw: quote.nicepayTotalKrw,
+      status: STATUS_PENDING,
+      step: 6,
+      updatedAt: new Date().toISOString(),
+    };
+    await r.ref.update(update);
+    const data = { ...r.data, ...update };
+
+    // 관리자 알림 (실패해도 결제 진행은 막지 않음)
+    const s = quote.surcharges;
+    const text = `A new reservation request has been submitted with the details below:
+
+[Reservation Details]
+- Reference Ticket ID: ${req.params.id}
+- Airport: ${data.airport}
+- Service Date & Time: ${data.date} ${data.flightTime || ''}
+- Service Type: ${String(data.serviceType || '').toUpperCase()}
+- Flight: ${data.airline || ''} ${data.flightNumber || ''}
+
+[Client Info]
+- Name: ${data.firstName || ''} ${data.lastName || ''}
+- Email: ${data.email || ''}
+- Phone: ${data.phone || ''}
+- Special Requests: ${data.specialRequests || 'None'}
+
+[Service Configuration]
+- Selected Chauffeur Vehicle: ${String(data.vehicleType || 'none').toUpperCase()}
+${data.vehicleType && data.vehicleType !== 'none' ? `- Transfer Address: ${data.transferAddress || 'Not provided'}\n` : ''}- Passengers Count: ${data.passengers}
+- Checked Luggage Count: ${data.luggageCount}
+
+[Pricing Breakdown]
+- Base Assist Fee: $${quote.baseFeeUsd}
+- Chauffeur Vehicle Fee: $${quote.vehicleUsd}
+- Extra Passenger Surcharge: $${quote.extraPassUsd}
+- Extra Baggage Surcharge: $${quote.extraLugUsd}
+${quote.porterUsd > 0 ? `- Porter Service: $${quote.porterUsd}\n` : ''}${s.nightFeeUsd > 0 ? `- Night Service Surcharge: $${s.nightFeeUsd}\n` : ''}${s.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${s.urgentFeeUsd}\n` : ''}${s.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${s.weekendFeeUsd}\n` : ''}--------------------------------------------------
+- Payment Method: ${method === 'paypal' ? 'PayPal (USD, incl. 4% fee)' : 'NICEPAY (KRW, no card fee)'}
+- Amount to Charge: ${currency === 'USD' ? `$${amount.toFixed(2)} USD` : `₩${amount.toLocaleString()}`}
+
+Sincerely,
+Beyond the Gate Automated System`;
+    adminRecipients()
+      .then(({ primary }) => sendAdminMail(`New Reservation Request - ${req.params.id}`, text, primary))
+      .catch(err => console.error('Admin notification failed:', err));
+
+    res.status(200).json(checkoutPayload(req.params.id, data));
+  } catch (error) {
+    console.error('Reservation submit failed:', error);
+    res.status(500).json({ error: 'Failed to submit reservation' });
+  }
+});
+
+// 결제 페이지 새로고침 시 확정된 결제 정보 재조회
+app.get('/api/reservations/:id/checkout', async (req, res) => {
+  try {
+    const r = await loadReservation(req.params.id, String(req.query.token || ''));
+    if (r.error) return res.status(r.code).json({ error: r.error });
+    if (!r.data.amount) return res.status(400).json({ error: 'Reservation not submitted' });
+    res.status(200).json(checkoutPayload(req.params.id, r.data));
+  } catch (error) {
+    console.error('Checkout lookup failed:', error);
+    res.status(500).json({ error: 'Failed to load checkout' });
+  }
+});
+
+// 결제 완료 페이지용 상태 조회 (개인정보 없이 상태·금액만 반환)
+app.get('/api/reservations/:id/status', async (req, res) => {
+  try {
+    const r = await loadReservation(req.params.id);
+    if (r.error) return res.status(r.code).json({ error: r.error });
+    res.status(200).json({
+      status: r.data.status,
+      paid: r.data.status === STATUS_PAID,
+      amount: r.data.payment?.amount ?? r.data.amount ?? null,
+      currency: r.data.payment?.currency ?? r.data.currency ?? null,
+    });
+  } catch (error) {
+    console.error('Status lookup failed:', error);
+    res.status(500).json({ error: 'Failed to load status' });
+  }
+});
+
+async function markPaid(ref, payment) {
+  await ref.update({
+    status: STATUS_PAID,
+    payment: { ...payment, paidAt: new Date().toISOString() },
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 // --- Nicepay Integration ---
+// 테스트 시 NICEPAY_API_BASE=https://sandbox-api.nicepay.co.kr
+const NICEPAY_API_BASE = process.env.NICEPAY_API_BASE || 'https://api.nicepay.co.kr';
+// 금액은 서버가 확정한 예약 금액(KRW)만 사용한다.
+// 카드 수수료는 고객에게 부과하지 않는다(여신전문금융업법 제19조).
 app.post('/api/nicepay-return', async (req, res) => {
-  const { authResultCode, authResultMsg, tid, txTid, authToken, mid, orderId, amount, signature, clientId } = req.body;
+  const { authResultCode, authResultMsg, tid, txTid, authToken, orderId, amount, signature, clientId } = req.body;
   const transactionId = tid || txTid; // Nicepay V2 uses 'tid'
   const secretKey = process.env.NICEPAY_SECRET_KEY;
-  // Fallback to env var if clientId is not in req.body
-  const nicepayClientId = clientId || process.env.VITE_NICEPAY_CLIENT_KEY;
+  const nicepayClientId = process.env.NICEPAY_CLIENT_ID || process.env.VITE_NICEPAY_CLIENT_KEY;
+  const fail = (message) => res.redirect(`/fail?orderId=${encodeURIComponent(orderId || '')}&message=${encodeURIComponent(message)}`);
 
-  if (!secretKey || !nicepayClientId) {
-    return res.redirect(`/fail?message=${encodeURIComponent('Nicepay keys are missing')}`);
-  }
+  if (!secretKey || !nicepayClientId) return fail('Nicepay keys are missing');
 
   // authResultCode '0000' means authentication succeeded
-  if (authResultCode !== '0000') {
-    return res.redirect(`/fail?message=${encodeURIComponent(authResultMsg || 'Authentication failed')}`);
+  if (authResultCode !== '0000') return fail(authResultMsg || 'Authentication failed');
+
+  // 인증 응답 위변조 검증: sha256(authToken + clientId + amount + secretKey)
+  const expectedSignature = crypto.createHash('sha256')
+    .update(`${authToken}${nicepayClientId}${amount}${secretKey}`).digest('hex');
+  if (clientId !== nicepayClientId || signature !== expectedSignature) {
+    console.error('Nicepay signature mismatch', { orderId });
+    return fail('Payment verification failed');
   }
 
-  const encryptedSecretKey = Buffer.from(`${nicepayClientId}:${secretKey}`).toString('base64');
-
   try {
-    const response = await fetch(`https://api.nicepay.co.kr/v1/payments/${transactionId}`, {
+    const r = await loadReservation(orderId);
+    if (r.error) return fail('Reservation not found');
+    if (r.data.status === STATUS_PAID) {
+      return res.redirect(`/success?gateway=nicepay&orderId=${encodeURIComponent(orderId)}`);
+    }
+    const expectedAmount = r.data.amount;
+    if (r.data.paymentMethod !== 'nicepay' || parseInt(amount, 10) !== expectedAmount) {
+      console.error('Nicepay amount mismatch', { orderId, amount, expectedAmount });
+      return fail('Payment amount mismatch');
+    }
+
+    const encryptedSecretKey = Buffer.from(`${nicepayClientId}:${secretKey}`).toString('base64');
+    const response = await fetch(`${NICEPAY_API_BASE}/v1/payments/${encodeURIComponent(transactionId)}`, {
       method: 'POST',
       headers: {
         Authorization: `Basic ${encryptedSecretKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ amount: parseInt(amount) }),
+      body: JSON.stringify({ amount: expectedAmount }),
     });
-
     const data = await response.json();
-    
+
     // resultCode '0000' means capture succeeded
     if (!response.ok || data.resultCode !== '0000') {
       console.error("Nicepay Capture Failed:", data);
-      return res.redirect(`/fail?message=${encodeURIComponent(data.resultMsg || 'Capture failed')}`);
+      return fail(data.resultMsg || 'Capture failed');
     }
-    
-    // Success! Redirect to frontend success page
-    res.redirect(`/success?gateway=nicepay&paymentKey=${transactionId}&orderId=${orderId}&amount=${amount}`);
+    if (Number(data.amount) !== expectedAmount || data.orderId !== orderId) {
+      console.error('Nicepay approval mismatch', { orderId, data });
+      await r.ref.update({ status: STATUS_REVIEW, updatedAt: new Date().toISOString() });
+      return fail('Payment verification failed. Please contact support.');
+    }
+
+    await markPaid(r.ref, {
+      gateway: 'nicepay',
+      transactionId: data.tid || transactionId,
+      amount: expectedAmount,
+      currency: 'KRW',
+    });
+    res.redirect(`/success?gateway=nicepay&orderId=${encodeURIComponent(orderId)}`);
   } catch (error) {
     console.error('Nicepay Capture Error:', error);
-    res.redirect(`/fail?message=${encodeURIComponent('Payment capture process failed')}`);
+    fail('Payment capture process failed');
   }
 });
 
@@ -183,25 +449,33 @@ async function generatePaypalAccessToken() {
   return data.access_token;
 }
 
+// PayPal 주문 생성 — 금액은 서버가 확정한 예약 금액(USD)만 사용
 app.post('/api/orders', async (req, res) => {
   try {
-    const { orderId, amount, orderName } = req.body;
+    const { orderId, token } = req.body;
+    const r = await loadReservation(orderId, String(token || ''));
+    if (r.error) return res.status(r.code).json({ error: r.error });
+    if (r.data.status === STATUS_PAID) return res.status(409).json({ error: 'Already paid' });
+    if (r.data.paymentMethod !== 'paypal' || r.data.currency !== 'USD') {
+      return res.status(400).json({ error: 'Reservation is not set up for PayPal' });
+    }
+
     const accessToken = await generatePaypalAccessToken();
-    const url = `${PAYPAL_BASE_URL}/v2/checkout/orders`;
     const payload = {
       intent: "CAPTURE",
       purchase_units: [
         {
           reference_id: orderId,
-          description: orderName,
+          custom_id: orderId,
+          description: `VIP ${r.data.serviceType || 'service'} in ${r.data.airport || 'ICN'}`.slice(0, 127),
           amount: {
             currency_code: "USD",
-            value: amount,
+            value: r.data.amount.toFixed(2),
           },
         },
       ],
     };
-    const response = await fetch(url, {
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -210,6 +484,9 @@ app.post('/api/orders', async (req, res) => {
       body: JSON.stringify(payload),
     });
     const data = await response.json();
+    if (response.ok && data.id) {
+      await r.ref.update({ paypalOrderId: data.id, updatedAt: new Date().toISOString() });
+    }
     res.status(response.status).json(data);
   } catch (error) {
     console.error("Failed to create order:", error);
@@ -220,9 +497,13 @@ app.post('/api/orders', async (req, res) => {
 app.post('/api/orders/:orderID/capture', async (req, res) => {
   try {
     const { orderID } = req.params;
+    const { orderId, token } = req.body;
+    const r = await loadReservation(orderId, String(token || ''));
+    if (r.error) return res.status(r.code).json({ error: r.error });
+    if (r.data.paypalOrderId !== orderID) return res.status(400).json({ error: 'PayPal order mismatch' });
+
     const accessToken = await generatePaypalAccessToken();
-    const url = `${PAYPAL_BASE_URL}/v2/checkout/orders/${orderID}/capture`;
-    const response = await fetch(url, {
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -230,10 +511,71 @@ app.post('/api/orders/:orderID/capture', async (req, res) => {
       },
     });
     const data = await response.json();
+
+    const capture = data?.purchase_units?.[0]?.payments?.captures?.[0];
+    if (response.ok && capture?.status === 'COMPLETED') {
+      const paidValue = capture.amount?.value;
+      if (capture.amount?.currency_code === 'USD' && paidValue === r.data.amount.toFixed(2)) {
+        await markPaid(r.ref, {
+          gateway: 'paypal',
+          transactionId: capture.id,
+          paypalOrderId: orderID,
+          amount: r.data.amount,
+          currency: 'USD',
+        });
+      } else {
+        console.error('PayPal amount mismatch', { orderId, paidValue, expected: r.data.amount });
+        await r.ref.update({ status: STATUS_REVIEW, updatedAt: new Date().toISOString() });
+      }
+    }
     res.status(response.status).json(data);
   } catch (error) {
     console.error("Failed to capture order:", error);
     res.status(500).json({ error: error.message || "Failed to capture order" });
+  }
+});
+
+// --- Chatbot ---
+// Gemini API 키는 서버 환경변수(GEMINI_API_KEY)에만 둔다. 브라우저/Firestore에 노출하지 않는다.
+app.post('/api/chat', async (req, res) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'Chatbot is not configured' });
+
+  const history = Array.isArray(req.body.messages) ? req.body.messages.slice(-20) : [];
+  const contents = history
+    .filter(m => m && typeof m.text === 'string' && m.text.trim())
+    .map(m => ({ role: m.isBot ? 'model' : 'user', parts: [{ text: m.text.slice(0, 1000) }] }));
+  if (!contents.length || contents[contents.length - 1].role !== 'user') {
+    return res.status(400).json({ error: 'Invalid messages' });
+  }
+
+  try {
+    const settings = await loadSettings();
+    const chatbotConfig = settings.chatbot || {};
+    const systemInstruction = `
+Your name is 'Q'. Always refer to yourself as 'Q' when interacting with users.
+${chatbotConfig.systemPrompt || 'You are a VIP concierge for Beyond The Gate, a premium airport meet & assist and chauffeur service in Korea. Be polite and helpful.'}
+IMPORTANT: Always reply in the exact language the user uses (e.g., if the user asks in English, reply in English; if Korean, reply in Korean).
+
+IMPORTANT GUIDANCE:
+1. ALWAYS keep your responses very concise and short (1-2 sentences max). Avoid long paragraphs.
+2. If the user asks about booking, making a reservation, or pricing, naturally guide them to use our reservation page by providing this link formatted exactly as markdown: "[Book](/)" (or "[예약하기](/)" if in Korean).
+3. ALWAYS try to answer the user's questions using the Knowledge Base.
+
+Here is the company Knowledge Base to use for answering questions:
+${chatbotConfig.knowledgeBase || ''}
+    `.trim();
+
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash-lite',
+      contents,
+      config: { systemInstruction, maxOutputTokens: 400 },
+    });
+    res.status(200).json({ reply: response.text || '' });
+  } catch (error) {
+    console.error('Chatbot failed:', error);
+    res.status(500).json({ error: 'Chatbot request failed' });
   }
 });
 
@@ -289,6 +631,11 @@ async function postToThreads(text) {
 
 // 블로그 포스팅 자동 발행 (Vercel Cron)
 app.get('/api/cron', async (req, res) => {
+  // Vercel Cron은 CRON_SECRET 환경변수가 있으면 Authorization 헤더에 담아 호출한다.
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
@@ -360,14 +707,14 @@ app.get('/api/cron', async (req, res) => {
     }
 
     // Firestore에 저장
-    const docRef = await addDoc(collection(db, "blog_posts"), {
+    const docRef = await db.collection("blog_posts").add({
       title,
       content,
       titleEn,
       contentEn,
       mainImageUrl,
       subImageUrl,
-      createdAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       author: "Gemini AI",
       published: true
     });
