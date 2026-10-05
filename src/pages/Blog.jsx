@@ -32,7 +32,7 @@ function Blog({ t, lang }) {
       
       {/* Blog Hero Section */}
       <div style={{
-        backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("/luxury_airport_vip.png")',
+        backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("/luxury_airport_vip.webp")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

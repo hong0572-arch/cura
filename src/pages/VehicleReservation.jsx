@@ -197,7 +197,7 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
             <p className="vr-intro-text">{isKo ? '철저하게 관리된 최고급 차량과 전문 기사님을 통해 최고의 편안함을 경험하세요.' : 'Experience top-tier comfort with our meticulously maintained fleet of premium vehicles and highly professional chauffeurs.'}</p>
           </div>
           <div className="vr-intro-feature">
-            <img src="/staria.jpg" alt="Unbeatable Value" className="vr-intro-img" />
+            <img src="/staria.webp" alt="Unbeatable Value" className="vr-intro-img" />
             <h4 className="vr-intro-title">{isKo ? '압도적인 가성비' : 'Unbeatable Value'}</h4>
             <p className="vr-intro-text">{isKo ? '투명하고 경쟁력 있는 거리 기반 요금제로 합리적인 가격의 럭셔리 서비스를 제공합니다.' : 'Enjoy luxury service without the premium price tag. We offer transparent, highly competitive distance-based rates.'}</p>
           </div>

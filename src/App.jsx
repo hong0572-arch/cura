@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from './firebase';
@@ -21,42 +21,84 @@ import Blog from './pages/Blog';
 import BusinessProposal from './pages/BusinessProposal';
 
 // Admin Components
-import AdminLogin from './components/AdminLogin';
-import AdminDashboard from './components/AdminDashboard';
+// 관리자 화면·예약 위저드는 필요할 때만 불러온다 (첫 화면 JS 용량 절감)
+const AdminLogin = lazy(() => import('./components/AdminLogin'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 import ReviewSystem from './components/ReviewSystem';
 import Chatbot from './components/Chatbot';
-import BookingWizard from './components/BookingWizard';
+const BookingWizard = lazy(() => import('./components/BookingWizard'));
 
 import SEOMeta from './components/SEOMeta';
 import { translations as defaultTranslations } from './translations';
+import { langFromPath, stripLocale, localizePath } from './utils/locale';
+import { optimizedImage } from './utils/images';
 
-function App() {
+// Firestore 문구에 없는 키는 코드의 기본 번역으로 채운다
+const mergeContent = (target, source) => {
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      if (!target[key]) target[key] = {};
+      mergeContent(target[key], source[key]);
+    } else if (target[key] === undefined) {
+      target[key] = source[key];
+    }
+  }
+  return target;
+};
+
+// initialSiteData: 빌드 시 사전 렌더링에 쓴 Firestore siteData 스냅샷
+// (브라우저에서는 window.__SITE_DATA__ 로 전달되어 첫 화면을 바로 그린다)
+function App({ initialSiteData = null }) {
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const langFromUrl = searchParams.get('lang') === 'en' ? 'en' : 'ko';
+  const navigate = useNavigate();
+  const lang = langFromPath(location.pathname);
 
-  const [lang, setLangState] = useState(langFromUrl);
   const [selectedVehicle, setSelectedVehicle] = useState('none');
   const [termsOpen, setTermsOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardData, setWizardData] = useState(null);
 
+  // 예전 주소(?lang=en)는 /en/... 경로로 옮긴다
   useEffect(() => {
-    if (langFromUrl !== lang) {
-      setLangState(langFromUrl);
+    const params = new URLSearchParams(location.search);
+    const legacyLang = params.get('lang');
+    if (!legacyLang) return;
+    params.delete('lang');
+    const query = params.toString();
+    const target = legacyLang === 'en' ? localizePath(stripLocale(location.pathname), 'en') : stripLocale(location.pathname);
+    navigate(`${target}${query ? `?${query}` : ''}${location.hash}`, { replace: true });
+  }, [location.pathname, location.search, location.hash, navigate]);
+
+  // 페이지 이동 시: #섹션이 있으면 그 위치로, 없으면 맨 위로 스크롤
+  useEffect(() => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (id === 'admin') return;
+    if (!id) {
+      window.scrollTo(0, 0);
+      return;
     }
-  }, [langFromUrl]);
+    const timer = setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - 80, behavior: 'smooth' });
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [location.pathname, location.hash]);
+
+  // 클라이언트에서 언어가 바뀌면 <html lang> 도 맞춘다 (사전 렌더링 페이지는 빌드 시 지정)
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   const setLang = (newLang) => {
-    setLangState(newLang);
-    const newParams = new URLSearchParams(window.location.search);
-    newParams.set('lang', newLang);
-    window.history.pushState({}, '', `${window.location.pathname}?${newParams.toString()}`);
+    const target = localizePath(stripLocale(location.pathname), newLang);
+    navigate(`${target}${location.search}${location.hash}`);
   };
 
   const defaultImages = {
-    heroBg: '/luxury_airport_vip.jpg',
-    fleetBg: '/luxury_fleet.png',
+    heroBg: '/luxury_airport_vip.webp',
+    fleetBg: '/luxury_fleet.webp',
   };
 
   // Gemini API 키는 서버 환경변수(GEMINI_API_KEY)로만 관리한다
@@ -124,49 +166,43 @@ function App() {
   };
 
   // --- Dynamic Content State from Firestore ---
-  const [content, setContent] = useState(defaultTranslations);
-  const [images, setImages] = useState(defaultImages);
-  const [settings, setSettings] = useState(defaultSettings);
-  const [loading, setLoading] = useState(true);
+  const resolveSiteData = (data) => {
+    const settingsFromData = data?.settings ? { ...data.settings } : null;
+    // Ensure chatbot settings exist even if data.settings is from an older save
+    if (settingsFromData && !settingsFromData.chatbot) {
+      settingsFromData.chatbot = { ...defaultChatbot };
+    }
+    return {
+      content: data?.content ? mergeContent(structuredClone(data.content), defaultTranslations) : defaultTranslations,
+      images: data?.images
+        ? Object.fromEntries(Object.entries(data.images).map(([k, v]) => [k, optimizedImage(v)]))
+        : defaultImages,
+      settings: settingsFromData || defaultSettings,
+    };
+  };
 
+  const [initial] = useState(() => resolveSiteData(initialSiteData));
+  const [content, setContent] = useState(initial.content);
+  const [images, setImages] = useState(initial.images);
+  const [settings, setSettings] = useState(initial.settings);
+
+  // 첫 화면은 빌드 시점 데이터로 바로 그리고, 최신 데이터는 뒤에서 받아 갱신한다
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const docRef = doc(db, 'siteData', 'main');
-        const docSnap = await getDoc(docRef);
+        const docSnap = await getDoc(doc(db, 'siteData', 'main'));
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.content) {
-            const merge = (target, source) => {
-              for (const key in source) {
-                if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                  if (!target[key]) target[key] = {};
-                  merge(target[key], source[key]);
-                } else if (target[key] === undefined) {
-                  target[key] = source[key];
-                }
-              }
-              return target;
-            };
-            setContent(merge(data.content, defaultTranslations));
-          }
-          if (data.images) setImages(data.images);
-          if (data.settings) {
-            // Ensure chatbot settings exist even if data.settings is from an older save
-            const mergedSettings = { ...data.settings };
-            if (!mergedSettings.chatbot) {
-              mergedSettings.chatbot = { ...defaultChatbot };
-            }
-            setSettings(mergedSettings);
-          }
+          const next = resolveSiteData(docSnap.data());
+          setContent(next.content);
+          setImages(next.images);
+          setSettings(next.settings);
         }
       } catch (error) {
         console.error('Error fetching data from Firestore:', error);
-      } finally {
-        setLoading(false);
       }
     };
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- Admin Routing States ---
@@ -271,45 +307,49 @@ function App() {
   // Map translations to selected language
   const t = content[lang] || defaultTranslations[lang];
 
-  if (loading) {
-    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff' }}>Loading...</div>;
-  }
-
   // Render Admin Screen if active
   if (view === 'admin') {
+    const loadingScreen = <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff' }}>Loading...</div>;
     if (adminState === 'checking') {
-      return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff' }}>Loading...</div>;
+      return loadingScreen;
     }
     if (adminState !== 'admin') {
       return (
-        <AdminLogin
-          notAuthorized={adminState === 'notAdmin'}
-          onCancel={() => { window.location.hash = ''; }}
-        />
+        <Suspense fallback={loadingScreen}>
+          <AdminLogin
+            notAuthorized={adminState === 'notAdmin'}
+            onCancel={() => { window.location.hash = ''; }}
+          />
+        </Suspense>
       );
     }
     return (
-      <AdminDashboard
-        data={content}
-        images={images}
-        settings={settings}
-        onSave={handleSaveAdminData}
-        onReset={handleResetDefaults}
-        onPreview={() => { window.location.hash = ''; }}
-        onLogout={handleAdminLogout}
-      />
+      <Suspense fallback={loadingScreen}>
+        <AdminDashboard
+          data={content}
+          images={images}
+          settings={settings}
+          onSave={handleSaveAdminData}
+          onReset={handleResetDefaults}
+          onPreview={() => { window.location.hash = ''; }}
+          onLogout={handleAdminLogout}
+        />
+      </Suspense>
     );
   }
 
   // Render standard Customer Screen
   return (
     <>
-      <SEOMeta lang={lang} translations={content || defaultTranslations} />
+      <SEOMeta lang={lang} path={stripLocale(location.pathname)} translations={content || defaultTranslations} />
       <Navbar lang={lang} setLang={setLang} t={t} />
 
       <main>
         <Routes>
-          <Route path="/" element={
+          {/* 한국어: /about, 영어: /en/about — 같은 페이지 구성을 두 경로에 둔다 */}
+          {['ko', 'en'].map(routeLang => (
+            <Route key={routeLang} path={routeLang === 'en' ? 'en' : '/'}>
+          <Route index element={
             <>
               {/* Pass customized images to sections */}
               <Hero t={t} customImage={images.heroBg} settings={settings} onOpenWizard={(data) => {
@@ -332,12 +372,14 @@ function App() {
               <Faq t={t} />
             </>
           } />
-          <Route path="/about" element={<AboutUs t={t} />} />
-          <Route path="/book-vehicle" element={<VehicleReservation t={t} settings={settings} lang={lang} />} />
-          <Route path="/terms" element={<Terms t={t} />} />
-          <Route path="/privacy" element={<Privacy t={t} />} />
-          <Route path="/blog" element={<Blog t={t} lang={lang} />} />
-          <Route path="/business" element={<BusinessProposal t={t} />} />
+          <Route path="about" element={<AboutUs t={t} />} />
+          <Route path="book-vehicle" element={<VehicleReservation t={t} settings={settings} lang={lang} />} />
+          <Route path="terms" element={<Terms t={t} />} />
+          <Route path="privacy" element={<Privacy t={t} />} />
+          <Route path="blog" element={<Blog t={t} lang={lang} />} />
+          <Route path="business" element={<BusinessProposal t={t} />} />
+            </Route>
+          ))}
         </Routes>
       </main>
 
@@ -352,13 +394,15 @@ function App() {
       <Chatbot settings={settings} lang={lang} />
 
       {isWizardOpen && (
-        <BookingWizard
-          initialData={wizardData}
-          onClose={() => setIsWizardOpen(false)}
-          settings={settings}
-          t={t}
-          lang={lang}
-        />
+        <Suspense fallback={null}>
+          <BookingWizard
+            initialData={wizardData}
+            onClose={() => setIsWizardOpen(false)}
+            settings={settings}
+            t={t}
+            lang={lang}
+          />
+        </Suspense>
       )}
     </>
   );

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Mail, Phone, MapPin, ArrowUp, ExternalLink, Lock } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { langFromPath, localizePath, stripLocale } from '../utils/locale';
 
 export default function Footer({ t, onOpenTerms }) {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -13,9 +14,11 @@ export default function Footer({ t, onOpenTerms }) {
     });
   };
 
+  const lang = langFromPath(location.pathname);
+
   const handleLinkClick = (id, path = '/') => {
-    if (location.pathname !== path) {
-      navigate(`${path}#${id}`);
+    if (stripLocale(location.pathname) !== path) {
+      navigate(localizePath(`${path}#${id}`, lang));
     } else {
       const element = document.getElementById(id);
       if (element) {
@@ -33,14 +36,14 @@ export default function Footer({ t, onOpenTerms }) {
   return (
     <footer className="footer-panel">
       <div className="container footer-container">
-        
+
         {/* Top Info row */}
         <div className="footer-main-grid">
-          
+
           {/* Brand Col */}
           <div className="footer-brand-col">
             <div className="footer-brand" onClick={scrollToTop}>
-              <img src="/logo.png" alt="Beyond the Gate Logo" className="footer-logo-img" />
+              <img src="/logo.webp" alt="Beyond the Gate Logo" className="footer-logo-img" />
             </div>
             <p className="brand-motto">
               {t.footer?.motto || 'Elevating the luxury standard of global airport hospitality and premium transport.'}
@@ -78,8 +81,8 @@ export default function Footer({ t, onOpenTerms }) {
                 <Phone size={16} className="contact-icon" />
                 <div className="contact-text-wrap">
                   <span className="contact-label">{t.contact.phone_lbl}</span>
-                  <a href={`tel:${(t.footer?.phone_val || '+82212345678').replace(/[^+\d]/g, '')}`} className="contact-link">
-                    {t.footer?.phone_val || '+82 (0)2-1234-5678'}
+                  <a href={`tel:${(t.footer?.phone_val || '+821028533998').replace(/[^+\d]/g, '').replace(/^\+820/, '+82')}`} className="contact-link">
+                    {t.footer?.phone_val || '+82 10-2853-3998'}
                   </a>
                 </div>
               </div>
@@ -133,7 +136,7 @@ export default function Footer({ t, onOpenTerms }) {
             <a href="#admin" className="legal-btn admin-link-btn" title="Admin Portal" style={{ color: 'rgba(197, 168, 128, 0.45)', marginLeft: '4px' }}>
               <Lock size={12} />
             </a>
-            
+
             <button onClick={scrollToTop} className="btn-to-top" aria-label="Scroll to top">
               <ArrowUp size={16} />
             </button>

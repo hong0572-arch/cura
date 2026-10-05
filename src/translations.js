@@ -444,7 +444,7 @@ export const translations = {
       motto: "공항 VIP 에스코트 및 하이엔드 수송 서비스의 새로운 기준을 제시합니다.",
       quick_links_title: "빠른 링크",
       email_val: "support@beyondthegate.vip",
-      phone_val: "+82 (0)2-1234-5678",
+      phone_val: "+82 10-2853-3998",
       address_val: "인천광역시 중구 공항로 271, 인천국제공항",
       offices: [
         {
@@ -1023,7 +1023,7 @@ export const translations = {
       motto: "Elevating the luxury standard of global airport hospitality and premium transport.",
       quick_links_title: "Quick Links",
       email_val: "support@beyondthegate.vip",
-      phone_val: "+82 (0)2-1234-5678",
+      phone_val: "+82 10-2853-3998",
       address_val: "271, Gonghang-ro, Jung-gu, Incheon (Incheon International Airport)",
       offices: [
         {

@@ -13,12 +13,12 @@ export default function CoreValues({ t }) {
   ];
 
   const bgImages = [
-    '/value_trust.jpg',
-    '/value_security.jpg',
-    '/value_response.jpg',
-    '/value_professionalism.jpg',
-    '/value_efficiency.jpg',
-    '/value_247.jpg'
+    '/value_trust.webp',
+    '/value_security.webp',
+    '/value_response.webp',
+    '/value_professionalism.webp',
+    '/value_efficiency.webp',
+    '/value_247.webp'
   ];
 
   return (

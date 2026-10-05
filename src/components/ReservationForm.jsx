@@ -316,8 +316,8 @@ Beyond the Gate Automated System`;
     : (t.form.features_departure || []);
     
   const imageUrl = activeTab === 'arrival' 
-    ? '/arrival_service_sunset.png' 
-    : '/departure_service_wing.png';
+    ? '/arrival_service_sunset.webp' 
+    : '/departure_service_wing.webp';
 
   return (
     <section id="reserve" className="reserve-section section-padding">

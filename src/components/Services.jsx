@@ -12,19 +12,19 @@ export default function Services({ t }) {
       id: 'arrival',
       title: t.services.arrival.title,
       desc: t.services.arrival.desc,
-      bg: '/vip_arrival_escort_v3.jpg'
+      bg: '/vip_arrival_escort_v3.webp'
     },
     {
       id: 'departure',
       title: t.services.departure.title,
       desc: t.services.departure.desc,
-      bg: '/vip_departure_escort.jpg'
+      bg: '/vip_departure_escort.webp'
     },
     {
       id: 'transfer',
       title: t.services.transfer.title,
       desc: t.services.transfer.desc,
-      bg: '/vip_arrival_escort.jpg'
+      bg: '/vip_arrival_escort.webp'
     }
   ];
 
