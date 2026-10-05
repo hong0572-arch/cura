@@ -1912,10 +1912,17 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                                 borderRadius: '4px', 
                                 fontSize: '0.8rem',
                                 backgroundColor: res.status === '결제 완료' ? 'rgba(74, 222, 128, 0.2)' : res.status === '결제 대기중' ? 'rgba(250, 204, 21, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                                color: res.status === '결제 완료' ? '#4ade80' : res.status === '결제 대기중' ? '#facc15' : '#ef4444'
+                                color: res.status === '결제 완료' ? '#4ade80' : res.status === '결제 대기중' ? '#facc15' : '#ef4444',
+                                display: 'inline-block',
+                                marginBottom: '4px'
                               }}>
                                 {res.status || '완료'}
                               </span>
+                              {res.status !== '결제 완료' && res.step && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  (Step {res.step}에서 중단)
+                                </div>
+                              )}
                             </td>
                             <td style={{ padding: '16px', wordBreak: 'break-word', color: 'var(--text-secondary)' }}>
                               {res.msg || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No special requests</span>}
