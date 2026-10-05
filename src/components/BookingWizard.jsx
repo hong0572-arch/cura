@@ -23,21 +23,7 @@ const COUNTRY_CODES = [
   { code: '+971', flag: '🇦🇪', name: 'UAE' },
 ];
 
-const AIRLINES = [
-  { name: 'Korean Air', code: 'KE' },
-  { name: 'Asiana Airlines', code: 'OZ' },
-  { name: '7Air Cargo', code: 'R7' },
-  { name: '9Air', code: 'AQ' },
-  { name: 'Abaete Aerotaxi', code: 'E4' },
-  { name: 'Abakan Air', code: 'S5*' },
-  { name: 'Delta Air Lines', code: 'DL' },
-  { name: 'Emirates', code: 'EK' },
-  { name: 'Lufthansa', code: 'LH' },
-  { name: 'KLM Royal Dutch', code: 'KL' },
-  { name: 'Air France', code: 'AF' },
-  { name: 'Singapore Airlines', code: 'SQ' },
-  { name: 'Cathay Pacific', code: 'CX' },
-];
+import { AIRLINES } from '../utils/airlines';
 
 export default function BookingWizard({ onClose, initialData, settings, t, lang = 'en' }) {
   const navigate = useNavigate();
