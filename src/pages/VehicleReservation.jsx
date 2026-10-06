@@ -4,6 +4,7 @@ import { PlaneLanding, PlaneTakeoff, Calendar, Clock, Users, Luggage, User, Mail
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
 import { localizePath } from '../utils/locale';
 import { CONTACT } from '../components/checkout/checkoutCopy';
+import { computeVehicleQuote } from '../utils/pricing';
 import './VehicleReservation.css';
 
 const libraries = ['places'];
@@ -31,6 +32,12 @@ const CAPACITY = {
 };
 const MIN_LEAD_HOURS = 24;
 
+const VEHICLES = [
+  { id: 'staria', image: '/vehicles/staria-card.webp', ko: { name: '현대 스타리아', cls: '프리미엄 미니밴' }, en: { name: 'Hyundai Staria', cls: 'Premium minivan' } },
+  { id: 'g90', image: '/vehicles/g90-card.webp', ko: { name: '제네시스 G90', cls: '럭셔리 세단' }, en: { name: 'Genesis G90', cls: 'Luxury sedan' } },
+  { id: 'sprinter', image: '/vehicles/sprinter-card.webp', ko: { name: '벤츠 스프린터', cls: 'VIP 대형 밴' }, en: { name: 'Mercedes-Benz Sprinter', cls: 'VIP large van' } },
+];
+
 const text = {
   ko: {
     title: '공항 픽업·샌딩 차량 예약',
@@ -52,6 +59,8 @@ const text = {
     badEmail: '이메일 주소를 확인해 주세요.',
     lead: `출발 ${MIN_LEAD_HOURS}시간 이내 예약은 차량 배정을 먼저 확인해야 합니다. WhatsApp이나 전화로 문의해 주세요.`,
     past: '지난 시간은 선택할 수 없습니다.',
+    seats: (v) => `최대 ${v.pax}명 · 수하물 ${v.bags}개`,
+    from: '부터',
     capacity: (v) => `선택한 차량의 권장 인원은 ${v.pax}명, 수하물 ${v.bags}개입니다. 초과 시 추가 요금이 붙으며, 더 큰 차량을 권장합니다.`,
     failed: '예약을 저장하지 못했습니다. 잠시 후 다시 시도하시거나 WhatsApp으로 연락해 주세요.',
     terms: '결제를 진행하면 이용약관 및 개인정보처리방침에 동의하는 것으로 봅니다.',
@@ -78,6 +87,8 @@ const text = {
     badEmail: 'Please check your email address.',
     lead: `Bookings within ${MIN_LEAD_HOURS} hours need a quick availability check — please message us on WhatsApp or call.`,
     past: 'Please choose a future date and time.',
+    seats: (v) => `Up to ${v.pax} guests · ${v.bags} bags`,
+    from: 'from',
     capacity: (v) => `This vehicle comfortably seats ${v.pax} with ${v.bags} bags. Extra guests or bags are charged, and a larger vehicle is recommended.`,
     failed: "We couldn't save your booking. Please try again or contact us on WhatsApp.",
     terms: 'By proceeding to payment you agree to our Terms and Privacy Policy.',
@@ -305,6 +316,36 @@ export default function VehicleReservation({ settings, lang = 'en' }) {
                 </button>
               </div>
 
+              <fieldset className="vr-vehicles">
+                <legend className="vr-label">{c.vehicle}</legend>
+                <div className="vr-vehicle-grid">
+                  {VEHICLES.map(v => {
+                    const info = v[isKo ? 'ko' : 'en'];
+                    const selected = formData.vehicleType === v.id;
+                    const fromUsd = computeVehicleQuote({ vehicleType: v.id, passengers: 1, luggage: 0 }, 1, settings).totalUsd;
+                    return (
+                      <label key={v.id} className={`vr-vehicle ${selected ? 'is-selected' : ''}`}>
+                        <input type="radio" name="vehicleType" value={v.id} checked={selected} onChange={handleChange} />
+                        <span className="vr-vehicle-media">
+                          <img src={v.image} alt="" width="360" height="210" loading="lazy" />
+                          {selected && (
+                            <span className="vr-vehicle-check" aria-hidden="true">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                            </span>
+                          )}
+                        </span>
+                        <span className="vr-vehicle-body">
+                          <span className="vr-vehicle-cls">{info.cls}</span>
+                          <span className="vr-vehicle-name">{info.name}</span>
+                          <span className="vr-vehicle-meta">{c.seats(CAPACITY[v.id])}</span>
+                          <span className="vr-vehicle-price">{money(fromUsd)} <small>{c.from}</small></span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
               <div className="vr-grid-2">
                 <div>
                   <label className="vr-label" htmlFor="vr-pickupLocation">
@@ -317,14 +358,6 @@ export default function VehicleReservation({ settings, lang = 'en' }) {
                     {formData.serviceType === 'arrival' ? <MapPin size={16} aria-hidden="true" /> : <PlaneTakeoff size={16} aria-hidden="true" />} {c.dropoff}
                   </label>
                   {formData.serviceType === 'departure' ? airportSelect('dropoffLocation') : placeInput('dropoffLocation')}
-                </div>
-                <div>
-                  <label className="vr-label" htmlFor="vr-vehicleType">{c.vehicle}</label>
-                  <select id="vr-vehicleType" name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="vr-input">
-                    <option value="staria">{isKo ? '프리미엄 미니밴 · 스타리아' : 'Premium minivan · Staria'}</option>
-                    <option value="g90">{isKo ? '럭셔리 세단 · 제네시스 G90' : 'Luxury sedan · Genesis G90'}</option>
-                    <option value="sprinter">{isKo ? 'VIP 대형 밴 · 벤츠 스프린터' : 'VIP large van · Mercedes Sprinter'}</option>
-                  </select>
                 </div>
                 <div>
                   <label className="vr-label" htmlFor="vr-flightNumber"><Plane size={16} aria-hidden="true" /> {c.flight}</label>
