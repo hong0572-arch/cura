@@ -228,7 +228,7 @@ export default function ReservationForm({ t, lang, selectedVehicle, setSelectedV
       });
 
       // Construct email content
-      const targetEmail = settings?.companyEmail || 'support@beyondthegate.vip';
+      const targetEmail = settings?.companyEmail || 'cura@beyondthegate.kr';
       const emailSubject = `New Reservation Request - ${newBookingId}`;
       const emailBody = `A new reservation request has been submitted with the details below:
 

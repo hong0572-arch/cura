@@ -1,0 +1,83 @@
+// 결제·완료·실패 화면 문구 (한/영)
+export const CONTACT = {
+  phone: '+82 10-2853-3998',
+  tel: '+821028533998',
+  whatsapp: 'https://wa.me/821028533998',
+  email: 'cura@beyondthegate.kr',
+};
+
+export const copy = {
+  ko: {
+    checkout: '결제',
+    reservation: '예약번호',
+    service: '서비스',
+    total: '결제 금액',
+    noCardFee: '국내 카드 결제는 카드 수수료가 없습니다.',
+    paypalFee: 'PayPal 결제 금액에는 4% 결제 수수료가 포함되어 있습니다.',
+    payNow: (amount) => `${amount} 결제하기`,
+    loadingModule: '결제 모듈을 불러오는 중…',
+    checking: '결제 정보를 확인하는 중…',
+    back: '이전 화면으로',
+    secure: '안전한 결제',
+    missing: '결제 정보를 불러올 수 없습니다. 예약을 처음부터 다시 진행해 주세요.',
+    startOver: '예약 다시 시작',
+    help: '도움이 필요하신가요?',
+    processingTitle: '결제를 확인하고 있습니다',
+    processingBody: '결제사 승인 결과를 확인하는 중입니다. 이 화면을 닫지 마세요.',
+    successTitle: '예약이 확정되었습니다',
+    successBody: '결제가 완료되었습니다. 담당 매니저가 일정 확인을 위해 연락드리겠습니다.',
+    paid: '결제 완료',
+    nextTitle: '다음 단계',
+    next: [
+      '예약번호를 보관해 주세요. 문의하실 때 필요합니다.',
+      '항공편이 변경되면 WhatsApp 또는 전화로 알려 주세요.',
+      '도착 당일에는 에이전트가 이름 보드를 들고 기다립니다.',
+    ],
+    home: '홈으로',
+    unverifiedTitle: '결제를 확인하지 못했습니다',
+    unverifiedBody: '결제가 완료되었다면 잠시 후 다시 확인되거나 담당자가 확인해 드립니다. 아래 예약번호로 문의해 주세요.',
+    failTitle: '결제가 완료되지 않았습니다',
+    failBody: '카드 승인이 거절되었거나 결제가 취소되었습니다. 카드사 승인 문자를 받으셨다면 아래 예약번호로 문의해 주세요.',
+    reason: '사유',
+    retry: '다시 결제하기',
+  },
+  en: {
+    checkout: 'Checkout',
+    reservation: 'Reservation',
+    service: 'Service',
+    total: 'Total',
+    noCardFee: 'No card fee on Korean card payments.',
+    paypalFee: 'The PayPal total includes a 4% processing fee.',
+    payNow: (amount) => `Pay ${amount}`,
+    loadingModule: 'Loading secure payment…',
+    checking: 'Loading your payment details…',
+    back: 'Go back',
+    secure: 'Secure payment',
+    missing: "We couldn't load your payment details. Please start your reservation again.",
+    startOver: 'Start again',
+    help: 'Need a hand?',
+    processingTitle: 'Confirming your payment',
+    processingBody: 'We are checking the result with the payment provider. Please keep this page open.',
+    successTitle: 'Your reservation is confirmed',
+    successBody: 'Payment received. Your VIP manager will contact you to confirm the details.',
+    paid: 'Paid',
+    nextTitle: 'What happens next',
+    next: [
+      'Keep your reservation number — you will need it if you contact us.',
+      'If your flight changes, tell us by WhatsApp or phone.',
+      'On the day, your agent will be waiting with a name board.',
+    ],
+    home: 'Back to home',
+    unverifiedTitle: "We couldn't confirm your payment yet",
+    unverifiedBody: 'If you completed payment, it may take a moment to appear or our team will verify it. Please contact us with the reservation number below.',
+    failTitle: 'Payment was not completed',
+    failBody: 'The card was declined or the payment was cancelled. If your bank shows a charge, contact us with the reservation number below.',
+    reason: 'Reason',
+    retry: 'Try payment again',
+  },
+};
+
+export const formatAmount = (amount, currency) =>
+  currency === 'USD'
+    ? `USD ${Number(amount).toFixed(2)}`
+    : `₩${Number(amount).toLocaleString('ko-KR')}`;

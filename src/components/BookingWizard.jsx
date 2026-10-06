@@ -238,7 +238,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
       const checkout = await res.json();
 
       navigate(checkout.method === 'paypal' ? '/payment/paypal' : '/payment', {
-        state: { orderId: bookingId, token: bookingToken, checkout }
+        state: { orderId: bookingId, token: bookingToken, checkout, lang }
       });
     } catch (err) {
       console.error('Reservation submit error:', err);
@@ -388,6 +388,12 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                           <li>
                             <span className="sky-inc-icon">🛂</span>
                             <div><strong>Customs clearance & escort assistance</strong></div>
+                          </li>
+                          <li>
+                            <span className="sky-inc-icon">🧾</span>
+                            <div>{lang === 'ko'
+                              ? <><strong>택스리펀드 지원:</strong> 외국인 고객의 부가세 환급 절차 안내 및 세관 확인·환급 창구 동행 (환급 여부·금액은 세관 및 환급사업자 기준)</>
+                              : <><strong>Tax refund assistance:</strong> guidance through the VAT refund process for international guests, with escort to the customs check and refund counters (eligibility set by Korea Customs and refund operators)</>}</div>
                           </li>
                           <li>
                             <span className="sky-inc-icon">🚶</span>
@@ -1485,8 +1491,8 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
 
               <div className="sky-contact-item mb-20">
                 <span className="sky-contact-emoji">📬</span>
-                <a href={`mailto:${t?.footer?.email_val || 'support@beyondthegate.vip'}`} className="sky-contact-link">
-                  {t?.footer?.email_val || 'support@beyondthegate.vip'}
+                <a href={`mailto:${t?.footer?.email_val || 'cura@beyondthegate.kr'}`} className="sky-contact-link">
+                  {t?.footer?.email_val || 'cura@beyondthegate.kr'}
                 </a>
               </div>
 

@@ -1,34 +1,79 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
-/* CSS Variable Design System */
+/* ==========================================================================
+   Design tokens — "Aviation Luxe" (A×B, 2026-10)
+   Navy operations panels + ivory surfaces + champagne gold.
+   Headings: Cormorant Garamond · Body: Manrope · Numbers/codes: IBM Plex Mono
+   Korean glyphs fall back to Pretendard.
+   ========================================================================== */
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-card: rgba(255, 255, 255, 0.75);
-  --bg-card-hover: rgba(255, 255, 255, 0.9);
-  
-  --gold-primary: #3043c0;
-  --gold-light: #7f8eec;
-  --gold-dark: #172476;
-  --gold-glow: rgba(48, 67, 192, 0.18);
-  --gold-glow-strong: rgba(48, 67, 192, 0.45);
-  
-  --text-primary: #0a0a0c;
-  --text-secondary: #4a4a58;
-  --text-muted: #727284;
-  --text-gold: #3043c0;
-  
-  --border-subtle: rgba(48, 67, 192, 0.15);
-  --border-focus: rgba(48, 67, 192, 0.55);
-  --border-gradient: linear-gradient(135deg, rgba(48, 67, 192, 0.3) 0%, rgba(244, 245, 251, 0.1) 100%);
-  
-  --font-serif: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  
-  --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Brand palette */
+  --navy: #0B1B33;
+  --navy-deep: #07121F;
+  --navy-line: #1F3350;
+  --ivory: #F7F3EC;
+  --sand: #EFE8DB;
+  --paper: #FFFDF8;
+  --line: #E4DCCD;
+  --ink: #1A1712;
+  --ink-soft: #5E574C;
+  --gold: #FEC74D;          /* logo gold — use on navy only */
+  --champagne: #7A5C17;     /* gold for text/links on ivory (AA contrast) */
+  --on-navy: #F4EEE2;
+  --on-navy-muted: #CFC6B5;
+  --on-navy-faint: #8F9BB0;
+  --danger: #B42318;
+  --success: #2F7D4A;
+
+  /* Shape & motion */
+  --radius: 4px;
+  --radius-lg: 10px;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --shadow-card: 0 18px 44px rgba(11, 27, 51, 0.12);
+
+  /* Legacy names used across components — mapped onto the new palette */
+  --bg-primary: var(--ivory);
+  --bg-secondary: var(--sand);
+  --bg-card: rgba(255, 253, 248, 0.92);
+  --bg-card-hover: var(--paper);
+
+  --gold-primary: var(--champagne);
+  --gold-light: var(--gold);
+  --gold-dark: var(--navy);
+  --gold-glow: rgba(122, 92, 23, 0.16);
+  --gold-glow-strong: rgba(122, 92, 23, 0.4);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-soft);
+  --text-muted: #6F675A;
+  --text-gold: var(--champagne);
+
+  --border-subtle: var(--line);
+  --border-focus: rgba(122, 92, 23, 0.55);
+  --border-gradient: linear-gradient(135deg, var(--line) 0%, rgba(255, 253, 248, 0.2) 100%);
+
+  --font-serif: 'Cormorant Garamond', 'Pretendard', Georgia, serif;
+  --font-sans: 'Manrope', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Pretendard', ui-monospace, monospace;
+
+  --transition-smooth: all 0.4s var(--ease-out);
   --transition-fast: all 0.2s ease;
-  
-  --glow-shadow: 0 0 30px rgba(48, 67, 192, 0.08);
+
+  --glow-shadow: 0 0 30px rgba(11, 27, 51, 0.06);
+}
+
+/* Dark surfaces re-map the legacy tokens so existing components stay readable */
+.on-navy,
+.navbar,
+.footer-panel,
+.hero-section {
+  --gold-primary: var(--gold);
+  --gold-light: var(--gold);
+  --text-primary: var(--on-navy);
+  --text-secondary: var(--on-navy-muted);
+  --text-muted: var(--on-navy-faint);
+  --border-subtle: var(--navy-line);
+  --gold-glow: rgba(254, 199, 77, 0.18);
 }
 
 
@@ -79,21 +124,30 @@ button, input, textarea, select {
 }
 
 /* Typography Utilities */
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+h4, h5, h6 {
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
 .font-serif {
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
 }
 
+/* Accent words: solid gold italic serif — no gradient text */
 .text-gold {
   color: var(--gold-primary);
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 50%, var(--gold-dark) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: currentColor;
+  background: none;
+  font-style: italic;
 }
 
 /* Image Card Styles */
@@ -175,16 +229,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-premium.primary {
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 50%, var(--gold-dark) 100%);
-  color: var(--bg-primary);
+  background: var(--navy);
+  color: var(--on-navy);
   border: none;
-  font-weight: 600;
-  box-shadow: 0 4px 20px var(--gold-glow);
+  font-weight: 700;
+  box-shadow: none;
 }
 
 .btn-premium.primary:hover {
-  transform: scale(1.03);
-  box-shadow: 0 8px 30px var(--gold-glow-strong);
+  background: #13284A;
+  transform: translateY(-1px);
 }
 
 .btn-premium.secondary {
@@ -228,13 +282,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .section-header h2 {
-  font-size: 2.8rem;
+  font-size: 3.2rem;
   margin-bottom: 20px;
-  font-family: var(--font-sans);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.005em;
   word-break: keep-all;
-  line-height: 1.3;
+  line-height: 1.12;
 }
 
 .section-header p {
@@ -760,7 +814,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #3b5bdb;
+  background: var(--navy);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -975,7 +1029,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 
 .btn-sky-book-now {
   width: 100%;
-  background: #3b5bdb;
+  background: var(--navy);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -998,7 +1052,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 }
 
 .sky-terms-note a {
-  color: #3b5bdb;
+  color: var(--navy);
   text-decoration: underline;
 }
 
@@ -1038,7 +1092,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 .btn-text-blue {
   background: none;
   border: none;
-  color: #3b5bdb;
+  color: var(--navy);
   font-weight: 600;
   cursor: pointer;
 }
@@ -1243,7 +1297,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 
 .sky-airline-box.active {
   background: #fff;
-  border-color: #3b5bdb;
+  border-color: var(--navy);
   box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15);
 }
 
@@ -1280,7 +1334,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 
 .sky-text-input:focus {
   background: #fff;
-  border-color: #3b5bdb;
+  border-color: var(--navy);
   box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15);
 }
 
@@ -1364,7 +1418,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 }
 
 .sky-click-link {
-  color: #3b5bdb;
+  color: var(--navy);
   text-decoration: underline;
   cursor: pointer;
   font-weight: 600;
@@ -1425,7 +1479,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 
 .sky-select-input:focus {
   background: #fff;
-  border-color: #3b5bdb;
+  border-color: var(--navy);
   box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15);
 }
 
@@ -1509,7 +1563,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 }
 
 input:checked + .sky-slider {
-  background-color: #3b5bdb;
+  background-color: var(--navy);
 }
 
 input:checked + .sky-slider:before {
@@ -1689,12 +1743,12 @@ input:checked + .sky-slider:before {
 }
 
 .sky-checkbox-wrap:hover input ~ .sky-checkbox-custom {
-  border-color: #3b5bdb;
+  border-color: var(--navy);
 }
 
 .sky-checkbox-wrap input:checked ~ .sky-checkbox-custom {
-  background-color: #3b5bdb;
-  border-color: #3b5bdb;
+  background-color: var(--navy);
+  border-color: var(--navy);
 }
 
 .sky-checkbox-custom:after {
@@ -1821,11 +1875,11 @@ input:checked + .sky-slider:before {
 }
 
 .sky-payment-option:hover {
-  border-color: #3b5bdb;
+  border-color: var(--navy);
 }
 
 .sky-payment-option.selected {
-  border-color: #3b5bdb;
+  border-color: var(--navy);
   box-shadow: 0 0 0 2px rgba(59, 91, 219, 0.15);
   background: #f8f9fa;
 }
@@ -1847,14 +1901,14 @@ input:checked + .sky-slider:before {
 }
 
 .sky-payment-option.selected .sky-radio-circle {
-  border-color: #3b5bdb;
+  border-color: var(--navy);
 }
 
 .sky-radio-inner {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #3b5bdb;
+  background: var(--navy);
 }
 
 .sky-pay-icon {
@@ -1896,7 +1950,7 @@ input:checked + .sky-slider:before {
 .btn-sky-submit-payment {
   width: 100%;
   padding: 16px;
-  background: #3b5bdb;
+  background: var(--navy);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -2008,7 +2062,7 @@ input:checked + .sky-slider:before {
 }
 
 .sky-contact-link:hover {
-  color: #3b5bdb;
+  color: var(--navy);
 }
 
 .btn-sky-whatsapp {
@@ -2100,4 +2154,101 @@ input:checked + .sky-slider:before {
 /* Fix Google Maps Autocomplete z-index inside modal */
 .pac-container {
   z-index: 100000 !important;
+}
+
+/* ==========================================================================
+   Aviation Luxe — shared building blocks
+   ========================================================================== */
+.btg-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-primary);
+}
+
+:lang(ko) .btg-eyebrow { letter-spacing: 0.04em; }
+
+.btg-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.btg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 14px 24px;
+  border-radius: var(--radius);
+  border: 1.5px solid transparent;
+  font: 700 1rem/1.2 var(--font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.btg-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btg-btn--primary { background: var(--navy); color: var(--on-navy); }
+.btg-btn--primary:hover:not(:disabled) { background: #13284A; }
+.btg-btn--gold { background: var(--gold); color: var(--navy); }
+.btg-btn--gold:hover:not(:disabled) { background: #FFD472; }
+.btg-btn--ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
+.btg-btn--ghost:hover:not(:disabled) { background: rgba(26, 23, 18, 0.05); }
+.btg-btn:focus-visible { outline: 2px solid var(--champagne); outline-offset: 3px; }
+
+/* Gold sheen on hover — primary actions only */
+.btg-sheen { position: relative; overflow: hidden; isolation: isolate; }
+.btg-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-130%);
+  transition: transform 0.9s ease;
+  z-index: -1;
+}
+.btg-sheen:hover::after, .btg-sheen:focus-visible::after { transform: translateX(130%); }
+
+.btg-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.btg-panel {
+  background: var(--navy);
+  color: var(--on-navy);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--radius-lg);
+}
+
+/* Scroll reveal — pure CSS. Browsers without view timelines, and visitors who
+   ask for reduced motion, simply see the content. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .btg-reveal {
+      animation: btg-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+  }
+}
+@keyframes btg-reveal {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes btg-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.btg-rise { animation: btg-rise 0.6s var(--ease-out) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

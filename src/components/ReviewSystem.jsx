@@ -32,7 +32,7 @@ export default function ReviewSystem({ t }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newReview.name || !newReview.text) return;
-    
+
     setSubmitting(true);
     try {
       await addDoc(collection(db, 'reviews'), {
@@ -81,8 +81,9 @@ export default function ReviewSystem({ t }) {
           <h2>Customer Reviews</h2>
           <p>What our clients say about us.</p>
         </div>
-        
-        <div className="grid-2" style={{ marginBottom: remainingReviews.length > 0 ? '20px' : '40px' }}>
+
+        {/* 모바일에서는 4개만 보이고, 전체는 '전체 리뷰 보기'에서 확인 */}
+        <div className="grid-2 reviews-grid" style={{ marginBottom: reviews.length > 4 ? '20px' : '40px' }}>
           {loading ? (
             <p style={{ textAlign: 'center' }}>Loading reviews...</p>
           ) : reviews.length === 0 ? (
@@ -94,8 +95,8 @@ export default function ReviewSystem({ t }) {
           )}
         </div>
 
-        {remainingReviews.length > 0 && (
-          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        {reviews.length > 4 && (
+          <div className={remainingReviews.length > 0 ? '' : 'reviews-more-mobile'} style={{ textAlign: 'center', marginBottom: '40px' }}>
             <button 
               className="btn-premium secondary" 
               onClick={() => setShowModal(true)}
@@ -109,23 +110,23 @@ export default function ReviewSystem({ t }) {
         <div className="glass-panel" style={{ padding: '30px', maxWidth: '600px', margin: '0 auto' }}>
           <h3 style={{ marginBottom: '20px', textAlign: 'center' }}>Leave a Review</h3>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <input 
-              type="text" 
-              placeholder="Your Name" 
+            <input
+              type="text"
+              placeholder="Your Name"
               value={newReview.name}
               onChange={(e) => setNewReview({...newReview, name: e.target.value})}
               style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
               required
             />
-            <select 
+            <select
               value={newReview.rating}
               onChange={(e) => setNewReview({...newReview, rating: Number(e.target.value)})}
               style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
             >
               {[5,4,3,2,1].map(num => <option key={num} value={num}>{num} Stars</option>)}
             </select>
-            <textarea 
-              placeholder="Your Review" 
+            <textarea
+              placeholder="Your Review"
               value={newReview.text}
               onChange={(e) => setNewReview({...newReview, text: e.target.value})}
               style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', minHeight: '100px', resize: 'vertical' }}
@@ -144,12 +145,12 @@ export default function ReviewSystem({ t }) {
           backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999,
           display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px'
         }}>
-          <div className="glass-panel" style={{ 
-            width: '100%', maxWidth: '800px', maxHeight: '85vh', 
+          <div className="glass-panel" style={{
+            width: '100%', maxWidth: '800px', maxHeight: '85vh',
             overflowY: 'auto', padding: '30px', position: 'relative',
             backgroundColor: 'var(--bg-primary)'
           }}>
-            <button 
+            <button
               onClick={() => setShowModal(false)}
               style={{
                 position: 'absolute', top: '15px', right: '15px',

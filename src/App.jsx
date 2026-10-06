@@ -19,6 +19,7 @@ import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Blog from './pages/Blog';
 import BusinessProposal from './pages/BusinessProposal';
+import PrivateJourneys from './pages/PrivateJourneys';
 
 // Admin Components
 // 관리자 화면·예약 위저드는 필요할 때만 불러온다 (첫 화면 JS 용량 절감)
@@ -27,8 +28,15 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 import ReviewSystem from './components/ReviewSystem';
 import Chatbot from './components/Chatbot';
 const BookingWizard = lazy(() => import('./components/BookingWizard'));
+// 블로그 글 상세 (마크다운 렌더러 포함) — 열 때만 불러온다
+const BlogPost = lazy(() => import('./pages/BlogPost'));
 
 import SEOMeta from './components/SEOMeta';
+import ThreeWays from './components/home/ThreeWays';
+import OpsTracker from './components/home/OpsTracker';
+import ClosingCta from './components/home/ClosingCta';
+import './components/home/home.css';
+import { homeCopy } from './content/homeCopy';
 import { translations as defaultTranslations } from './translations';
 import { langFromPath, stripLocale, localizePath } from './utils/locale';
 import { optimizedImage } from './utils/images';
@@ -109,7 +117,7 @@ function App({ initialSiteData = null }) {
   };
 
   const defaultSettings = {
-    companyEmail: 'support@beyondthegate.vip',
+    companyEmail: 'cura@beyondthegate.kr',
     extraPassengerFeeUsd: 120,
     extraLuggageFeeUsd: 40,
     porterFeeUsd: 110,
@@ -352,14 +360,16 @@ function App({ initialSiteData = null }) {
           <Route index element={
             <>
               {/* Pass customized images to sections */}
-              <Hero t={t} customImage={images.heroBg} settings={settings} onOpenWizard={(data) => {
+              <Hero t={t} lang={lang} customImage={images.heroBg} settings={settings} onOpenWizard={(data) => {
                 setWizardData(data);
                 setIsWizardOpen(true);
               }} />
 
-              <CoreValues t={t} />
+              <ThreeWays copy={(homeCopy[lang] || homeCopy.ko).ways} lang={lang} />
 
               <Services t={t} />
+
+              <OpsTracker copy={(homeCopy[lang] || homeCopy.ko).ops} />
 
               <Fleet
                 t={t}
@@ -367,9 +377,13 @@ function App({ initialSiteData = null }) {
                 customImage={images.fleetBg}
               />
 
+              <CoreValues t={t} />
+
               <ReviewSystem t={t} />
 
               <Faq t={t} />
+
+              <ClosingCta copy={(homeCopy[lang] || homeCopy.ko).closing} lang={lang} />
             </>
           } />
           <Route path="about" element={<AboutUs t={t} />} />
@@ -377,7 +391,9 @@ function App({ initialSiteData = null }) {
           <Route path="terms" element={<Terms t={t} />} />
           <Route path="privacy" element={<Privacy t={t} />} />
           <Route path="blog" element={<Blog t={t} lang={lang} />} />
+          <Route path="blog/:postId" element={<Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--ivory)' }} />}><BlogPost lang={lang} /></Suspense>} />
           <Route path="business" element={<BusinessProposal t={t} />} />
+          <Route path="private-journeys" element={<PrivateJourneys lang={lang} />} />
             </Route>
           ))}
         </Routes>

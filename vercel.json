@@ -74,6 +74,14 @@
       "destination": "/en/privacy.html"
     },
     {
+      "source": "/private-journeys",
+      "destination": "/private-journeys.html"
+    },
+    {
+      "source": "/en/private-journeys",
+      "destination": "/en/private-journeys.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/spa.html"
     }

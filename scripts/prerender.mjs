@@ -15,6 +15,7 @@ const PROJECT_ID = 'cura-1969a'
 const PAGES = [
   { path: '/', priority: '1.0', changefreq: 'weekly' },
   { path: '/book-vehicle', priority: '0.9', changefreq: 'monthly' },
+  { path: '/private-journeys', priority: '0.9', changefreq: 'monthly' },
   { path: '/about', priority: '0.8', changefreq: 'monthly' },
   { path: '/blog', priority: '0.7', changefreq: 'daily' },
   { path: '/business', priority: '0.6', changefreq: 'monthly' },

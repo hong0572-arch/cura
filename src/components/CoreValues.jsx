@@ -1,65 +1,31 @@
-import React from 'react';
 import { Award, ShieldCheck, Zap, Globe, Coins, HeartHandshake } from 'lucide-react';
 
+// 6가지 가치 — 큰 사진 카드 대신 간결한 목록 (모바일 길이 단축)
+const icons = [Award, ShieldCheck, Zap, Globe, Coins, HeartHandshake];
+
 export default function CoreValues({ t }) {
-  // Map icons to the values
-  const icons = [
-    <Award size={32} strokeWidth={1.5} />,
-    <ShieldCheck size={32} strokeWidth={1.5} />,
-    <Zap size={32} strokeWidth={1.5} />,
-    <Globe size={32} strokeWidth={1.5} />,
-    <Coins size={32} strokeWidth={1.5} />,
-    <HeartHandshake size={32} strokeWidth={1.5} />
-  ];
-
-  const bgImages = [
-    '/value_trust.webp',
-    '/value_security.webp',
-    '/value_response.webp',
-    '/value_professionalism.webp',
-    '/value_efficiency.webp',
-    '/value_247.webp'
-  ];
-
   return (
-    <section id="values" className="values-section section-padding">
+    <section id="values" className="home-section">
       <div className="container">
-        <div className="section-header">
-          <span className="badge-gold">{t.values.badge || 'Value Proposition'}</span>
-          <h2 className="font-serif text-gold">{t.values.title}</h2>
-          <p>{t.values.subtitle}</p>
+        <div className="home-head btg-reveal">
+          <p className="btg-eyebrow">{t.values.badge || 'Our promise'}</p>
+          <h2 className="home-title">{t.values.title}</h2>
+          {t.values.subtitle && <p className="home-lead" style={{ marginTop: '14px' }}>{t.values.subtitle}</p>}
         </div>
 
-        <div className="grid-3 values-grid">
-          {t.values.items.map((item, idx) => (
-            <div 
-              key={idx} 
-              className="image-card"
-              style={{ backgroundImage: `url(${bgImages[idx % bgImages.length]})` }}
-            >
-              <div className="image-card-overlay"></div>
-              <div className="image-card-content">
-                <div style={{ color: 'var(--gold-light)', marginBottom: '16px' }}>
-                  {icons[idx]}
-                </div>
-                <h3 className="image-card-title">{item.title}</h3>
-                <p className="image-card-desc">{item.desc}</p>
+        <div className="promise-grid btg-reveal">
+          {t.values.items.map((item, idx) => {
+            const Icon = icons[idx % icons.length];
+            return (
+              <div key={item.title} className="promise-item">
+                <Icon className="promise-icon" size={26} strokeWidth={1.5} aria-hidden="true" />
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
-
-      <style>{`
-        .values-section {
-          background: transparent;
-          position: relative;
-        }
-
-        .values-grid {
-          margin-top: 50px;
-        }
-      `}</style>
     </section>
   );
 }
