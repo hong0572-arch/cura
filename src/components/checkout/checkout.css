@@ -1,0 +1,200 @@
+/* Checkout · Success · Fail — Aviation Luxe */
+.co-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.co-header {
+  background: var(--navy);
+  border-bottom: 1px solid var(--navy-line);
+}
+.co-header-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.co-logo { height: 32px; width: auto; display: block; }
+.co-secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--on-navy-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.co-main {
+  flex: 1;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 40px 16px 56px;
+  box-sizing: border-box;
+}
+
+.co-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  animation: btg-rise 0.5s var(--ease-out) both;
+}
+
+/* Navy strip at the top of the card: eyebrow + reservation number */
+.co-card-head {
+  background: var(--navy);
+  color: var(--on-navy);
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.co-card-head .btg-eyebrow { color: var(--gold); }
+.co-ref {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--on-navy-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.co-body {
+  padding: 24px 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.co-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 2rem;
+  line-height: 1.12;
+  color: var(--ink);
+}
+.co-sub { margin: 0; color: var(--ink-soft); line-height: 1.65; }
+
+.co-rows { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.co-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+.co-row dt { color: var(--ink-soft); }
+.co-row dd { margin: 0; text-align: right; font-weight: 600; }
+.co-mono { font-family: var(--font-mono); font-weight: 500; }
+
+.co-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.co-total-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.co-total-amount {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.co-note { margin: 0; font-size: 0.85rem; color: var(--ink-soft); line-height: 1.55; }
+
+.co-actions { display: flex; flex-direction: column; gap: 10px; }
+.co-actions .btg-btn { width: 100%; }
+.co-link-btn {
+  background: none;
+  border: none;
+  padding: 10px;
+  min-height: 44px;
+  color: var(--ink-soft);
+  font: 600 0.92rem var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.co-link-btn:hover { color: var(--ink); }
+
+.co-alert {
+  border: 1px solid #E8B4AE;
+  background: #FBEFED;
+  color: var(--danger);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.co-paypal { min-height: 150px; }
+
+.co-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+  padding: 20px 16px 28px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.co-footer a { color: var(--champagne); font-weight: 600; text-decoration: none; }
+.co-footer a:hover { text-decoration: underline; }
+
+/* Status icon (success / fail / pending) */
+.co-status {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.co-status--ok { background: var(--navy); color: var(--gold); }
+.co-status--fail { background: #FBEFED; color: var(--danger); }
+.co-status--wait { background: var(--sand); color: var(--champagne); }
+.co-status svg path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: co-draw 0.6s 0.25s var(--ease-out) forwards; }
+@keyframes co-draw { to { stroke-dashoffset: 0; } }
+
+.co-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid var(--line);
+  border-top-color: var(--champagne);
+  border-radius: 999px;
+  animation: co-spin 0.9s linear infinite;
+}
+@keyframes co-spin { to { transform: rotate(360deg); } }
+
+.co-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.co-steps li { display: flex; gap: 12px; line-height: 1.55; color: var(--ink-soft); font-size: 0.95rem; }
+.co-steps li span:first-child { font-family: var(--font-mono); color: var(--champagne); min-width: 22px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .co-status svg path { stroke-dashoffset: 0; }
+}
+
+/* Korean text reads better with tighter tracking than the Latin mono labels */
+:lang(ko) .co-total-label,
+:lang(ko) .co-secure { letter-spacing: 0.02em; }

@@ -238,7 +238,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
       const checkout = await res.json();
 
       navigate(checkout.method === 'paypal' ? '/payment/paypal' : '/payment', {
-        state: { orderId: bookingId, token: bookingToken, checkout }
+        state: { orderId: bookingId, token: bookingToken, checkout, lang }
       });
     } catch (err) {
       console.error('Reservation submit error:', err);

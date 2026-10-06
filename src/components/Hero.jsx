@@ -4,7 +4,7 @@ import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 
 const DEFAULT_AIRPORTS = [
-  { city: 'Seoul', name: 'Incheon Intl', code: 'ICN' }, 
+  { city: 'Seoul', name: 'Incheon Intl', code: 'ICN' },
   { city: 'Paris', name: 'Paris Charles de', code: 'CDG' },
   { city: 'Milan', name: 'Milano Malpensa', code: 'MXP' },
   { city: 'Rome', name: 'Rome - Leonardo da', code: 'FCO' },
@@ -33,7 +33,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
     children: 0,
     email: ''
   });
-  
+
   const [activeDropdown, setActiveDropdown] = useState(null);
   const barRef = useRef(null);
 
@@ -94,14 +94,14 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
 
       <div className="container hero-container">
         <div className="hero-content" style={{ maxWidth: '900px', width: '100%' }}>
-          
+
           {t?.brand_sub && (
             <div className="hero-badge">
               <span className="gold-star">✦</span> {t.brand_sub}
             </div>
           )}
 
-          <h1 className="hero-title font-sans">
+          <h1 className="hero-title">
             {(t?.hero?.title || '').split('\n').map((line, idx) => (
               <span key={idx} className="title-line">
                 {line}
@@ -120,7 +120,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
           <div className="custom-search-bar-wrap" ref={barRef}>
             <div className="search-inputs-row">
               {/* 1. Airport */}
-              <div 
+              <div
                 className={`search-input-box ${activeDropdown === 'airport' ? 'active' : ''}`}
                 onClick={() => setActiveDropdown(activeDropdown === 'airport' ? null : 'airport')}
               >
@@ -129,12 +129,12 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
                   <span className="main-text">{selectedAirport.city} {selectedAirport.name ? '' : selectedAirport.code}</span>
                 </div>
                 {selectedAirport.name && <span className="side-text text-muted">{selectedAirport.code}</span>}
-                
+
                 {activeDropdown === 'airport' && (
                   <div className="dropdown-popover airport-popover">
                     {activeAirports.map(a => (
-                      <div 
-                        key={a.code} 
+                      <div
+                        key={a.code}
                         className="dropdown-item airport-item"
                         onClick={(e) => { e.stopPropagation(); updateForm('airport', a.code); setActiveDropdown(null); }}
                       >
@@ -150,7 +150,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
               </div>
 
               {/* 2. Service Type */}
-              <div 
+              <div
                 className={`search-input-box ${activeDropdown === 'service' ? 'active' : ''}`}
                 onClick={() => setActiveDropdown(activeDropdown === 'service' ? null : 'service')}
               >
@@ -158,14 +158,14 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
                   <span className="main-text" style={{color: '#555'}}>{activeDropdown === 'service' ? 'Service type' : selectedService.label}</span>
                 </div>
                 <ChevronDown className="input-icon chevron" size={16} />
-                
+
                 {activeDropdown === 'service' && (
                   <div className="dropdown-popover service-popover">
                     {SERVICES.map(s => {
                       const Icon = s.icon;
                       return (
-                        <div 
-                          key={s.id} 
+                        <div
+                          key={s.id}
                           className="dropdown-item"
                           onClick={(e) => { e.stopPropagation(); updateForm('serviceType', s.id); setActiveDropdown(null); }}
                         >
@@ -178,7 +178,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
               </div>
 
               {/* 3. Date */}
-              <div 
+              <div
                 className="search-input-box"
                 style={{ cursor: 'pointer' }}
                 onClick={(e) => {
@@ -192,7 +192,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
                   </span>
                 </div>
                 <Calendar className="input-icon" size={16} />
-                <input 
+                <input
                   type="date"
                   value={formData.date}
                   min={minDate}
@@ -210,7 +210,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
               </div>
 
               {/* 4. Passengers */}
-              <div 
+              <div
                 className={`search-input-box ${activeDropdown === 'passengers' ? 'active' : ''}`}
                 onClick={() => setActiveDropdown(activeDropdown === 'passengers' ? null : 'passengers')}
               >
@@ -220,7 +220,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
                   </span>
                 </div>
                 <Users className="input-icon" size={16} />
-                
+
                 {activeDropdown === 'passengers' && (
                   <div className="dropdown-popover passengers-popover" onClick={e => e.stopPropagation()}>
                     <div className="pax-row">
@@ -252,7 +252,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
               {/* 5. Email */}
               <div className="search-input-box no-border" style={{ cursor: 'text', paddingRight: '8px' }}>
                 <div className="input-text-area" style={{ width: '100%' }}>
-                  <input 
+                  <input
                     type="email"
                     placeholder="Email Address *"
                     value={formData.email}
@@ -303,12 +303,12 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
               </div>
 
             </div>
-            
+
             <button onClick={handleCheckPrice} className="btn-hero-submit">
               Check Price
             </button>
           </div>
-          
+
         </div>
 
         {/* Quick Stats Overlay (Luxurious Look) */}
@@ -415,21 +415,24 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
         }
 
         .hero-title {
-          font-size: 3.5rem;
-          line-height: 1.25;
-          color: #fff;
+          font-family: var(--font-serif);
+          font-size: 4.2rem;
+          line-height: 1.08;
+          color: var(--on-navy);
           margin-bottom: 24px;
           letter-spacing: -0.01em;
-          font-weight: 700;
-          text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+          font-weight: 500;
+          text-shadow: 0 4px 16px rgba(7, 18, 31, 0.45);
         }
 
         .title-line {
           display: inline-block;
-          background: linear-gradient(to right, #fff 30%, var(--gold-light) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: slide-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          color: var(--on-navy);
+          animation: slide-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+        }
+        .title-line + .title-line {
+          color: var(--gold);
+          font-style: italic;
         }
 
         .hero-subtitle {
@@ -470,13 +473,13 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
           color: #333;
           font-size: 0.95rem;
         }
-        
+
         .search-input-box.no-border {
           border-right: none;
         }
 
         .search-input-box.active {
-          box-shadow: inset 0 0 0 2px #3b5bdb;
+          box-shadow: inset 0 0 0 2px #0B1B33;
           border-radius: inherit;
           z-index: 10;
         }
@@ -527,7 +530,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
 
         .btn-hero-submit {
           width: 100%;
-          background: #3b5bdb;
+          background: #0B1B33;
           color: #fff;
           border: none;
           padding: 16px;
@@ -539,10 +542,15 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
           transition: background 0.2s;
         }
         .btn-hero-submit:hover {
-          background: #364fc7;
+          background: #13284A;
         }
 
         /* Stats Panel Overlay */
+        .hero-stats-panel.glass-panel {
+          background: rgba(11, 27, 51, 0.78);
+          border-color: var(--navy-line);
+        }
+
         .hero-stats-panel {
           display: flex;
           align-items: center;
@@ -562,10 +570,10 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
         }
 
         .stat-number {
-          font-size: 1.8rem;
-          font-weight: 700;
-          color: var(--gold-primary);
-          font-family: var(--font-sans);
+          font-size: 1.6rem;
+          font-weight: 500;
+          color: var(--gold);
+          font-family: var(--font-mono);
         }
 
         .stat-label {
@@ -635,7 +643,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
         .dropdown-item:hover {
           background: #f8f9fa;
         }
-        
+
         .mr-12 {
           margin-right: 12px;
         }
@@ -764,11 +772,11 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
           cursor: default;
         }
         .cal-day.today {
-          border: 1px solid #3b5bdb;
-          color: #3b5bdb;
+          border: 1px solid #0B1B33;
+          color: #0B1B33;
         }
         .cal-day.selected {
-          background: #3b5bdb;
+          background: #0B1B33;
           color: #fff;
           border: none;
         }

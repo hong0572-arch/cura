@@ -165,7 +165,7 @@ export default function VehicleReservation({ settings, t, lang = 'en' }) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const checkout = await res.json();
       navigate(checkout.method === 'paypal' ? '/payment/paypal' : '/payment', {
-        state: { orderId, token, checkout }
+        state: { orderId, token, checkout, lang }
       });
     } catch (err) {
       console.error('Vehicle reservation error:', err);

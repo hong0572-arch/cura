@@ -142,17 +142,17 @@ export default function Navbar({ lang, setLang, t }) {
           right: 0;
           height: 80px;
           z-index: 1000;
+          background: var(--navy);
           transition: var(--transition-smooth);
-          border-bottom: 1px solid transparent;
+          border-bottom: 1px solid var(--navy-line);
         }
 
         .navbar.scrolled {
-          background: rgba(4, 9, 20, 0.85);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+          background: rgba(11, 27, 51, 0.96);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           height: 70px;
-          border-bottom: 1px solid var(--border-subtle);
-          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 6px 24px rgba(7, 18, 31, 0.35);
         }
 
         .navbar-container {
@@ -232,8 +232,9 @@ export default function Navbar({ lang, setLang, t }) {
         .nav-link-btn {
           background: transparent;
           border: none;
-          color: #ffffff;
-          font-size: 0.9rem;
+          color: var(--on-navy);
+          font-family: var(--font-sans);
+          font-size: 0.92rem;
           font-weight: 500;
           cursor: pointer;
           transition: var(--transition-fast);
@@ -248,12 +249,12 @@ export default function Navbar({ lang, setLang, t }) {
           left: 0;
           width: 0;
           height: 1px;
-          background: var(--gold-primary);
+          background: var(--gold);
           transition: var(--transition-fast);
         }
 
         .nav-link-btn:hover {
-          color: var(--gold-primary);
+          color: var(--gold);
         }
 
         .nav-link-btn:hover::after {
@@ -270,20 +271,21 @@ export default function Navbar({ lang, setLang, t }) {
           display: flex;
           align-items: center;
           gap: 6px;
-          background: rgba(197, 168, 128, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: #ffffff;
-          padding: 6px 12px;
-          border-radius: 20px;
+          background: transparent;
+          border: 1px solid var(--navy-line);
+          color: var(--on-navy);
+          padding: 8px 12px;
+          border-radius: var(--radius);
           cursor: pointer;
-          font-size: 0.8rem;
-          font-weight: 600;
+          font-family: var(--font-mono);
+          font-size: 0.78rem;
+          font-weight: 500;
           transition: var(--transition-fast);
         }
 
         .lang-toggle-btn:hover {
-          background: rgba(197, 168, 128, 0.15);
-          border-color: var(--gold-primary);
+          border-color: var(--gold);
+          color: var(--gold);
         }
 
         .btn-nav-reserve {
@@ -315,10 +317,12 @@ export default function Navbar({ lang, setLang, t }) {
           align-items: center;
           gap: 4px;
           background: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: #ffffff;
-          padding: 6px 10px;
-          border-radius: 15px;
+          border: 1px solid var(--navy-line);
+          color: var(--on-navy);
+          font-family: var(--font-mono);
+          padding: 8px 10px;
+          min-height: 40px;
+          border-radius: var(--radius);
           cursor: pointer;
           font-size: 0.75rem;
           font-weight: 600;
@@ -327,8 +331,10 @@ export default function Navbar({ lang, setLang, t }) {
         .mobile-menu-toggle {
           background: transparent;
           border: none;
-          color: #fff;
+          color: var(--on-navy);
           cursor: pointer;
+          min-width: 44px;
+          min-height: 44px;
         }
 
         .nav-menu-mobile {
@@ -336,9 +342,8 @@ export default function Navbar({ lang, setLang, t }) {
           top: 80px;
           left: 0;
           right: 0;
-          background: rgba(4, 9, 20, 0.98);
-          backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--border-subtle);
+          background: var(--navy-deep);
+          border-bottom: 1px solid var(--navy-line);
           padding: 24px;
           transform: translateY(-120%);
           transition: var(--transition-smooth);
@@ -369,13 +374,14 @@ export default function Navbar({ lang, setLang, t }) {
         .mobile-nav-link-btn {
           background: transparent;
           border: none;
-          color: #ffffff;
-          font-size: 1.1rem;
+          color: var(--on-navy);
+          font-family: var(--font-serif);
+          font-size: 1.45rem;
           text-align: left;
           padding: 12px 0;
           font-weight: 500;
           cursor: pointer;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          border-bottom: 1px solid var(--navy-line);
         }
 
         .mobile-cta {

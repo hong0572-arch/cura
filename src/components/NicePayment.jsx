@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics';
 import { useCheckout } from '../utils/useCheckout';
+import { localizePath } from '../utils/locale';
+import CheckoutLayout from './checkout/CheckoutLayout';
+import { copy, formatAmount } from './checkout/checkoutCopy';
 
 export default function NicePayment() {
   const navigate = useNavigate();
   // 서버가 확정한 결제 정보 (금액은 브라우저에서 바꿀 수 없음)
-  const { checkout: orderDetails, error: checkoutError } = useCheckout();
+  const { checkout: orderDetails, error: checkoutError, lang } = useCheckout();
+  const t = copy[lang] || copy.ko;
 
   const [errorMsg, setErrorMsg] = useState('');
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
@@ -20,19 +24,19 @@ export default function NicePayment() {
       setIsSdkLoaded(true);
     };
     script.onerror = () => {
-      setErrorMsg('나이스페이 결제 모듈을 불러오는데 실패했습니다.');
+      setErrorMsg(lang === 'en' ? 'The payment module could not be loaded.' : '나이스페이 결제 모듈을 불러오는데 실패했습니다.');
     };
     document.body.appendChild(script);
 
     return () => {
       document.body.removeChild(script);
     };
-  }, []);
+  }, [lang]);
 
   const handlePayment = () => {
     if (!orderDetails || orderDetails.currency !== 'KRW') return;
     if (!isSdkLoaded || !window.AUTHNICE) {
-      alert('결제 모듈이 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+      setErrorMsg(t.loadingModule);
       return;
     }
 
@@ -43,6 +47,7 @@ export default function NicePayment() {
     }
 
     try {
+      setErrorMsg('');
       track('Payment Initiated', { method: 'NicePay', amount: orderDetails.amount });
       window.AUTHNICE.requestPay({
         clientId: clientId,
@@ -65,61 +70,58 @@ export default function NicePayment() {
     }
   };
 
+  const amountLabel = orderDetails ? formatAmount(orderDetails.amount, 'KRW') : '';
+
   return (
-    <div style={{ maxWidth: '600px', margin: '50px auto', padding: '30px', background: 'rgba(4, 9, 20, 0.8)', borderRadius: '12px', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#c5a880' }}>국내 카드 결제 (나이스페이)</h2>
-      {checkoutError && (
-        <div style={{ padding: '15px', marginBottom: '20px', background: 'rgba(255, 0, 0, 0.2)', border: '1px solid red', borderRadius: '8px', color: '#ffaaaa' }}>
-          결제 정보를 불러올 수 없습니다. 예약을 다시 진행해 주세요.
+    <CheckoutLayout lang={lang}>
+      <section className="co-card" aria-labelledby="co-title">
+        <div className="co-card-head">
+          <span className="btg-eyebrow">{t.checkout} · NICEPAY</span>
+          {orderDetails && <span className="co-ref">{orderDetails.orderId}</span>}
         </div>
-      )}
-      {errorMsg && (
-        <div style={{ padding: '15px', marginBottom: '20px', background: 'rgba(255, 0, 0, 0.2)', border: '1px solid red', borderRadius: '8px', color: '#ffaaaa' }}>
-          <strong>오류:</strong> {errorMsg}
+
+        <div className="co-body">
+          {checkoutError && !orderDetails ? (
+            <>
+              <p className="co-alert" role="alert">{t.missing}</p>
+              <a className="btg-btn btg-btn--primary" href={localizePath('/', lang)}>{t.startOver}</a>
+            </>
+          ) : !orderDetails ? (
+            <p className="co-sub">{t.checking}</p>
+          ) : (
+            <>
+              <h1 id="co-title" className="co-title">{orderDetails.orderName}</h1>
+
+              <dl className="co-rows">
+                <div className="co-row"><dt>{t.reservation}</dt><dd className="co-mono">{orderDetails.orderId}</dd></div>
+                {orderDetails.customerName && (
+                  <div className="co-row"><dt>{lang === 'en' ? 'Lead guest' : '예약자'}</dt><dd>{orderDetails.customerName}</dd></div>
+                )}
+              </dl>
+
+              <div className="co-total">
+                <span className="co-total-label">{t.total}</span>
+                <span className="co-total-amount">{amountLabel}</span>
+              </div>
+              <p className="co-note">{t.noCardFee}</p>
+
+              {errorMsg && <p className="co-alert" role="alert">{errorMsg}</p>}
+
+              <div className="co-actions">
+                <button
+                  type="button"
+                  onClick={handlePayment}
+                  disabled={!isSdkLoaded}
+                  className="btg-btn btg-btn--gold btg-sheen"
+                >
+                  {isSdkLoaded ? t.payNow(amountLabel) : t.loadingModule}
+                </button>
+                <button type="button" className="co-link-btn" onClick={() => navigate(-1)}>{t.back}</button>
+              </div>
+            </>
+          )}
         </div>
-      )}
-      {orderDetails && (
-        <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-          <p><strong>예약번호:</strong> {orderDetails.orderId}</p>
-          <p><strong>주문명:</strong> {orderDetails.orderName}</p>
-          <p><strong>결제금액:</strong> {orderDetails.amount.toLocaleString()}원 <span style={{ opacity: 0.7, fontSize: '13px' }}>(카드 수수료 없음)</span></p>
-        </div>
-      )}
-      
-      <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
-        <button 
-          onClick={handlePayment}
-          disabled={!isSdkLoaded || !orderDetails}
-          style={{
-            flex: 1,
-            padding: '15px',
-            backgroundColor: isSdkLoaded && orderDetails ? '#3182f6' : '#555',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: isSdkLoaded && orderDetails ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {orderDetails ? `${orderDetails.amount.toLocaleString()}원 결제하기` : '결제 정보 확인 중...'}
-        </button>
-        <button 
-          onClick={() => navigate('/')}
-          style={{
-            flex: 1,
-            padding: '15px',
-            backgroundColor: 'transparent',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: '8px',
-            fontSize: '16px',
-            cursor: 'pointer',
-          }}
-        >
-          돌아가기
-        </button>
-      </div>
-    </div>
+      </section>
+    </CheckoutLayout>
   );
 }

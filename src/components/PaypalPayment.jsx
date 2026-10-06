@@ -3,21 +3,25 @@ import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics';
 import { useCheckout } from '../utils/useCheckout';
+import { localizePath } from '../utils/locale';
+import CheckoutLayout from './checkout/CheckoutLayout';
+import { copy, formatAmount } from './checkout/checkoutCopy';
 
-// Note: Replace with your actual Client ID or use environment variables
-// Vite uses import.meta.env.VITE_PAYPAL_CLIENT_ID
-const initialOptions = {
+// PayPal 버튼 문구는 결제 화면 언어에 맞춘다
+const paypalOptions = (lang) => ({
     "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "test",
     currency: "USD",
     intent: "capture",
-};
+    locale: lang === 'ko' ? 'ko_KR' : 'en_US',
+});
 
 export default function PaypalPayment() {
     const navigate = useNavigate();
     const [errorMsg, setErrorMsg] = useState('');
 
     // 서버가 확정한 결제 정보 (금액은 서버가 PayPal 주문 생성 시 다시 사용)
-    const { orderId, token, checkout: orderDetails, error: checkoutError } = useCheckout();
+    const { orderId, token, checkout: orderDetails, error: checkoutError, lang } = useCheckout();
+    const t = copy[lang] || copy.en;
 
     const createOrder = async () => {
         try {
@@ -97,63 +101,70 @@ export default function PaypalPayment() {
             console.error("Capture Error:", error);
             setErrorMsg(`Sorry, your transaction could not be processed: ${error.message}`);
             // Navigate to fail page using query string to match existing Fail.jsx expectations
-            navigate(`/fail?message=${encodeURIComponent(error.message)}`);
+            navigate(`/fail?gateway=paypal&orderId=${encodeURIComponent(orderId || '')}&message=${encodeURIComponent(error.message)}`);
         }
     };
 
-    return (
-        <div style={{ maxWidth: '600px', margin: '50px auto', padding: '30px', background: 'rgba(4, 9, 20, 0.8)', borderRadius: '12px', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#c5a880' }}>Pay with PayPal</h2>
-            
-            {checkoutError && (
-                <div style={{ padding: '15px', marginBottom: '20px', background: 'rgba(255, 0, 0, 0.2)', border: '1px solid red', borderRadius: '8px', color: '#ffaaaa' }}>
-                    We couldn't load your payment details. Please start your reservation again.
-                </div>
-            )}
-            {errorMsg && (
-                <div style={{ padding: '15px', marginBottom: '20px', background: 'rgba(255, 0, 0, 0.2)', border: '1px solid red', borderRadius: '8px', color: '#ffaaaa' }}>
-                    <strong>Error:</strong> {errorMsg}
-                </div>
-            )}
-            
-            {orderDetails && (
-                <div style={{ marginBottom: '30px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                    <p style={{ marginBottom: '10px' }}><strong>Reservation:</strong> {orderDetails.orderId}</p>
-                    <p style={{ marginBottom: '10px' }}><strong>Order:</strong> {orderDetails.orderName}</p>
-                    <p><strong>Total Amount:</strong> ${Number(orderDetails.amount).toFixed(2)} USD <span style={{ opacity: 0.7, fontSize: '13px' }}>(incl. 4% PayPal fee)</span></p>
-                </div>
-            )}
+    const amountLabel = orderDetails ? formatAmount(orderDetails.amount, 'USD') : '';
 
-            {orderDetails?.currency === 'USD' && (
-            <PayPalScriptProvider options={initialOptions}>
-                <PayPalButtons
-                    style={{ layout: "vertical", shape: "rect" }}
-                    createOrder={createOrder}
-                    onApprove={onApprove}
-                    onError={(err) => {
-                        console.error("PayPal Error:", err);
-                        setErrorMsg(prev => prev || "An error occurred during the payment process. Please try again.");
-                    }}
-                />
-            </PayPalScriptProvider>
-            )}
-            
-            <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                <button 
-                    onClick={() => navigate('/')}
-                    style={{
-                        padding: '12px 24px',
-                        backgroundColor: 'transparent',
-                        color: '#fff',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                    }}
-                >
-                    Cancel and Return
-                </button>
-            </div>
-        </div>
+    return (
+        <CheckoutLayout lang={lang}>
+            <section className="co-card" aria-labelledby="co-title">
+                <div className="co-card-head">
+                    <span className="btg-eyebrow">{t.checkout} · PayPal</span>
+                    {orderDetails && <span className="co-ref">{orderDetails.orderId}</span>}
+                </div>
+
+                <div className="co-body">
+                    {checkoutError && !orderDetails ? (
+                        <>
+                            <p className="co-alert" role="alert">{t.missing}</p>
+                            <a className="btg-btn btg-btn--primary" href={localizePath('/', lang)}>{t.startOver}</a>
+                        </>
+                    ) : !orderDetails ? (
+                        <p className="co-sub">{t.checking}</p>
+                    ) : (
+                        <>
+                            <h1 id="co-title" className="co-title">{orderDetails.orderName}</h1>
+
+                            <dl className="co-rows">
+                                <div className="co-row"><dt>{t.reservation}</dt><dd className="co-mono">{orderDetails.orderId}</dd></div>
+                                {orderDetails.customerName && (
+                                    <div className="co-row"><dt>{lang === 'ko' ? '예약자' : 'Lead guest'}</dt><dd>{orderDetails.customerName}</dd></div>
+                                )}
+                            </dl>
+
+                            <div className="co-total">
+                                <span className="co-total-label">{t.total}</span>
+                                <span className="co-total-amount">{amountLabel}</span>
+                            </div>
+                            <p className="co-note">{t.paypalFee}</p>
+
+                            {errorMsg && <p className="co-alert" role="alert">{errorMsg}</p>}
+
+                            {orderDetails.currency === 'USD' && (
+                                <div className="co-paypal">
+                                    <PayPalScriptProvider options={paypalOptions(lang)}>
+                                        <PayPalButtons
+                                            style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay" }}
+                                            createOrder={createOrder}
+                                            onApprove={onApprove}
+                                            onError={(err) => {
+                                                console.error("PayPal Error:", err);
+                                                setErrorMsg(prev => prev || "An error occurred during the payment process. Please try again.");
+                                            }}
+                                        />
+                                    </PayPalScriptProvider>
+                                </div>
+                            )}
+
+                            <div className="co-actions">
+                                <button type="button" className="co-link-btn" onClick={() => navigate(-1)}>{t.back}</button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </section>
+        </CheckoutLayout>
     );
 }

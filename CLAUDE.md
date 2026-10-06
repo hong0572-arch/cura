@@ -4,7 +4,10 @@
 
 ## 비즈니스 컨텍스트
 - 서비스 공항/범위: 인천공항·김포공항 출입국 의전, 라운지, 픽업(차량)
-- 주요 고객: 외국인 비즈니스 고객, 기업 담당자, 고령 고객의 가족
+- 사업 방향(2026-10): 공항 의전 회사 → **DMC(Destination Management Company)**로 확장. 공항 의전·차량은 "바로 예약", 맞춤 여행·단체·기업 프로그램은 "제안 요청"의 두 갈래.
+- 주요 고객: **럭셔리 여행을 계획하는 개인·가족·소규모 단체**, 외국인 비즈니스 고객, 기업 담당자(대표단·MICE), 고령 고객의 가족
+- 디자인 방향(확정): "A×B Aviation Luxe" — 네이비 운영 패널(운항 안내판·항공편 추적) + 세리프 제목(Cormorant Garamond)·본문 Manrope·숫자 IBM Plex Mono + 아이보리 바탕·샴페인 골드. 로고(금색 #FEC74D, 투명 배경)는 유지하며 어두운 배경 위에만 둔다. 시안: https://claude.ai/artifact/PaGSrYzajTNWVGnfC43CfT (AB-Motion)
+- 애니메이션 원칙: 예약 CTA·가격은 지연 없이 즉시 표시, `prefers-reduced-motion` 존중, 라이브러리 없이 CSS 위주(스크롤 효과는 `animation-timeline: view()`), 사전 렌더링 내용은 HTML에 그대로 두고 효과는 마운트 후 시작
 - 결제 수단/PG: PayPal(해외), NICEPAY(국내) — Toss는 사용하지 않음(코드 제거 완료)
 - 지원 언어: 한국어/영어 (`src/translations.js`)
 

@@ -147,8 +147,8 @@ export default function Footer({ t, onOpenTerms }) {
 
       <style>{`
         .footer-panel {
-          background: #02060f;
-          border-top: 1px solid var(--border-subtle);
+          background: var(--navy-deep);
+          border-top: 1px solid var(--navy-line);
           padding: 80px 0 40px;
           position: relative;
         }
