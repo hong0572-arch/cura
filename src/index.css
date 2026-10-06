@@ -229,16 +229,16 @@ h4, h5, h6 {
 }
 
 .btn-premium.primary {
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 50%, var(--gold-dark) 100%);
-  color: var(--bg-primary);
+  background: var(--navy);
+  color: var(--on-navy);
   border: none;
-  font-weight: 600;
-  box-shadow: 0 4px 20px var(--gold-glow);
+  font-weight: 700;
+  box-shadow: none;
 }
 
 .btn-premium.primary:hover {
-  transform: scale(1.03);
-  box-shadow: 0 8px 30px var(--gold-glow-strong);
+  background: #13284A;
+  transform: translateY(-1px);
 }
 
 .btn-premium.secondary {
@@ -2222,17 +2222,20 @@ input:checked + .sky-slider:before {
   border-radius: var(--radius-lg);
 }
 
-/* Scroll reveal — pure CSS; browsers without view timelines just show content */
+/* Scroll reveal — pure CSS. Browsers without view timelines, and visitors who
+   ask for reduced motion, simply see the content. */
 @supports (animation-timeline: view()) {
-  .btg-reveal {
-    animation: btg-reveal linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 28%;
+  @media (prefers-reduced-motion: no-preference) {
+    .btg-reveal {
+      animation: btg-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
   }
-  @keyframes btg-reveal {
-    from { opacity: 0; transform: translateY(32px); }
-    to { opacity: 1; transform: none; }
-  }
+}
+@keyframes btg-reveal {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes btg-rise {

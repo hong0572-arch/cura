@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import FlipBoard from './home/FlipBoard';
+import { homeCopy } from '../content/homeCopy';
 import { ChevronDown, PlaneLanding, PlaneTakeoff, ArrowRightLeft, Calendar, Users, Minus, Plus, Plane, Mail } from 'lucide-react';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
@@ -24,7 +26,7 @@ const getInitialDate = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-export default function Hero({ t, customImage, onOpenWizard, settings }) {
+export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'ko' }) {
   const [formData, setFormData] = useState({
     airport: 'ICN',
     serviceType: 'arrival',
@@ -93,8 +95,9 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
       <div className="hero-overlay"></div>
 
       <div className="container hero-container">
-        <div className="hero-content" style={{ maxWidth: '900px', width: '100%' }}>
-
+        <div className="hero-content" style={{ maxWidth: '1240px', width: '100%' }}>
+          <div className="hero-top">
+          <div className="hero-copy">
           {t?.brand_sub && (
             <div className="hero-badge">
               <span className="gold-star">✦</span> {t.brand_sub}
@@ -115,6 +118,11 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
               {t.hero.subtitle}
             </p>
           )}
+          </div>
+          <div className="hero-board">
+            <FlipBoard copy={(homeCopy[lang] || homeCopy.ko).board} />
+          </div>
+          </div>
 
           {/* Custom Search Bar */}
           <div className="custom-search-bar-wrap" ref={barRef}>
@@ -380,6 +388,26 @@ export default function Hero({ t, customImage, onOpenWizard, settings }) {
             rgba(4, 9, 20, 0.8) 100%
           );
           z-index: 2;
+        }
+
+        /* Copy left, flip board right (desktop); board hidden on small screens */
+        .hero-top {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 40px;
+          align-items: center;
+          width: 100%;
+        }
+        .hero-board { display: none; }
+        @media (min-width: 1100px) {
+          .hero-top {
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            text-align: left;
+            margin-bottom: 36px;
+          }
+          .hero-top .hero-subtitle { margin-left: 0; margin-right: 0; }
+          .hero-top .hero-title { font-size: 3.7rem; }
+          .hero-board { display: block; }
         }
 
         .hero-container {

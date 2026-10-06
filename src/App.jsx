@@ -29,6 +29,11 @@ import Chatbot from './components/Chatbot';
 const BookingWizard = lazy(() => import('./components/BookingWizard'));
 
 import SEOMeta from './components/SEOMeta';
+import ThreeWays from './components/home/ThreeWays';
+import OpsTracker from './components/home/OpsTracker';
+import ClosingCta from './components/home/ClosingCta';
+import './components/home/home.css';
+import { homeCopy } from './content/homeCopy';
 import { translations as defaultTranslations } from './translations';
 import { langFromPath, stripLocale, localizePath } from './utils/locale';
 import { optimizedImage } from './utils/images';
@@ -352,14 +357,16 @@ function App({ initialSiteData = null }) {
           <Route index element={
             <>
               {/* Pass customized images to sections */}
-              <Hero t={t} customImage={images.heroBg} settings={settings} onOpenWizard={(data) => {
+              <Hero t={t} lang={lang} customImage={images.heroBg} settings={settings} onOpenWizard={(data) => {
                 setWizardData(data);
                 setIsWizardOpen(true);
               }} />
 
-              <CoreValues t={t} />
+              <ThreeWays copy={(homeCopy[lang] || homeCopy.ko).ways} lang={lang} />
 
               <Services t={t} />
+
+              <OpsTracker copy={(homeCopy[lang] || homeCopy.ko).ops} />
 
               <Fleet
                 t={t}
@@ -367,9 +374,13 @@ function App({ initialSiteData = null }) {
                 customImage={images.fleetBg}
               />
 
+              <CoreValues t={t} />
+
               <ReviewSystem t={t} />
 
               <Faq t={t} />
+
+              <ClosingCta copy={(homeCopy[lang] || homeCopy.ko).closing} lang={lang} />
             </>
           } />
           <Route path="about" element={<AboutUs t={t} />} />

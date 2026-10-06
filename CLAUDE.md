@@ -34,6 +34,8 @@
 - 사전 렌더링되는 컴포넌트는 렌더 중에 `window`/`document`/`Date.now()`/난수를 쓰지 않는다(하이드레이션 불일치). 브라우저 API는 effect·이벤트 핸들러 안에서만.
 - `vercel.json`: 공개 페이지마다 rewrite(`/about` → `/about.html`)를 명시하고, 나머지 경로는 `spa.html`(빈 셸)로 보낸다. **`cleanUrls`는 쓰지 않는다** — 켜면 `/api/*`·`/payment` rewrite가 404가 된다(2026-10 운영 장애).
 - 이미지: `public/`의 png/jpg는 `node scripts/optimize-images.mjs`로 WebP를 만들고 코드에서는 `.webp`를 쓴다(Firestore 경로는 `optimizedImage()`가 변환).
+- 홈 구성(2026-10): Hero(문구+운항 안내판 `home/FlipBoard`) → `home/ThreeWays`(Private Journeys 사전 상담·공항&차량·단체&기업) → Services(입국/출국/환승 탭) → `home/OpsTracker`(항공편 추적) → Fleet → CoreValues(간결 목록) → Reviews → FAQ → `home/ClosingCta`. 새 섹션 문구는 `src/content/homeCopy.js`(코드 관리, 한/영)에 있고 관리자 화면에서는 편집되지 않는다.
+- 디자인 토큰·공용 클래스(`.btg-btn`, `.btg-eyebrow`, `.btg-card`, `.btg-panel`, `.btg-reveal`, `.btg-sheen`)는 `src/index.css` 상단/하단. 어두운 영역은 `.on-navy` 등으로 기존 변수를 재정의한다. 결제·완료·실패 화면은 `components/checkout/`.
 - 관리자 화면·예약 위저드는 `React.lazy`로 분리돼 있다. 방문자 첫 화면 번들에 무거운 라이브러리를 추가하지 않는다.
 
 ## 작업 원칙
