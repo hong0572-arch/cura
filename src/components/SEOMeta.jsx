@@ -53,6 +53,10 @@ const AIRPORTS = [
 const plain = (text = '') => String(text).replace(/[[\]]/g, '');
 
 export default function SEOMeta({ lang, path = '/', translations }) {
+  // 블로그 글 상세는 BlogPost 가 제목·설명·canonical·구조화 데이터를 직접 넣는다
+  if (path.startsWith('/blog/')) {
+    return <Helmet htmlAttributes={{ lang }} />;
+  }
   const content = translations[lang] || translations.ko;
   const seo = content?.seo || translations.ko.seo;
   const page = PAGE_META[path]?.[lang];

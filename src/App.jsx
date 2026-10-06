@@ -28,6 +28,8 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 import ReviewSystem from './components/ReviewSystem';
 import Chatbot from './components/Chatbot';
 const BookingWizard = lazy(() => import('./components/BookingWizard'));
+// 블로그 글 상세 (마크다운 렌더러 포함) — 열 때만 불러온다
+const BlogPost = lazy(() => import('./pages/BlogPost'));
 
 import SEOMeta from './components/SEOMeta';
 import ThreeWays from './components/home/ThreeWays';
@@ -389,6 +391,7 @@ function App({ initialSiteData = null }) {
           <Route path="terms" element={<Terms t={t} />} />
           <Route path="privacy" element={<Privacy t={t} />} />
           <Route path="blog" element={<Blog t={t} lang={lang} />} />
+          <Route path="blog/:postId" element={<Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--ivory)' }} />}><BlogPost lang={lang} /></Suspense>} />
           <Route path="business" element={<BusinessProposal t={t} />} />
           <Route path="private-journeys" element={<PrivateJourneys lang={lang} />} />
             </Route>
