@@ -1485,8 +1485,8 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
 
               <div className="sky-contact-item mb-20">
                 <span className="sky-contact-emoji">📬</span>
-                <a href={`mailto:${t?.footer?.email_val || 'support@beyondthegate.vip'}`} className="sky-contact-link">
-                  {t?.footer?.email_val || 'support@beyondthegate.vip'}
+                <a href={`mailto:${t?.footer?.email_val || 'cura@beyondthegate.kr'}`} className="sky-contact-link">
+                  {t?.footer?.email_val || 'cura@beyondthegate.kr'}
                 </a>
               </div>
 

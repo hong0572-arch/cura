@@ -27,6 +27,7 @@ export default function Navbar({ lang, setLang, t }) {
 
   const navItems = [
     { id: 'ways', label: lang === 'ko' ? '서비스' : 'Services', path: '/' },
+    { id: 'journeys', label: 'Private Journeys', path: '/private-journeys' },
     { id: 'services', label: lang === 'ko' ? '공항 의전' : (t.nav.services || 'Airport VIP'), path: '/' },
     { id: 'fleet', label: t.nav.fleet, path: '/' },
     { id: 'faq', label: t.nav.faq, path: '/' },

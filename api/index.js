@@ -61,6 +61,10 @@ const TOKEN_RE = /^[A-Za-z0-9-]{20,64}$/;
 let settingsCache = { value: null, at: 0 };
 async function loadSettings() {
   if (settingsCache.value && Date.now() - settingsCache.at < 60_000) return settingsCache.value;
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT && process.env.NODE_ENV !== 'production') {
+    // 로컬 개발: Firestore 에 접근할 수 없으므로 코드 기본값으로 계산 (운영에서는 사용 안 함)
+    return {};
+  }
   const snap = await db.doc('siteData/main').get();
   const settings = snap.exists ? (snap.data().settings || {}) : {};
   settingsCache = { value: settings, at: Date.now() };
@@ -142,7 +146,6 @@ async function adminRecipients() {
   const list = [
     settings.companyEmail,
     ...(process.env.ADMIN_EMAILS || '').split(','),
-    'support@beyondthegate.vip',
     'cura@beyondthegate.kr',
   ].map(e => (e || '').trim().toLowerCase()).filter(Boolean);
   return { primary: list[0], allowed: new Set(list) };
@@ -392,6 +395,7 @@ function sanitizeVehicleForm(input = {}) {
     name: str(input.name, 100),
     email: str(input.email, 200),
     phone: str(input.phone, 40),
+    flightNumber: str(input.flightNumber, 20).toUpperCase(),
   };
 }
 
@@ -445,6 +449,7 @@ app.post('/api/vehicle-reservations/:id', async (req, res) => {
       ...form,
       date: `${form.date}T${form.time}`,
       luggageCount: form.luggage,
+      flight: form.flightNumber,
       transferAddress: form.serviceType === 'arrival' ? form.dropoffLocation : form.pickupLocation,
       orderName,
       quote: { ...quote, lockedAt: now },
@@ -476,6 +481,7 @@ app.post('/api/vehicle-reservations/:id', async (req, res) => {
 - Date & Time: ${form.date} ${form.time}
 - Pickup: ${form.pickupLocation}
 - Drop-off: ${form.dropoffLocation}
+- Flight: ${form.flightNumber || '-'}
 - Estimated Distance: ${quote.distanceKm} km
 - Passengers / Luggage: ${form.passengers} / ${form.luggage}
 
@@ -498,6 +504,114 @@ Beyond the Gate Automated System`;
     if (error.code === 409) return res.status(409).json({ error: 'Reservation id conflict' });
     console.error('Vehicle reservation failed:', error);
     res.status(500).json({ error: 'Failed to create reservation' });
+  }
+});
+
+// --- Private Journeys enquiries ---
+// 맞춤 여행 사전 상담 문의: 관리자 메일로 전송하고, 가능하면 Firestore 에도 기록한다.
+const ENQUIRY_LIMIT = 5;               // IP당 시간당 최대 접수 건수 (인스턴스 단위의 간단한 제한)
+const enquiryHits = new Map();
+
+function tooManyEnquiries(ip) {
+  const now = Date.now();
+  const recent = (enquiryHits.get(ip) || []).filter(t => now - t < 3_600_000);
+  recent.push(now);
+  enquiryHits.set(ip, recent);
+  if (enquiryHits.size > 2000) enquiryHits.clear();
+  return recent.length > ENQUIRY_LIMIT;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const pickList = (value, allowed) => (Array.isArray(value) ? value : [])
+  .map(v => String(v)).filter(v => allowed.includes(v)).slice(0, allowed.length);
+
+const STYLES = ['culture', 'food', 'shopping', 'nature', 'wellness', 'kculture', 'family', 'occasion'];
+const PLACES = ['seoul', 'jeju', 'busan', 'gyeongju', 'gangwon', 'unsure'];
+const NEEDS = ['airport', 'chauffeur', 'hotel', 'guide', 'dining', 'interpreter'];
+const BUDGETS = ['b1', 'b2', 'b3', 'b4', 'unsure'];
+const CONTACTS = ['email', 'whatsapp', 'phone'];
+
+app.post('/api/journey-enquiries', async (req, res) => {
+  const b = req.body || {};
+  // 봇 차단용 숨김 필드: 사람은 비워 둔다
+  if (b.company) return res.status(200).json({ success: true });
+
+  const str = (v, max) => String(v ?? '').trim().slice(0, max);
+  const enquiry = {
+    lang: b.lang === 'en' ? 'en' : 'ko',
+    name: str(b.name, 100),
+    email: str(b.email, 200),
+    phone: str(b.phone, 40),
+    country: str(b.country, 60),
+    arrival: str(b.arrival, 10),
+    departure: str(b.departure, 10),
+    flexible: Boolean(b.flexible),
+    adults: Math.min(50, Math.max(1, parseInt(b.adults, 10) || 1)),
+    children: Math.min(50, Math.max(0, parseInt(b.children, 10) || 0)),
+    styles: pickList(b.styles, STYLES),
+    places: pickList(b.places, PLACES),
+    needs: pickList(b.needs, NEEDS),
+    budget: BUDGETS.includes(b.budget) ? b.budget : 'unsure',
+    contact: CONTACTS.includes(b.contact) ? b.contact : 'email',
+    message: str(b.message, 3000),
+    consent: b.consent === true,
+  };
+
+  if (!enquiry.name || !EMAIL_RE.test(enquiry.email)) {
+    return res.status(400).json({ error: 'Name and a valid email are required' });
+  }
+  if (!enquiry.consent) return res.status(400).json({ error: 'Consent is required' });
+  const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+  if (tooManyEnquiries(ip)) return res.status(429).json({ error: 'Too many requests' });
+
+  const id = `PJ-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  const createdAt = new Date().toISOString();
+
+  // Firestore 기록은 실패해도 메일 전송은 진행한다
+  try {
+    await db.collection('journeyEnquiries').doc(id).set({ ...enquiry, id, createdAt, status: 'new' });
+  } catch (error) {
+    console.error('Enquiry save failed:', error.message);
+  }
+
+  const text = `New Private Journeys enquiry — ${id}
+
+[Guest]
+- Name: ${enquiry.name}
+- Email: ${enquiry.email}
+- Phone / WhatsApp: ${enquiry.phone || '-'}
+- Country: ${enquiry.country || '-'}
+- Preferred contact: ${enquiry.contact}
+- Page language: ${enquiry.lang}
+
+[Trip]
+- Dates: ${enquiry.arrival || '?'} → ${enquiry.departure || '?'}${enquiry.flexible ? ' (flexible)' : ''}
+- Travellers: ${enquiry.adults} adults, ${enquiry.children} children
+- Interests: ${enquiry.styles.join(', ') || '-'}
+- Destinations: ${enquiry.places.join(', ') || '-'}
+- Services needed: ${enquiry.needs.join(', ') || '-'}
+- Budget per person (excl. flights): ${enquiry.budget}
+
+[Message]
+${enquiry.message || '-'}
+
+Received ${createdAt} · consent to personal data collection: yes
+Reply to this email to answer the guest directly.`;
+
+  try {
+    const { primary } = await adminRecipients();
+    const { user, transporter } = getTransporter();
+    await transporter.sendMail({
+      from: `"BTG Private Journeys" <${user}>`,
+      to: primary,
+      replyTo: enquiry.email,
+      subject: `[Private Journeys] ${enquiry.name} · ${enquiry.adults + enquiry.children} pax · ${enquiry.arrival || 'dates TBC'}`,
+      text,
+    });
+    res.status(200).json({ success: true, id });
+  } catch (error) {
+    console.error('Enquiry email failed:', error);
+    res.status(500).json({ error: 'Failed to send enquiry' });
   }
 });
 

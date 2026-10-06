@@ -8,7 +8,7 @@ const BUSINESS = {
   name: 'Beyond the Gate',
   alternateName: 'Cura Airport Service (CAS)',
   telephone: '+82-10-2853-3998',
-  email: 'support@beyondthegate.vip',
+  email: 'cura@beyondthegate.kr',
   logo: `${SITE_URL}/logo.png`,
 };
 
@@ -21,6 +21,10 @@ const PAGE_META = {
   '/book-vehicle': {
     ko: { title: '공항 차량 예약', description: '인천·김포공항 픽업 및 샌딩 차량 예약. 스타리아, 제네시스 G90, 벤츠 스프린터 중 선택하고 거리별 요금을 바로 확인하세요.' },
     en: { title: 'Airport Chauffeur Booking', description: 'Book a private airport transfer from Incheon or Gimpo airport. Choose Staria, Genesis G90 or Mercedes Sprinter and see your fare instantly.' },
+  },
+  '/private-journeys': {
+    ko: { title: 'Private Journeys · 맞춤 한국 여행 사전 상담', description: '커플·가족·소규모 단체를 위한 럭셔리 맞춤 한국 여행. 공항 의전, 전담 가이드, 전용 차량, 레스토랑과 숙소까지 일정에 맞춰 설계합니다.' },
+    en: { title: 'Private Journeys · Tailor-made Korea Trips', description: 'Luxury tailor-made trips to Korea for couples, families and small groups — airport VIP, private guides, chauffeurs, dining and stays arranged around you.' },
   },
   '/blog': {
     ko: { title: '공항 의전 가이드 블로그', description: '인천공항 이용 팁, VIP 의전 서비스 안내 등 공항 이동에 도움이 되는 정보를 전합니다.' },

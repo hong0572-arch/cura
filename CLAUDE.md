@@ -36,6 +36,10 @@
 - 이미지: `public/`의 png/jpg는 `node scripts/optimize-images.mjs`로 WebP를 만들고 코드에서는 `.webp`를 쓴다(Firestore 경로는 `optimizedImage()`가 변환).
 - 홈 구성(2026-10): Hero(문구+운항 안내판 `home/FlipBoard`) → `home/ThreeWays`(Private Journeys 사전 상담·공항&차량·단체&기업) → Services(입국/출국/환승 탭) → `home/OpsTracker`(항공편 추적) → Fleet → CoreValues(간결 목록) → Reviews → FAQ → `home/ClosingCta`. 새 섹션 문구는 `src/content/homeCopy.js`(코드 관리, 한/영)에 있고 관리자 화면에서는 편집되지 않는다.
 - 디자인 토큰·공용 클래스(`.btg-btn`, `.btg-eyebrow`, `.btg-card`, `.btg-panel`, `.btg-reveal`, `.btg-sheen`)는 `src/index.css` 상단/하단. 어두운 영역은 `.on-navy` 등으로 기존 변수를 재정의한다. 결제·완료·실패 화면은 `components/checkout/`.
+- Private Journeys(맞춤 여행) 사전 상담: `/private-journeys`(`pages/PrivateJourneys.jsx`, 문구 `content/journeysCopy.js`) → `POST /api/journey-enquiries` → 관리자 메일(Reply-To 고객) + Firestore `journeyEnquiries`(서버 기록). 숨김 필드·IP당 시간 5건 제한. 개인정보 수집·이용 동의 필수.
+- 대표 연락 이메일은 `cura@beyondthegate.kr`로 통일(관리자 알림 기본 수신처).
+- 차량 예약(`/book-vehicle`): 지도 로딩과 무관하게 폼 표시(자동완성은 보조), 항공편 번호 저장, 출발 24시간 이내·지난 시간 예약 차단(WhatsApp 안내), 차량 권장 인원 초과 시 안내, 견적 실패 사유 표시.
+- 로컬 개발: `node api/index.js`(4242) + `npm run dev`(5173, /api 프록시). 서비스 계정이 없으면 설정은 코드 기본값을 쓰고 Firestore 쓰기는 실패한다(메일 발송은 실제로 나감).
 - 관리자 화면·예약 위저드는 `React.lazy`로 분리돼 있다. 방문자 첫 화면 번들에 무거운 라이브러리를 추가하지 않는다.
 
 ## 작업 원칙

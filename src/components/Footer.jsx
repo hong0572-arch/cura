@@ -72,8 +72,8 @@ export default function Footer({ t, onOpenTerms }) {
                 <Mail size={16} className="contact-icon" />
                 <div className="contact-text-wrap">
                   <span className="contact-label">{t.form.email}</span>
-                  <a href={`mailto:${t.footer?.email_val || 'support@beyondthegate.vip'}`} className="contact-link">
-                    {t.footer?.email_val || 'support@beyondthegate.vip'}
+                  <a href={`mailto:${t.footer?.email_val || 'cura@beyondthegate.kr'}`} className="contact-link">
+                    {t.footer?.email_val || 'cura@beyondthegate.kr'}
                   </a>
                 </div>
               </div>

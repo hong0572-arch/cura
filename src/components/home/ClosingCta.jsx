@@ -16,7 +16,7 @@ export default function ClosingCta({ copy, lang }) {
           <p className="closing-desc">{copy.desc}</p>
         </div>
         <div className="closing-actions">
-          <a href={localizePath('/business', lang)} onClick={(e) => go(e, '/business')} className="btg-btn btg-btn--gold btg-sheen">{copy.primary}</a>
+          <a href={localizePath('/private-journeys', lang)} onClick={(e) => go(e, '/private-journeys')} className="btg-btn btg-btn--gold btg-sheen">{copy.primary}</a>
           <a href={localizePath('/#hero', lang)} onClick={(e) => go(e, '/#hero')} className="btg-btn closing-ghost">{copy.secondary}</a>
         </div>
       </div>

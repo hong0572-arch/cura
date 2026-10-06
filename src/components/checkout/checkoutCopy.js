@@ -3,7 +3,7 @@ export const CONTACT = {
   phone: '+82 10-2853-3998',
   tel: '+821028533998',
   whatsapp: 'https://wa.me/821028533998',
-  email: 'support@beyondthegate.vip',
+  email: 'cura@beyondthegate.kr',
 };
 
 export const copy = {

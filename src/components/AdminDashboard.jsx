@@ -1555,7 +1555,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                       type="email"
                       value={editSettings.companyEmail || ''}
                       onChange={(e) => handleSettingChange('companyEmail', e.target.value)}
-                      placeholder="e.g. company@beyondthegate.vip"
+                      placeholder="e.g. cura@beyondthegate.kr"
                       required
                     />
                   </div>

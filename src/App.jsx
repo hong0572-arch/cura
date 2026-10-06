@@ -19,6 +19,7 @@ import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Blog from './pages/Blog';
 import BusinessProposal from './pages/BusinessProposal';
+import PrivateJourneys from './pages/PrivateJourneys';
 
 // Admin Components
 // 관리자 화면·예약 위저드는 필요할 때만 불러온다 (첫 화면 JS 용량 절감)
@@ -114,7 +115,7 @@ function App({ initialSiteData = null }) {
   };
 
   const defaultSettings = {
-    companyEmail: 'support@beyondthegate.vip',
+    companyEmail: 'cura@beyondthegate.kr',
     extraPassengerFeeUsd: 120,
     extraLuggageFeeUsd: 40,
     porterFeeUsd: 110,
@@ -389,6 +390,7 @@ function App({ initialSiteData = null }) {
           <Route path="privacy" element={<Privacy t={t} />} />
           <Route path="blog" element={<Blog t={t} lang={lang} />} />
           <Route path="business" element={<BusinessProposal t={t} />} />
+          <Route path="private-journeys" element={<PrivateJourneys lang={lang} />} />
             </Route>
           ))}
         </Routes>
