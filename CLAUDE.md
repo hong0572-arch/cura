@@ -40,6 +40,7 @@
 - 대표 연락 이메일은 `cura@beyondthegate.kr`로 통일(관리자 알림 기본 수신처).
 - 차량 예약(`/book-vehicle`): 지도 로딩과 무관하게 폼 표시(자동완성은 보조), 항공편 번호 저장, 출발 24시간 이내·지난 시간 예약 차단(WhatsApp 안내), 차량 권장 인원 초과 시 안내, 견적 실패 사유 표시.
 - 로컬 개발: `node api/index.js`(4242) + `npm run dev`(5173, /api 프록시). 서비스 계정이 없으면 설정은 코드 기본값을 쓰고 Firestore 쓰기는 실패한다(메일 발송은 실제로 나감).
+- 블로그: 목록 `/blog`(사진 카드), 글 `/blog/:postId`(`pages/BlogPost.jsx`, lazy). 매일 `/api/cron`이 글 작성 후 `attachBlogImages()`로 커버·본문 이미지 2장을 Gemini 이미지 모델(`GEMINI_IMAGE_MODEL`, 기본 `gemini-3.1-flash-image` — Imagen 은 종료됨)로 생성해 Storage `blog/<id>/`에 저장하고 글에 주소·대체 텍스트를 기록한다. 이미지가 없으면 화면은 `utils/blogImages.js`가 주제에 맞는 사이트 사진을 고른다. 기존 글 채우기: `POST /api/blog/backfill-images?limit=3` (Bearer CRON_SECRET).
 - 관리자 화면·예약 위저드는 `React.lazy`로 분리돼 있다. 방문자 첫 화면 번들에 무거운 라이브러리를 추가하지 않는다.
 
 ## 작업 원칙

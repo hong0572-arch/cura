@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import { GoogleGenAI } from "@google/genai";
 import { computeQuote, computeVehicleQuote, haversineKm, VEHICLE_ROAD_FACTOR, VEHICLE_TYPES } from '../src/utils/pricing.js';
 import { generateProposalHtml } from '../src/utils/emailTemplate.js';
@@ -841,6 +842,130 @@ ${chatbotConfig.knowledgeBase || ''}
   }
 });
 
+// --- Blog images ---
+// Imagen 은 종료되어 Gemini 이미지 모델(Nano Banana)을 쓴다. 생성한 이미지는 Firebase Storage 에
+// 파일로 저장하고 글에는 주소만 기록한다 (Firestore 문서 1MB 한도).
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
+const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-3.5-flash-lite';
+const STORAGE_BUCKET = process.env.FIREBASE_STORAGE_BUCKET || 'cura-1969a.firebasestorage.app';
+
+// 글 내용에 맞는 장면 설명 두 개(커버·본문)와 대체 텍스트를 만든다
+async function planBlogImages(ai, title, content) {
+  const prompt = `You are the photo editor for "Beyond the Gate", a premium airport VIP meet & assist and chauffeur service at Incheon (ICN) and Gimpo (GMP) airports in Korea.
+Read the blog post below and write two different photo briefs that illustrate it.
+
+Rules for every brief:
+- Photorealistic editorial travel photography, natural light, premium and calm mood, 16:9 composition.
+- Settings: Korean airport terminals, arrival or departure halls, curbside pick-up, a black Genesis G90 sedan, Hyundai Staria or Mercedes Sprinter van, hotel entrances in Seoul, or Korean travel scenes when the post is about travel.
+- Staff wear dark navy uniforms. Guests are business travellers or families.
+- No text, letters, signage words, logos, watermarks, license plates or brand names visible. No celebrities or identifiable real people.
+
+Return JSON only, no markdown:
+{"cover": {"prompt": "...", "alt_ko": "...", "alt_en": "..."}, "inline": {"prompt": "...", "alt_ko": "...", "alt_en": "..."}}
+
+Title: ${title}
+Post:
+${content.slice(0, 2500)}`;
+
+  const response = await ai.models.generateContent({ model: TEXT_MODEL, contents: prompt });
+  const raw = (response.text || '').replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+  const plan = JSON.parse(raw);
+  if (!plan?.cover?.prompt || !plan?.inline?.prompt) throw new Error('Image plan is incomplete');
+  return plan;
+}
+
+// 이미지 모델 호출 → base64 JPEG/PNG
+async function generateImageBytes(ai, prompt) {
+  const fullPrompt = `${prompt}\nAvoid any visible text, logos or license plates.`;
+  if (ai.interactions?.create) {
+    const interaction = await ai.interactions.create({
+      model: IMAGE_MODEL,
+      input: fullPrompt,
+      response_format: { type: 'image', mime_type: 'image/jpeg', aspect_ratio: '16:9', image_size: '1K' },
+    });
+    const image = interaction.output_image || interaction.outputImage
+      || (interaction.outputs || []).find(o => o?.data && /image/.test(o.mime_type || o.mimeType || 'image'));
+    if (image?.data) return { data: image.data, mimeType: image.mime_type || image.mimeType || 'image/jpeg' };
+  }
+  // 구 방식(generateContent) 대체 경로
+  const response = await ai.models.generateContent({
+    model: IMAGE_MODEL,
+    contents: fullPrompt,
+    config: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '16:9' } },
+  });
+  const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.data);
+  if (!part) throw new Error('No image returned');
+  return { data: part.inlineData.data, mimeType: part.inlineData.mimeType || 'image/png' };
+}
+
+// Storage 에 저장하고 다운로드 토큰 주소를 돌려준다
+async function saveBlogImage(postId, slot, image) {
+  const ext = image.mimeType.includes('png') ? 'png' : 'jpg';
+  const path = `blog/${postId}/${slot}.${ext}`;
+  const token = crypto.randomUUID();
+  await getStorage().bucket(STORAGE_BUCKET).file(path).save(Buffer.from(image.data, 'base64'), {
+    resumable: false,
+    contentType: image.mimeType,
+    metadata: { cacheControl: 'public, max-age=31536000', metadata: { firebaseStorageDownloadTokens: token } },
+  });
+  return `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+}
+
+// 글 하나에 커버·본문 이미지를 만들어 붙인다. 실패해도 예외를 던지지 않는다.
+async function attachBlogImages(ai, postId, title, content) {
+  try {
+    const plan = await planBlogImages(ai, title, content);
+    const [cover, inline] = await Promise.allSettled([
+      generateImageBytes(ai, plan.cover.prompt).then(img => saveBlogImage(postId, 'cover', img)),
+      generateImageBytes(ai, plan.inline.prompt).then(img => saveBlogImage(postId, 'inline', img)),
+    ]);
+    const update = {};
+    if (cover.status === 'fulfilled') {
+      Object.assign(update, { mainImageUrl: cover.value, mainImageAlt: plan.cover.alt_ko || '', mainImageAltEn: plan.cover.alt_en || '' });
+    } else {
+      console.error('Cover image failed:', cover.reason?.message || cover.reason);
+    }
+    if (inline.status === 'fulfilled') {
+      Object.assign(update, { subImageUrl: inline.value, subImageAlt: plan.inline.alt_ko || '', subImageAltEn: plan.inline.alt_en || '' });
+    } else {
+      console.error('Inline image failed:', inline.reason?.message || inline.reason);
+    }
+    if (Object.keys(update).length) {
+      await db.collection('blog_posts').doc(postId).update({ ...update, imageModel: IMAGE_MODEL });
+    }
+    return update;
+  } catch (error) {
+    console.error('Blog image generation failed:', error.message || error);
+    return {};
+  }
+}
+
+// 기존 글에 이미지 채우기 (한 번에 몇 개씩). CRON_SECRET 필요.
+//   curl -X POST "https://beyondthegate.kr/api/blog/backfill-images?limit=3" -H "Authorization: Bearer <CRON_SECRET>"
+app.post('/api/blog/backfill-images', async (req, res) => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const max = Math.min(5, Math.max(1, parseInt(req.query.limit, 10) || 3));
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const snap = await db.collection('blog_posts').orderBy('createdAt', 'desc').get();
+    const targets = snap.docs.filter(d => !d.data().mainImageUrl).slice(0, max);
+    const results = [];
+    for (const d of targets) {
+      const data = d.data();
+      const update = await attachBlogImages(ai, d.id, data.title || '', data.content || '');
+      results.push({ id: d.id, cover: Boolean(update.mainImageUrl), inline: Boolean(update.subImageUrl) });
+    }
+    const remaining = snap.docs.filter(d => !d.data().mainImageUrl).length - results.filter(r => r.cover).length;
+    res.status(200).json({ processed: results, remaining });
+  } catch (error) {
+    console.error('Backfill failed:', error);
+    res.status(500).json({ error: 'Backfill failed' });
+  }
+});
+
 // --- Threads Integration ---
 async function postToThreads(text) {
   const accessToken = process.env.THREADS_ACCESS_TOKEN;
@@ -942,44 +1067,19 @@ app.get('/api/cron', async (req, res) => {
       console.error('Translation failed:', translateError);
     }
 
-    // 이미지 생성 (메인 이미지, 보조 이미지)
-    let mainImageUrl = '';
-    let subImageUrl = '';
-
-    try {
-      const mainImageResp = await ai.models.generateImages({
-        model: 'imagen-3.0-generate-001',
-        prompt: 'A luxurious black premium van like Mercedes Sprinter or Hyundai Staria waiting outside an international airport terminal, professional cinematic photography, VIP service concept, high quality',
-        config: { numberOfImages: 1, aspectRatio: '16:9', outputMimeType: 'image/jpeg' }
-      });
-      if (mainImageResp.generatedImages && mainImageResp.generatedImages.length > 0) {
-        mainImageUrl = `data:image/jpeg;base64,${mainImageResp.generatedImages[0].image.imageBytes}`;
-      }
-
-      const subImageResp = await ai.models.generateImages({
-        model: 'imagen-3.0-generate-001',
-        prompt: 'A professional chauffeur in a black suit opening the door of a luxury black sedan for a VIP passenger, elegant, business travel, 8k resolution, photorealistic',
-        config: { numberOfImages: 1, aspectRatio: '16:9', outputMimeType: 'image/jpeg' }
-      });
-      if (subImageResp.generatedImages && subImageResp.generatedImages.length > 0) {
-        subImageUrl = `data:image/jpeg;base64,${subImageResp.generatedImages[0].image.imageBytes}`;
-      }
-    } catch (imgError) {
-      console.error('Image generation failed (fallback to text-only):', imgError);
-    }
-
-    // Firestore에 저장
+    // Firestore에 저장 (이미지는 아래에서 만들어 붙인다)
     const docRef = await db.collection("blog_posts").add({
       title,
       content,
       titleEn,
       contentEn,
-      mainImageUrl,
-      subImageUrl,
       createdAt: FieldValue.serverTimestamp(),
       author: "Gemini AI",
       published: true
     });
+
+    // 글 내용에 맞는 커버·본문 이미지 생성 → Storage 저장 → 글에 주소 기록 (실패해도 발행은 유지)
+    const images = await attachBlogImages(ai, docRef.id, title, content);
 
     // --- Threads 자동 포스팅 ---
     try {
@@ -1004,7 +1104,7 @@ ${content.substring(0, 500)}...`;
       console.error('Threads generation or posting failed:', threadsError);
     }
 
-    res.status(200).json({ success: true, message: 'Blog post published and sent to Threads', postId: docRef.id });
+    res.status(200).json({ success: true, message: 'Blog post published and sent to Threads', postId: docRef.id, images: { cover: Boolean(images.mainImageUrl), inline: Boolean(images.subImageUrl) } });
   } catch (error) {
     console.error('Cron job failed:', error);
     res.status(500).json({ error: 'Failed to generate and publish blog post', details: error.message });

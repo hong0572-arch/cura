@@ -129,14 +129,14 @@ export default function BlogPost({ lang }) {
 
       <div className="container">
         <figure className="post-cover">
-          <img src={cover} alt="" width="1200" height="640" />
+          <img src={cover} alt={(isEn ? post.mainImageAltEn : post.mainImageAlt) || ''} width="1200" height="640" />
         </figure>
 
         <article className="post-body">
           <ReactMarkdown components={mdComponents}>{first}</ReactMarkdown>
           {second && inline && (
             <figure className="post-inline">
-              <img src={inline} alt="" loading="lazy" width="900" height="520" />
+              <img src={inline} alt={(isEn ? post.subImageAltEn : post.subImageAlt) || ''} loading="lazy" width="900" height="520" />
             </figure>
           )}
           {second && <ReactMarkdown components={mdComponents}>{second}</ReactMarkdown>}
