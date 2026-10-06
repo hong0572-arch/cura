@@ -193,7 +193,13 @@ export const translations = {
             { title: "출국동행", desc: "출국심사/환전/라운지 이동" },
             { title: "게이트 이동 탑승확인", desc: "최종 탑승 에스코트" }
           ],
-          footer: "각 단계에서 발생할 수 있는 지연과 불편을 사전에 예방하며, 고객이 여유롭고 품격 있는 출국 경험을 누릴 수 있도록 지원합니다."
+          footer: "각 단계에서 발생할 수 있는 지연과 불편을 사전에 예방하며, 고객이 여유롭고 품격 있는 출국 경험을 누릴 수 있도록 지원합니다.",
+          taxRefund: {
+            chip: "Tax Refund 지원",
+            title: "택스리펀드 지원",
+            desc: "세관 확인·환급 창구 동행",
+            note: "외국인 고객의 택스리펀드(부가세 환급) 절차를 안내하고, 필요한 경우 세관 확인과 환급 창구·키오스크까지 동행합니다. 환급 대상 여부와 금액은 세관 및 환급사업자 기준에 따릅니다."
+          }
         },
         transfer: {
           badge: "TRANSFER SERVICE",
@@ -323,15 +329,15 @@ export const translations = {
       refund_50: "50% 공제 후 환불",
       time_under24h: "이용 24시간 미만 / 이내",
       refund_0: "환불 불가 (전액 100% 부과)",
-      
+
       fasttrack_title: "패스트트랙 (Fast Track) 규정 공지",
       fasttrack_text: "인천국제공항에서는 공식적인 일반 상업용 패스트트랙 통로 시스템이 운영되지 않음을 알려드립니다. 모든 출입국 심사 및 보안 검색에 소요되는 시간은 공항 당국의 운영 지침 및 당일 공항 혼잡 상황에 따릅니다. 대상 자격을 갖추신 분에 한해서만 패스트트랙 라인 에스코트가 이루어집니다.",
-      
+
       noshow_title: "노쇼 (No-Show) 규정 안내",
       noshow_text: "사전 연락 없이 지정된 시간 및 장소에서 담당자와 만나지 못할 경우 '노쇼(No-Show)'로 엄격히 처리되며, 서비스 금액은 100% 환불되지 않습니다. 노쇼 판단 기준 시간은 다음과 같습니다.",
       noshow_arrival: "입국 시: 항공기 실제 착륙 시간(ATA) 기준 90분 이내에 담당자와 만나지 못하거나 연락이 닿지 않을 경우",
       noshow_departure: "출국 시: 지정된 미팅 시간 기준 60분 이내에 담당자를 만나지 못하거나 연락이 닿지 않을 경우",
-      
+
       full_terms_title: "공항 의전 서비스 이용 약관",
       full_terms: [
         "결제 및 예약 확정: 원활한 예약 확정을 위해서는 서비스 제공 전에 규정된 요금의 사전 결제가 전액 완료되어야 합니다.",
@@ -386,18 +392,18 @@ export const translations = {
       passengers: "탑승 인원수 (Passengers)",
       luggage: "위탁 수하물 수 (Luggage count)",
       msg: "기타 요청사항 (Special Requests / Notes)",
-      
+
       placeholder_name: "예: 홍길동",
       placeholder_email: "name@example.com",
       placeholder_phone: "010-0000-0000",
       placeholder_flight: "예: KE182",
       placeholder_msg: "항공편 정보 및 특별 요청 사항을 입력해 주세요...",
-      
+
       none: "차량 미사용 (의전 서비스만 이용)",
       staria: "스타리아 미니밴 (Staria Minivan) (+175,500 KRW)",
       g90: "제네시스 G90 고급세단 (Genesis G90) (+270,000 KRW)",
       sprinter: "벤츠 스프린터 대형밴 (Benz Sprinter) (+270,000 KRW)",
-      
+
       calc_title: "실시간 견적 산출 내역",
       calc_base: "의전 기본 요금 ($200)",
       calc_vehicle: "차량 요금",
@@ -408,7 +414,7 @@ export const translations = {
       approx_label: "≈",
       approx_currency: "KRW",
       calc_footer_text: "보안 결제 전송 및 최종 금액 확인 단계가 진행됩니다.",
-      
+
       submit: "예약 요청하기 (Submit Order)",
       submitting: "예약 주문 생성 중...",
       success_title: "예약 요청이 성공적으로 접수되었습니다!",
@@ -772,7 +778,13 @@ export const translations = {
             { title: "Departure Escort", desc: "Immigration/Exchange/Lounge" },
             { title: "Boarding Confirmation", desc: "Final boarding escort" }
           ],
-          footer: "We proactively prevent delays and inconveniences at each step, ensuring a relaxed and elegant departure experience."
+          footer: "We proactively prevent delays and inconveniences at each step, ensuring a relaxed and elegant departure experience.",
+          taxRefund: {
+            chip: "Tax Refund assistance",
+            title: "Tax Refund Assistance",
+            desc: "Customs check & refund counter",
+            note: "For international guests, we guide you through Korea's VAT tax refund process and, where needed, escort you to the customs check and the refund counters or kiosks. Eligibility and refund amounts are set by Korea Customs and the refund operators."
+          }
         },
         transfer: {
           badge: "TRANSFER SERVICE",
@@ -902,15 +914,15 @@ export const translations = {
       refund_50: "50% Refund",
       time_under24h: "Less than 24 hours prior",
       refund_0: "Non-refundable (100% charged)",
-      
+
       fasttrack_title: "Fast Track Information Notice",
       fasttrack_text: "Please be advised that Incheon International Airport (ICN) does not operate a general commercial fast track lane system. Security and immigration lines are determined by airport operations and congestion. Access to specialized fast-track gates is restricted to passengers qualifying under official airport rules.",
-      
+
       noshow_title: "No-Show Conditions",
       noshow_text: "Failure to establish contact with our team at the designated time and place will be treated as a No-Show. No-shows are non-refundable (100% forfeit). Threshold limits for determining a No-Show are:",
       noshow_arrival: "Arrival: 90 minutes from the aircraft's actual time of arrival (ATA) without contact.",
       noshow_departure: "Departure: 60 minutes past the designated meet time without contact.",
-      
+
       full_terms_title: "Meet & Assist Terms & Conditions",
       full_terms: [
         "Payment & Confirmation: Full prepayment is required prior to the scheduled service to guarantee and confirm reservation status.",
@@ -965,18 +977,18 @@ export const translations = {
       passengers: "Number of Passengers",
       luggage: "Checked Baggage Count",
       msg: "Special Requests / Notes",
-      
+
       placeholder_name: "e.g. John Doe",
       placeholder_email: "name@example.com",
       placeholder_phone: "+82 10-0000-0000",
       placeholder_flight: "e.g. KE182",
       placeholder_msg: "Provide airline details, special dietary, or child seats requested...",
-      
+
       none: "No vehicle (Meet & Assist service only)",
       staria: "Staria Minivan (+175,500 KRW)",
       g90: "Genesis G90 Sedan (+270,000 KRW)",
       sprinter: "Mercedes Benz Sprinter (+270,000 KRW)",
-      
+
       calc_title: "Live Estimation Details",
       calc_base: "Base Meet & Assist Fee ($200)",
       calc_vehicle: "Chauffeur Vehicle Fee",
@@ -987,7 +999,7 @@ export const translations = {
       approx_label: "≈",
       approx_currency: "KRW",
       calc_footer_text: "Secure 256-bit SSL encrypted booking portal. Final rates verified before billing email.",
-      
+
       submit: "Submit Booking Request",
       submitting: "Creating booking request...",
       success_title: "Booking Request Submitted!",

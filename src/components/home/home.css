@@ -262,6 +262,7 @@
   .svc-tab .image-card-content { padding: 12px; }
   .svc-tab .image-card-title { font-size: 0.95rem; line-height: 1.25; }
   .svc-tab .image-card-desc { display: none; }
+  .svc-tab .svc-chip { display: none; }
   .hero-section { padding-bottom: 96px !important; }
   /* Process steps: two columns instead of a long vertical list */
   .process-flow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
@@ -274,3 +275,32 @@
 @media (min-width: 769px) {
   .reviews-more-mobile { display: none; }
 }
+
+/* Departure: tax refund highlight */
+.svc-chip {
+  display: inline-block;
+  align-self: flex-start;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.process-step--highlight .process-icon-circle { border-color: var(--champagne); background: rgba(254, 199, 77, 0.18); }
+.process-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: 720px;
+  margin: 14px auto 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  word-break: keep-all;
+}
+.process-note svg { flex: none; margin-top: 3px; color: var(--champagne); }

@@ -3,7 +3,7 @@ import {
   PlaneLanding, PlaneTakeoff, RefreshCw,
   MapPin, Compass, FileCheck, Briefcase,
   ShieldAlert, Car, Mail, Ticket, ShoppingBag,
-  Bell, Plane, CalendarClock, UserCheck, BaggageClaim, Shield, ChevronRight, CheckCircle2
+  Bell, Plane, CalendarClock, UserCheck, BaggageClaim, Shield, ChevronRight, CheckCircle2, Receipt
 } from 'lucide-react';
 
 export default function Services({ t }) {
@@ -18,6 +18,7 @@ export default function Services({ t }) {
       id: 'departure',
       title: t.services.departure.title,
       desc: t.services.departure.desc,
+      chip: t.services.diagrams?.departure?.taxRefund?.chip,
       bg: '/vip_departure_escort.webp'
     },
     {
@@ -78,6 +79,7 @@ export default function Services({ t }) {
             >
               <div className="image-card-overlay"></div>
               <div className="image-card-content">
+                {svc.chip && <span className="svc-chip">{svc.chip}</span>}
                 <h3 className="image-card-title">{svc.title}</h3>
                 <p className="image-card-desc">{svc.desc}</p>
               </div>
@@ -162,6 +164,16 @@ export default function Services({ t }) {
                 <span>{t.services.diagrams?.departure?.steps?.[1]?.desc || '신속한 발권 지원'}</span>
               </div>
               <ChevronRight className="process-arrow" />
+              {t.services.diagrams?.departure?.taxRefund && (
+                <>
+                  <div className="process-step process-step--highlight">
+                    <div className="process-icon-circle"><Receipt size={32} strokeWidth={1.5} /></div>
+                    <h4>{t.services.diagrams.departure.taxRefund.title}</h4>
+                    <span>{t.services.diagrams.departure.taxRefund.desc}</span>
+                  </div>
+                  <ChevronRight className="process-arrow" />
+                </>
+              )}
               <div className="process-step">
                 <div className="process-icon-circle"><Shield size={32} strokeWidth={1.5} /></div>
                 <h4>{t.services.diagrams?.departure?.steps?.[2]?.title || '보안지원'}</h4>
@@ -183,6 +195,9 @@ export default function Services({ t }) {
 
             <div className="process-footer">
               <p>{t.services.diagrams?.departure?.footer || '각 단계에서 발생할 수 있는 지연과 불편을 사전에 예방하며, 고객이 여유롭고 품격 있는 출국 경험을 누릴 수 있도록 지원합니다.'}</p>
+              {t.services.diagrams?.departure?.taxRefund?.note && (
+                <p className="process-note"><Receipt size={16} aria-hidden="true" /> {t.services.diagrams.departure.taxRefund.note}</p>
+              )}
             </div>
           </div>
 

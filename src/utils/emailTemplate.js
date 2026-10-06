@@ -23,7 +23,7 @@ export const generateProposalHtml = (rawFormData, quote, bookingId) => {
   const airportName = AIRPORT_NAMES[rawFormData.airport] || `${escapeHtml(rawFormData.airport)} Airport`;
   const serviceName = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
   const refCode = escapeHtml(bookingId);
-  
+
   // Format the inclusions based on service type
   let inclusions = [];
   if (serviceType === 'arrival') {
@@ -41,6 +41,7 @@ export const generateProposalHtml = (rawFormData, quote, bookingId) => {
       'Fast-track immigration through priority lanes (where available)',
       'Baggage assistance: Escort will assist with baggage retrieval and guide you from your vehicle.',
       'Customs clearance & escort assistance',
+      'Tax refund assistance: guidance through the VAT refund process for international guests, with escort to the customs check and refund counters (eligibility set by Korea Customs and refund operators)',
       'Escort all the way to your flight',
       'Real-time flight monitoring — we wait for you, even if you are delayed'
     ];
@@ -80,21 +81,21 @@ export const generateProposalHtml = (rawFormData, quote, bookingId) => {
         .header-title { font-size: 32px; font-weight: normal; margin: 0 0 24px 0; font-family: Georgia, serif; }
         .header-ref { font-size: 12px; color: #a0aab5; }
         .header-divider { width: 40px; height: 2px; background-color: #c9a050; margin: 0 auto 24px auto; }
-        
+
         .content { padding: 40px 30px; }
         .intro-text { font-size: 15px; color: #4a5568; margin-bottom: 40px; }
-        
+
         .section-title { color: #c9a050; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 16px; }
-        
+
         .request-box { background-color: #fcf9f2; border-radius: 8px; padding: 24px; margin-bottom: 40px; border-left: 4px solid #c9a050; }
         .request-row { display: flex; margin-bottom: 12px; font-size: 14px; }
         .request-row:last-child { margin-bottom: 0; }
         .request-label { width: 120px; color: #888; }
         .request-value { font-weight: 600; color: #2d3748; flex: 1; }
-        
+
         .package-title { font-size: 22px; font-family: Georgia, serif; color: #1a202c; margin-bottom: 8px; }
         .package-subtitle { font-size: 14px; font-style: italic; color: #718096; margin-bottom: 24px; }
-        
+
         .pricing-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-top: 20px; }
         .price-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; color: #4a5568; }
         .price-row-total { display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid #1a202c; font-size: 18px; font-weight: bold; color: #1a202c; }
@@ -110,7 +111,7 @@ export const generateProposalHtml = (rawFormData, quote, bookingId) => {
           <div class="header-divider"></div>
           <div class="header-ref">Ref · ${refCode}</div>
         </div>
-        
+
         <!-- Content -->
         <div class="content">
           <div class="intro-text">
@@ -118,7 +119,7 @@ export const generateProposalHtml = (rawFormData, quote, bookingId) => {
             <p>${intro}</p>
             <p>${intro2}</p>
           </div>
-          
+
           <!-- 01. Your Request -->
           <div class="section-title">01 · YOUR REQUEST</div>
           <div class="request-box">
@@ -141,16 +142,16 @@ export const generateProposalHtml = (rawFormData, quote, bookingId) => {
               </tr>
             </table>
           </div>
-          
+
           <!-- 02. Inclusions -->
           <div class="section-title">02 · YOUR VIP PACKAGE INCLUSIONS</div>
           <h2 class="package-title">VIP ${serviceName} — Personal Meet & Greet</h2>
           <div class="package-subtitle">From the moment you land to your waiting driver — we handle every step so you walk out fresh, not frustrated.</div>
-          
+
           <div style="margin-bottom: 40px;">
             ${inclusionsHtml}
           </div>
-          
+
           <!-- 03. Pricing -->
           <div class="section-title">03 · YOUR VIP PACKAGE</div>
           <div class="pricing-box">
@@ -203,7 +204,7 @@ ${porterUsd > 0 ? `- Porter Service: $${porterUsd}\n` : ''}${surcharges?.nightFe
 - Total (PayPal, USD, incl. 4% fee): $${paypalTotalUsd.toFixed(2)}
             </pre>
           </div>
-          
+
         </div>
       </div>
     </body>
