@@ -304,3 +304,73 @@
   word-break: keep-all;
 }
 .process-note svg { flex: none; margin-top: 3px; color: var(--champagne); }
+
+/* ---------- Service process: animated flow (icons draw in sequence) ---------- */
+.process-flow > .process-step:nth-of-type(1) { --i: 0; }
+.process-flow > .process-step:nth-of-type(2) { --i: 1; }
+.process-flow > .process-step:nth-of-type(3) { --i: 2; }
+.process-flow > .process-step:nth-of-type(4) { --i: 3; }
+.process-flow > .process-step:nth-of-type(5) { --i: 4; }
+.process-flow > .process-step:nth-of-type(6) { --i: 5; }
+.process-flow > .process-step:nth-of-type(7) { --i: 6; }
+
+.process-track { display: none; }
+@media (min-width: 901px) {
+  /* A progress line replaces the chevrons on wide screens */
+  .process-track {
+    display: block;
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    top: 40px;
+    height: 2px;
+    background: var(--line);
+    z-index: 0;
+  }
+  .process-track i { display: block; height: 100%; background: var(--champagne); transform-origin: left center; }
+  .process-flow > .process-arrow { visibility: hidden; }
+  .process-icon-circle { background: var(--paper); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .process-diagram-container.is-live .process-track i {
+    animation: pt-fill 10s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+  }
+  .process-diagram-container.is-live .process-icon-circle {
+    animation: pt-ring 10s ease infinite;
+    animation-delay: calc(var(--i) * 1.3s);
+  }
+  .process-diagram-container.is-live .process-icon-circle svg * {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: pt-ink 10s ease infinite;
+    animation-delay: calc(var(--i) * 1.3s);
+  }
+  .process-diagram-container.is-live .process-step h4,
+  .process-diagram-container.is-live .process-step > span {
+    animation: pt-label 10s ease infinite;
+    animation-delay: calc(var(--i) * 1.3s);
+  }
+}
+@keyframes pt-fill {
+  0% { transform: scaleX(0); }
+  70% { transform: scaleX(1); }
+  92% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@keyframes pt-ink {
+  0% { stroke-dashoffset: 100; }
+  10% { stroke-dashoffset: 0; }
+  88% { stroke-dashoffset: 0; opacity: 1; }
+  96%, 100% { stroke-dashoffset: 0; opacity: 0.25; }
+}
+@keyframes pt-ring {
+  0% { transform: scale(1); }
+  5% { transform: scale(1.08); background: #FFF6DE; border-color: var(--champagne); box-shadow: 0 0 0 6px rgba(254, 199, 77, 0.18); }
+  12%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(254, 199, 77, 0); }
+}
+@keyframes pt-label {
+  0% { opacity: 0.45; }
+  8%, 88% { opacity: 1; }
+  96%, 100% { opacity: 0.45; }
+}

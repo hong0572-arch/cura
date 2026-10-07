@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   PlaneLanding, PlaneTakeoff, RefreshCw,
   MapPin, Compass, FileCheck, Briefcase,
@@ -31,6 +31,17 @@ export default function Services({ t }) {
 
   // 입국·출국·환승 과정 중 하나만 보여 준다 (나머지도 HTML에는 남아 검색엔진이 읽을 수 있음)
   const [active, setActive] = useState('arrival');
+
+  // 과정 다이어그램이 화면에 들어오면 아이콘 그리기 애니메이션을 처음부터 시작한다
+  const diagramRef = useRef(null);
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    const el = diagramRef.current;
+    if (!el || !('IntersectionObserver' in window)) return undefined;
+    const observer = new IntersectionObserver(([entry]) => setLive(entry.isIntersecting), { threshold: 0.25 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const handleScrollToProcess = (id) => {
     setActive(id);
@@ -88,7 +99,7 @@ export default function Services({ t }) {
         </div>
 
         {/* --- Process Diagram Section --- */}
-        <div className="process-diagram-container" style={{ marginTop: '40px' }}>
+        <div ref={diagramRef} className={`process-diagram-container ${live ? 'is-live' : ''}`} style={{ marginTop: '40px' }}>
 
           {/* Arrival Process */}
           <div id="process-arrival" className="process-wrapper glass-panel" hidden={active !== 'arrival'}>
@@ -103,6 +114,7 @@ export default function Services({ t }) {
             </div>
 
             <div className="process-flow">
+              <span className="process-track" aria-hidden="true"><i /></span>
               <div className="process-step">
                 <div className="process-icon-circle"><PlaneLanding size={32} strokeWidth={1.5} /></div>
                 <h4>{t.services.diagrams?.arrival?.steps?.[0]?.title || '에어브릿지 영접'}</h4>
@@ -152,6 +164,7 @@ export default function Services({ t }) {
             </div>
 
             <div className="process-flow">
+              <span className="process-track" aria-hidden="true"><i /></span>
               <div className="process-step">
                 <div className="process-icon-circle"><MapPin size={32} strokeWidth={1.5} /></div>
                 <h4>{t.services.diagrams?.departure?.steps?.[0]?.title || '공항도착장소 영접'}</h4>
@@ -210,6 +223,7 @@ export default function Services({ t }) {
             </div>
 
             <div className="process-flow">
+              <span className="process-track" aria-hidden="true"><i /></span>
               <div className="process-step">
                 <div className="process-icon-circle"><CalendarClock size={32} strokeWidth={1.5} /></div>
                 <h4>{t.services.diagrams?.transfer?.steps?.[0]?.title || '사전 준비 (Pre-Arrival)'}</h4>
