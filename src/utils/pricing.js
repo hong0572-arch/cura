@@ -11,6 +11,9 @@ const AIRPORT_UTC_OFFSET = { ICN: '+09:00', GMP: '+09:00' };
 const SERVICE_TYPES = ['arrival', 'departure', 'transfer', 'picketing'];
 const DEFAULT_BASE_USD = { arrival: 250, departure: 270, transfer: 340, picketing: 140 };
 
+// 의전 기본 요금에 포함되는 인원 (그 이상은 1인당 extraPassengerFeeUsd)
+export const INCLUDED_PASSENGERS = 3;
+
 const round2 = (n) => Math.round(n * 100) / 100;
 
 function parseFlightDate(date, time, airport) {
@@ -48,7 +51,7 @@ export function computeQuote(formData, settings, now = new Date()) {
 
   // Extra passengers
   const passengers = Math.max(1, parseInt(formData.passengers, 10) || 1);
-  const extraPassCount = Math.max(0, passengers - 2);
+  const extraPassCount = Math.max(0, passengers - INCLUDED_PASSENGERS);
   const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 120);
 
   // Luggage & porter

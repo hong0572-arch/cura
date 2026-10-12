@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { computeQuote } from '../../utils/pricing';
+import { computeQuote, INCLUDED_PASSENGERS as INC } from '../../utils/pricing';
 import './boardingPass.css';
 
 // 탑승권 결제 시안 — 개발 전용 미리보기 (/preview/boarding-pass). 실제 예약·결제는 하지 않는다.
@@ -73,9 +73,9 @@ export default function BoardingPassPreview() {
 
   // 기존 결제 화면의 견적 항목을 그대로 옮긴다 (0원 항목은 숨김)
   const lines = [
-    { label: `${SERVICES[service]} meet & assist (1–2 guests)`, usd: quote.baseFeeUsd },
+    { label: `${SERVICES[service]} meet & assist (1–${INC} guests)`, usd: quote.baseFeeUsd },
     quote.vehicleUsd > 0 && { label: `Car · ${CARS[form.car].name}`, usd: quote.vehicleUsd, why: form.address ? `${dep ? 'Pick-up from' : 'Drop-off at'} ${form.address}` : '' },
-    quote.extraPassUsd > 0 && { label: `Extra guests × ${quote.extraPassCount}`, usd: quote.extraPassUsd, why: 'Base price covers 2 guests' },
+    quote.extraPassUsd > 0 && { label: `Extra guests × ${quote.extraPassCount}`, usd: quote.extraPassUsd, why: `Base price covers up to ${INC} guests` },
     quote.extraLugUsd > 0 && { label: `Extra bags × ${quote.extraBags}`, usd: quote.extraLugUsd, why: `One bag per guest is included (min. 2)` },
     quote.porterUsd > 0 && { label: `Porter × ${form.bags >= 9 ? 2 : 1}`, usd: quote.porterUsd, why: `${form.bags} bags — a porter carries them for you` },
     surcharges.nightFeeUsd > 0 && { label: 'Night supplement', usd: surcharges.nightFeeUsd, why: `Flight ${dep ? 'departs' : 'lands'} ${time} — between 22:00 and 06:00` },
@@ -183,7 +183,7 @@ export default function BoardingPassPreview() {
                     <select id="bp-guests" value={guests} onChange={e => set('guests', parseInt(e.target.value, 10))}>
                       {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>)}
                     </select>
-                    <small>Base price covers 2 guests.</small>
+                    <small>Base price covers up to {INC} guests.</small>
                   </div>
                   <div className="f">
                     <label htmlFor="bp-bags">Checked bags</label>

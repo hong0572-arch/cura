@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { computeQuote } from '../utils/pricing';
+import { computeQuote, INCLUDED_PASSENGERS as INC } from '../utils/pricing';
 import { localizePath } from '../utils/locale';
 import { track } from '@vercel/analytics';
 import { signInWithPopup } from 'firebase/auth';
@@ -55,7 +55,7 @@ const COPY = {
     time: (dep) => `${dep ? 'Departure' : 'Landing'} time (KST)`,
     seoulNow: (t) => `It is ${t} in Seoul now.`,
     connNo: 'Connecting flight number', connTime: 'Connecting departure (KST)', connAirline: 'Connecting airline',
-    guests: 'Guests', guestsHint: 'Base price covers 2 guests.',
+    guests: 'Guests', guestsHint: `Base price covers up to ${INC} guests.`,
     bags: 'Checked bags', bagsHint: '5+ bags include a porter.',
     car: (dep) => `Private car ${dep ? 'to the airport' : 'from the airport'}`,
     noCar: 'No car', noCarNote: 'Meet & assist only',
@@ -95,9 +95,9 @@ const COPY = {
     priceDetails: (p) => `Price details · ${p}`, hideDetails: 'Hide price details',
     pass: { title: 'VIP MEET & ASSIST', draft: 'DRAFT', passenger: 'PASSENGER', guestsBags: 'GUESTS · BAGS', date: 'DATE', lands: 'LANDS KST', departs: 'DEPARTS KST', meet: 'MEET AT', gate: 'GATE', curb: 'CURB', conn: 'CONNECTING', car: 'PRIVATE CAR', contact: 'CONTACT', bookedBy: 'BOOKED BY', addMobile: 'ADD MOBILE', addConn: 'ADD CONNECTING FLIGHT', flight: 'FLIGHT', enterFlight: 'Enter flight', placeholderName: 'SURNAME / GIVEN', wheelchair: 'WHEELCHAIR', taxRefund: 'TAX REFUND ASSIST' },
     lines: {
-      base: (s) => `${s} meet & assist (1–2 guests)`,
+      base: (s) => `${s} meet & assist (1–${INC} guests)`,
       car: (n) => `Car · ${n}`, carWhy: (dep, a) => `${dep ? 'Pick-up from' : 'Drop-off at'} ${a}`,
-      extraPax: (n) => `Extra guests × ${n}`, extraPaxWhy: 'Base price covers 2 guests',
+      extraPax: (n) => `Extra guests × ${n}`, extraPaxWhy: `Base price covers up to ${INC} guests`,
       extraBags: (n) => `Extra bags × ${n}`, extraBagsWhy: 'One bag per guest is included (min. 2)',
       porter: (n) => `Porter × ${n}`, porterWhy: (b) => `${b} bags — a porter carries them for you`,
       night: 'Night supplement', nightWhy: (dep, t) => `Flight ${dep ? 'departs' : 'lands'} ${t} — between 22:00 and 06:00`,
@@ -127,7 +127,7 @@ const COPY = {
     time: (dep) => `${dep ? '출발' : '도착'} 시간 (KST)`,
     seoulNow: (t) => `지금 서울은 ${t}입니다.`,
     connNo: '연결편 번호', connTime: '연결편 출발 시간 (KST)', connAirline: '연결편 항공사',
-    guests: '인원', guestsHint: '기본 요금에 2명까지 포함됩니다.',
+    guests: '인원', guestsHint: `기본 요금에 ${INC}명까지 포함됩니다.`,
     bags: '위탁 수하물', bagsHint: '5개 이상이면 포터가 포함됩니다.',
     car: (dep) => (dep ? '공항까지 전용 차량' : '공항에서 전용 차량'),
     noCar: '차량 없음', noCarNote: '의전만',
@@ -167,9 +167,9 @@ const COPY = {
     priceDetails: (p) => `금액 내역 · ${p}`, hideDetails: '금액 내역 접기',
     pass: { title: 'VIP 의전', draft: '작성 중', passenger: 'PASSENGER', guestsBags: 'GUESTS · BAGS', date: 'DATE', lands: 'LANDS KST', departs: 'DEPARTS KST', meet: 'MEET AT', gate: 'GATE', curb: 'CURB', conn: 'CONNECTING', car: 'PRIVATE CAR', contact: 'CONTACT', bookedBy: 'BOOKED BY', addMobile: '휴대폰 입력', addConn: '연결편 입력', flight: 'FLIGHT', enterFlight: '항공편 입력', placeholderName: 'SURNAME / GIVEN', wheelchair: 'WHEELCHAIR', taxRefund: 'TAX REFUND' },
     lines: {
-      base: (s) => `${s} 의전 (1~2명)`,
+      base: (s) => `${s} 의전 (1~${INC}명)`,
       car: (n) => `차량 · ${n}`, carWhy: (dep, a) => `${dep ? '픽업' : '도착지'}: ${a}`,
-      extraPax: (n) => `추가 인원 × ${n}`, extraPaxWhy: '기본 요금에 2명 포함',
+      extraPax: (n) => `추가 인원 × ${n}`, extraPaxWhy: `기본 요금에 ${INC}명 포함`,
       extraBags: (n) => `추가 수하물 × ${n}`, extraBagsWhy: '1인당 1개(최소 2개) 포함',
       porter: (n) => `포터 × ${n}`, porterWhy: (b) => `수하물 ${b}개 — 포터가 옮겨 드립니다`,
       night: '야간 할증', nightWhy: (dep, t) => `${dep ? '출발' : '도착'} ${t} — 22:00~06:00 항공편`,
