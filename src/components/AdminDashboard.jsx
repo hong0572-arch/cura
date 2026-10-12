@@ -314,7 +314,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
   const handleVehicleChange = (airportIndex, vehicleIndex, field, value) => {
     setEditSettings(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
-      copy.airports[airportIndex].vehicles[vehicleIndex][field] = (field === 'priceUsd' || field === 'priceKrw') ? (Number(value) || 0) : value;
+      copy.airports[airportIndex].vehicles[vehicleIndex][field] = ['priceUsd', 'priceKrw', 'maxPax', 'maxBags'].includes(field) ? (Number(value) || 0) : value;
       return copy;
     });
   };
@@ -1532,6 +1532,15 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                           <div className="form-field-nested">
                             <label>Price KRW</label>
                             <input type="number" value={vehicle.priceKrw || 0} onChange={e => handleVehicleChange(aIndex, vIndex, 'priceKrw', e.target.value)} />
+                          </div>
+                          {/* 예약 위저드: 권장 인원·수하물을 넘으면 고객에게 안내한다 (0 = 안내 안 함) */}
+                          <div className="form-field-nested">
+                            <label>Recommended max guests (0 = no limit)</label>
+                            <input type="number" min="0" value={vehicle.maxPax || 0} onChange={e => handleVehicleChange(aIndex, vIndex, 'maxPax', e.target.value)} />
+                          </div>
+                          <div className="form-field-nested">
+                            <label>Recommended max bags (0 = no limit)</label>
+                            <input type="number" min="0" value={vehicle.maxBags || 0} onChange={e => handleVehicleChange(aIndex, vIndex, 'maxBags', e.target.value)} />
                           </div>
                         </div>
                       </div>

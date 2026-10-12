@@ -59,7 +59,7 @@ const COPY = {
     bags: 'Checked bags', bagsHint: '5+ bags include a porter.',
     car: (dep) => `Private car ${dep ? 'to the airport' : 'from the airport'}`,
     noCar: 'No car', noCarNote: 'Meet & assist only',
-    carNote: (c) => `Recommended up to ${c.pax} guests · ${c.bags} bags`,
+    carNote: (c) => `Recommended ${[c.pax && `${c.pax} guests`, c.bags && `${c.bags} bags`].filter(Boolean).join(' · ')}`,
     overCap: 'Your party is larger than this car is recommended for. Consider a bigger car, or WhatsApp us and we will arrange it.',
     address: (dep) => (dep ? 'Pick-up address' : 'Drop-off address'),
     addressPh: 'Hotel name or address in Seoul',
@@ -131,7 +131,7 @@ const COPY = {
     bags: '위탁 수하물', bagsHint: '5개 이상이면 포터가 포함됩니다.',
     car: (dep) => (dep ? '공항까지 전용 차량' : '공항에서 전용 차량'),
     noCar: '차량 없음', noCarNote: '의전만',
-    carNote: (c) => `권장 ${c.pax}명 · 수하물 ${c.bags}개`,
+    carNote: (c) => `권장 ${[c.pax && `${c.pax}명`, c.bags && `수하물 ${c.bags}개`].filter(Boolean).join(' · ')}`,
     overCap: '선택한 차량의 권장 인원·수하물보다 많습니다. 더 큰 차량을 고르시거나 WhatsApp으로 문의해 주세요.',
     address: (dep) => (dep ? '픽업 주소' : '도착지 주소'),
     addressPh: '호텔 이름 또는 서울 내 주소',
@@ -213,6 +213,12 @@ const getTomorrowString = () => {
 };
 // 관리자 화면에 입력된 차량 이름의 오타 보정 (기존 위저드와 같은 처리)
 const cleanVehicleName = (name) => String(name).replace(/Merces/i, 'Mercedes').replace(/Venz/i, 'Benz').replace(/Toyata/i, 'Toyota');
+// 차량 권장 인원·수하물: 관리자 화면 입력값(maxPax/maxBags) 우선, 없으면 차종 이름으로 기본값
+const vehicleCapacity = (v) => {
+  if (Number(v.maxPax) > 0 || Number(v.maxBags) > 0) return { pax: Number(v.maxPax) || 0, bags: Number(v.maxBags) || 0 };
+  const key = CAPACITY[v.id] ? v.id : /staria/i.test(v.name) ? 'staria' : /g90/i.test(v.name) ? 'g90' : /sprinter/i.test(v.name) ? 'sprinter' : null;
+  return key ? CAPACITY[key] : null;
+};
 const usd2 = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const airlineFromFlight = (no) => {
   const m = String(no || '').toUpperCase().match(/^([A-Z0-9]{2})\s?\d/);
@@ -376,11 +382,11 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   const airports = airportOptions.length ? airportOptions : [{ code: 'ICN' }, { code: 'GMP' }];
   const servicePrice = (id) => currentAirport?.services?.[id]?.usd ?? settings?.servicePrices?.[id]?.usd ?? DEFAULT_SERVICE_USD[id];
   const vehicles = currentAirport?.vehicles?.length
-    ? currentAirport.vehicles.map(v => ({ id: v.id, name: cleanVehicleName(v.name || VEHICLE_NAMES[v.id] || v.id), usd: settings?.vehiclePricesUsd?.[v.id] || Number(v.priceUsd) || 0 }))
-    : Object.keys(DEFAULT_VEHICLE_USD).map(id => ({ id, name: VEHICLE_NAMES[id], usd: settings?.vehiclePricesUsd?.[id] || DEFAULT_VEHICLE_USD[id] }));
+    ? currentAirport.vehicles.map(v => ({ id: v.id, name: cleanVehicleName(v.name || VEHICLE_NAMES[v.id] || v.id), usd: settings?.vehiclePricesUsd?.[v.id] || Number(v.priceUsd) || 0, cap: vehicleCapacity(v) }))
+    : Object.keys(DEFAULT_VEHICLE_USD).map(id => ({ id, name: VEHICLE_NAMES[id], usd: settings?.vehiclePricesUsd?.[id] || DEFAULT_VEHICLE_USD[id], cap: CAPACITY[id] }));
   const vehicleName = vehicles.find(v => v.id === formData.vehicleType)?.name || formData.vehicleType;
-  const cap = CAPACITY[formData.vehicleType];
-  const overCapacity = cap && (Number(formData.passengers) > cap.pax || Number(formData.luggageCount) > cap.bags);
+  const cap = vehicles.find(v => v.id === formData.vehicleType)?.cap;
+  const overCapacity = cap && ((cap.pax && Number(formData.passengers) > cap.pax) || (cap.bags && Number(formData.luggageCount) > cap.bags));
 
   // 기존 결제 화면의 견적 항목 (0원 항목은 숨김)
   const L = c.lines;
@@ -613,7 +619,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                           <button type="button" className={seg(formData.vehicleType === 'none')} onClick={() => updateForm('vehicleType', 'none')}>{c.noCar}<span>{c.noCarNote}</span></button>
                           {vehicles.map(v => (
                             <button key={v.id} type="button" className={seg(formData.vehicleType === v.id)} onClick={() => updateForm('vehicleType', v.id)}>
-                              {v.name}<span>USD {v.usd}{CAPACITY[v.id] ? ` · ${c.carNote(CAPACITY[v.id])}` : ''}</span>
+                              {v.name}<span>USD {v.usd}{v.cap ? ` · ${c.carNote(v.cap)}` : ''}</span>
                             </button>
                           ))}
                         </div>
@@ -823,7 +829,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
 
         <div className="mbar">
           <div className="p">{c.total}<b>{priceMain}</b></div>
-          <button type="button" className={`btn ${step === 3 ? 'btn-gold' : 'btn-navy'}`} onClick={onCta} disabled={isSubmitting}>
+          <button type="button" className="btn btn-gold" onClick={onCta} disabled={isSubmitting}>
             {step === 3 ? (isSubmitting ? c.paying : c.payShort) : `${c.continue} (${step}/3)`}
           </button>
         </div>
