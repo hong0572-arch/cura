@@ -664,13 +664,40 @@ Request: ${interests || 'Highlights'}`;
     const response = await ai.models.generateContent({
       model: TEXT_MODEL,
       contents: prompt,
-      config: { responseMimeType: 'application/json', maxOutputTokens: 1200, temperature: 0.6 },
+      config: {
+        responseMimeType: 'application/json',
+        // 응답 형식을 고정한다 (모델이 다른 키·구조로 답하는 것을 막음)
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            places: {
+              type: 'ARRAY',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  name: { type: 'STRING' }, name_ko: { type: 'STRING' }, search: { type: 'STRING' }, region: { type: 'STRING' },
+                  why: { type: 'STRING' }, hours: { type: 'NUMBER' }, tip: { type: 'STRING' },
+                },
+                required: ['name', 'search', 'why'],
+              },
+            },
+          },
+          required: ['places'],
+        },
+        maxOutputTokens: 2000,
+        temperature: 0.6,
+      },
     });
     const raw = (response.text || '').replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
     const parsed = JSON.parse(raw);
-    const places = (Array.isArray(parsed?.places) ? parsed.places : []).slice(0, 6).map(p => ({
-      name: str(p.name, 100),
-      nameKo: str(p.name_ko, 100),
+    // 모델이 배열만 돌려주거나 다른 키를 쓰는 경우도 받아 준다
+    const list = Array.isArray(parsed) ? parsed
+      : Array.isArray(parsed?.places) ? parsed.places
+      : Object.values(parsed || {}).find(Array.isArray) || [];
+    if (!list.length) console.warn('Journey suggest: empty list', raw.slice(0, 300));
+    const places = list.slice(0, 6).map(p => ({
+      name: str(p.name || p.name_en || p.title, 100),
+      nameKo: str(p.name_ko || p.nameKo, 100),
       search: str(p.search || p.name, 140),
       region: str(p.region, 60),
       why: str(p.why, 220),

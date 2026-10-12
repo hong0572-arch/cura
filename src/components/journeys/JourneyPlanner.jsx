@@ -159,7 +159,7 @@ export default function JourneyPlanner({ lang = 'en', copy, settings }) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const resolved = await Promise.all((data.places || []).map(async (s) => ({ ...s, map: await resolvePlace(s) })));
-      setAi({ status: 'done', places: resolved, error: '' });
+      setAi({ status: 'done', places: resolved, error: resolved.length ? '' : c.ai.empty });
     } catch (err) {
       console.error('AI suggest failed:', err);
       setAi({ status: 'error', places: [], error: err.code === 429 ? c.ai.tooMany : c.ai.error });
