@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { localizePath } from '../../utils/locale';
+import { FEATURES } from '../../config/features';
 
 // 세 갈래: Private Journeys(사전 상담) · 공항 의전 & 차량(바로 예약) · 단체 & 기업(제안 요청)
 export default function ThreeWays({ copy, lang }) {
@@ -13,11 +14,11 @@ export default function ThreeWays({ copy, lang }) {
     <section id="ways" className="home-section">
       <div className="container">
         <div className="home-head btg-reveal">
-          <p className="btg-eyebrow">{copy.eyebrow}</p>
+          <p className="btg-eyebrow">{FEATURES.privateJourneys ? copy.eyebrow : copy.eyebrowPaused}</p>
           <h2 className="home-title">{copy.title}</h2>
         </div>
         <div className="ways-grid">
-          {copy.items.map(item => (
+          {copy.items.filter(item => FEATURES.privateJourneys || item.id !== 'journeys').map(item => (
             <article key={item.id} id={`way-${item.id}`} className="way-card btg-card btg-reveal">
               <div className="way-media">
                 <img src={item.image} alt={item.alt} loading="lazy" width="640" height="400" />

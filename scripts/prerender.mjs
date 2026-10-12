@@ -12,7 +12,9 @@ const SITE_URL = 'https://beyondthegate.kr'
 const PROJECT_ID = 'cura-1969a'
 
 // 사전 렌더링할 공개 페이지 (한국어 경로 기준, 영어는 /en 접두사)
-const PAGES = [
+import { FEATURES } from '../src/config/features.js'
+
+const ALL_PAGES = [
   { path: '/', priority: '1.0', changefreq: 'weekly' },
   { path: '/book-vehicle', priority: '0.9', changefreq: 'monthly' },
   { path: '/private-journeys', priority: '0.9', changefreq: 'monthly' },
@@ -22,6 +24,9 @@ const PAGES = [
   { path: '/terms', priority: '0.3', changefreq: 'yearly' },
   { path: '/privacy', priority: '0.3', changefreq: 'yearly' },
 ]
+// 비활성화한 페이지는 HTML 은 만들되(준비 중 안내) 사이트맵에서는 뺀다
+const PAGES = ALL_PAGES
+const SITEMAP_PAGES = ALL_PAGES.filter(p => FEATURES.privateJourneys || p.path !== '/private-journeys')
 
 const enPath = (p) => (p === '/' ? '/en' : `/en${p}`)
 
@@ -70,7 +75,7 @@ const safeJson = (obj) => JSON.stringify(obj).replace(/</g, '\\u003c')
 
 function buildSitemap() {
   const today = new Date().toISOString().slice(0, 10)
-  const urls = PAGES.flatMap(({ path: p, priority, changefreq }) =>
+  const urls = SITEMAP_PAGES.flatMap(({ path: p, priority, changefreq }) =>
     [p, enPath(p)].map(loc => `  <url>
     <loc>${SITE_URL}${loc}</loc>
     <xhtml:link rel="alternate" hreflang="ko" href="${SITE_URL}${p}" />

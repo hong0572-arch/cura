@@ -9,6 +9,7 @@ import { getStorage } from 'firebase-admin/storage';
 import { GoogleGenAI } from "@google/genai";
 import { computeQuote, computeVehicleQuote, computeJourneyQuote, haversineKm, VEHICLE_ROAD_FACTOR, VEHICLE_TYPES } from '../src/utils/pricing.js';
 import { generateProposalHtml } from '../src/utils/emailTemplate.js';
+import { FEATURES } from '../src/config/features.js';
 
 dotenv.config();
 
@@ -634,6 +635,7 @@ const clientIp = (req) => String(req.headers['x-forwarded-for'] || req.socket?.r
 
 // AI 장소 추천: 개인정보 없이 관심사·지역·이미 고른 장소만 보낸다
 app.post('/api/journeys/suggest', async (req, res) => {
+  if (!FEATURES.privateJourneys) return res.status(503).json({ error: 'Private Journeys is not available yet' });
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'AI is not configured' });
   if (tooManySuggests(clientIp(req))) return res.status(429).json({ error: 'Too many requests' });
@@ -752,6 +754,7 @@ function sanitizeJourneyPlan(b = {}) {
 const money = (n) => (n === null || n === undefined ? 'to be quoted' : `USD ${Number(n).toFixed(2)}`);
 
 app.post('/api/journey-requests', async (req, res) => {
+  if (!FEATURES.privateJourneys) return res.status(503).json({ error: 'Private Journeys is not available yet' });
   const b = req.body || {};
   if (b.company) return res.status(200).json({ success: true, id: 'PJ-OK' }); // 숨김 필드 → 봇
   const str = (v, max) => String(v ?? '').trim().slice(0, max);

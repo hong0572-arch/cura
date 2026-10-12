@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import { db } from '../firebase';
 import { localizePath, SITE_URL } from '../utils/locale';
 import { blogImages, excerpt, postTitle, postBody, postDate } from '../utils/blogImages';
+import { FEATURES } from '../config/features';
 import './Blog.css';
 
 // 본문을 두 번째 소제목 앞에서 나눠 중간에 사진을 넣는다
@@ -154,7 +155,9 @@ export default function BlogPost({ lang }) {
           </div>
           <div className="post-cta-actions">
             <a className="btg-btn btg-btn--gold btg-sheen" href={localizePath('/#hero', lang)} onClick={(e) => go(e, '/#hero')}>{isEn ? 'Book airport VIP' : '공항 의전 예약'}</a>
-            <a className="btg-btn post-cta-ghost" href={localizePath('/private-journeys', lang)} onClick={(e) => go(e, '/private-journeys')}>Private Journeys</a>
+            {FEATURES.privateJourneys && (
+              <a className="btg-btn post-cta-ghost" href={localizePath('/private-journeys', lang)} onClick={(e) => go(e, '/private-journeys')}>Private Journeys</a>
+            )}
           </div>
         </aside>
 

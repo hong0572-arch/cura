@@ -13,6 +13,7 @@ export const homeCopy = {
     },
     ways: {
       eyebrow: '세 가지 방법',
+      eyebrowPaused: '함께하는 방법',
       title: '둘이서, 가족과, 혹은 팀과 함께.',
       items: [
         {
@@ -83,6 +84,7 @@ export const homeCopy = {
     },
     ways: {
       eyebrow: 'Three ways to travel with us',
+      eyebrowPaused: 'Ways to travel with us',
       title: 'For two, for the family, or for the whole team.',
       items: [
         {
