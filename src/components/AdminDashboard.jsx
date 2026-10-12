@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { vehiclesFor } from '../utils/vehicles';
+import { JOURNEY_DEFAULTS } from '../utils/pricing';
 import {
   Save, Eye, RotateCcw, Layout, FileText,
   HelpCircle, Image, Settings, Sparkles, Check,
@@ -155,6 +157,14 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
       return copy;
     });
   };
+
+  // Private Journeys 요금 (settings.journeys)
+  const setJourney = (key, value) => setEditSettings(prev => ({ ...prev, journeys: { ...(prev.journeys || {}), [key]: value } }));
+  const setJourneyRate = (vehicleId, field, value) => setEditSettings(prev => {
+    const j = prev.journeys || {};
+    const rates = j.vehicleRates || {};
+    return { ...prev, journeys: { ...j, vehicleRates: { ...rates, [vehicleId]: { ...(rates[vehicleId] || {}), [field]: value } } } };
+  });
 
   const handleTextChange = (lang, path, value) => {
     setEditData(prev => {
@@ -542,6 +552,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
     { id: 'form_calculator', label: 'Calculator & Ticket', icon: <Calculator size={18} /> },
     { id: 'airports', label: 'Airports & Pricing', icon: <Plane size={18} /> },
     { id: 'pricing_settings', label: 'Pricing & Email Settings', icon: <Calculator size={18} /> },
+    { id: 'journeys', label: 'Private Journeys Pricing', icon: <Navigation size={18} /> },
     { id: 'reservations', label: 'Customer Reservations', icon: <FileSpreadsheet size={18} /> },
     { id: 'faq', label: 'FAQs Accordion', icon: <HelpCircle size={18} /> },
     { id: 'policies', label: 'Policies & T&C', icon: <ShieldAlert size={18} /> },
@@ -1831,6 +1842,84 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 </div>
               </div>
             )}
+
+            {/* Tab: Private Journeys Pricing — 플래너 예상 견적에 쓰인다 (0 = '별도 견적'으로 표시) */}
+            {activeTab === 'journeys' && (() => {
+              const j = { ...JOURNEY_DEFAULTS, ...(editSettings.journeys || {}) };
+              const num = (v) => Math.max(0, Number(v) || 0);
+              const cars = [...vehiclesFor(editSettings, 'ICN'), ...vehiclesFor(editSettings, 'GMP')]
+                .filter((v, i, all) => all.findIndex(x => x.id === v.id) === i);
+              return (
+                <div className="tab-section">
+                  <h3>Private Journeys — package & trip pricing</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Package = arrival + departure meet & assist with the chosen car each way (from Airports & Pricing), minus the discount below.
+                    Any rate left at 0 is shown to guests as "to be quoted". Prices are in USD; KRW uses the exchange rate.
+                  </p>
+                  <div className="form-row-2">
+                    <div className="form-field-pair">
+                      <label className="field-main-label">Package discount (%)</label>
+                      <div className="form-field"><input type="number" min="0" max="50" value={j.packageDiscountPct} onChange={e => setJourney('packageDiscountPct', Math.min(50, num(e.target.value)))} /></div>
+                    </div>
+                    <div className="form-field-pair">
+                      <label className="field-main-label">Guide per destination (USD)</label>
+                      <div className="form-field"><input type="number" min="0" value={j.guidePerStopUsd} onChange={e => setJourney('guidePerStopUsd', num(e.target.value))} /></div>
+                    </div>
+                  </div>
+                  <div className="form-row-2" style={{ marginTop: '10px' }}>
+                    <div className="form-field-pair">
+                      <label className="field-main-label">Half-day car (hours)</label>
+                      <div className="form-field"><input type="number" min="1" value={j.halfDayHours} onChange={e => setJourney('halfDayHours', num(e.target.value))} /></div>
+                    </div>
+                    <div className="form-field-pair">
+                      <label className="field-main-label">Full-day car (hours)</label>
+                      <div className="form-field"><input type="number" min="1" value={j.fullDayHours} onChange={e => setJourney('fullDayHours', num(e.target.value))} /></div>
+                    </div>
+                  </div>
+                  <div className="form-row-2" style={{ marginTop: '10px' }}>
+                    <div className="form-field-pair">
+                      <label className="field-main-label">Long distance starts at (km from Seoul)</label>
+                      <div className="form-field"><input type="number" min="10" value={j.longDistanceKm} onChange={e => setJourney('longDistanceKm', num(e.target.value))} /></div>
+                    </div>
+                    <div className="form-field-pair">
+                      <label className="field-main-label">Long-distance surcharge per day (USD)</label>
+                      <div className="form-field"><input type="number" min="0" value={j.longDistanceUsd} onChange={e => setJourney('longDistanceUsd', num(e.target.value))} /></div>
+                    </div>
+                  </div>
+                  <div className="form-row-2" style={{ marginTop: '10px' }}>
+                    <div className="form-field-pair">
+                      <label className="field-main-label">Driver overnight (hotel outside Seoul area, per night, USD)</label>
+                      <div className="form-field"><input type="number" min="0" value={j.driverOvernightUsd} onChange={e => setJourney('driverOvernightUsd', num(e.target.value))} /></div>
+                    </div>
+                    <div style={{ visibility: 'hidden' }}></div>
+                  </div>
+
+                  <h3 style={{ marginTop: '28px' }}>Car hire during the trip (USD)</h3>
+                  {cars.map(v => {
+                    const r = (j.vehicleRates || {})[v.id] || {};
+                    return (
+                      <div key={v.id} style={{ padding: '12px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '0.9rem', marginBottom: '8px' }}>{v.name}</div>
+                        <div className="form-row-2">
+                          <div className="form-field-nested">
+                            <label>Half day</label>
+                            <input type="number" min="0" value={r.halfDayUsd || 0} onChange={e => setJourneyRate(v.id, 'halfDayUsd', num(e.target.value))} />
+                          </div>
+                          <div className="form-field-nested">
+                            <label>Full day</label>
+                            <input type="number" min="0" value={r.fullDayUsd || 0} onChange={e => setJourneyRate(v.id, 'fullDayUsd', num(e.target.value))} />
+                          </div>
+                          <div className="form-field-nested">
+                            <label>Extra hour</label>
+                            <input type="number" min="0" value={r.overtimeUsd || 0} onChange={e => setJourneyRate(v.id, 'overtimeUsd', num(e.target.value))} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {/* Tab: Customer Reservations */}
             {activeTab === 'reservations' && (

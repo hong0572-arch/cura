@@ -7,6 +7,7 @@ import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
 import { AIRLINES } from '../utils/airlines';
+import { vehiclesFor, isOverCapacity } from '../utils/vehicles';
 import './checkout/boardingPass.css';
 
 // 예약 위저드 — "탑승권" 디자인 3단계 (일정 → 탑승객 → 확인·결제).
@@ -35,10 +36,6 @@ const COUNTRY_CODES = [
 ];
 
 const DEFAULT_SERVICE_USD = { arrival: 250, departure: 270, transfer: 340, picketing: 140 };
-const DEFAULT_VEHICLE_USD = { staria: 130, g90: 200, sprinter: 200 };
-// 차량 권장 인원·수하물 (차량 예약 페이지와 같은 기준)
-const CAPACITY = { staria: { pax: 4, bags: 4 }, g90: { pax: 2, bags: 2 }, sprinter: { pax: 6, bags: 6 } };
-const VEHICLE_NAMES = { staria: 'Hyundai Staria', g90: 'Genesis G90', sprinter: 'Mercedes Sprinter' };
 const AIRPORT_NAMES = { ICN: { en: 'Seoul Incheon', ko: '인천국제공항' }, GMP: { en: 'Seoul Gimpo', ko: '김포국제공항' } };
 
 const COPY = {
@@ -211,14 +208,6 @@ const getTomorrowString = () => {
   d.setDate(d.getDate() + 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-// 관리자 화면에 입력된 차량 이름의 오타 보정 (기존 위저드와 같은 처리)
-const cleanVehicleName = (name) => String(name).replace(/Merces/i, 'Mercedes').replace(/Venz/i, 'Benz').replace(/Toyata/i, 'Toyota');
-// 차량 권장 인원·수하물: 관리자 화면 입력값(maxPax/maxBags) 우선, 없으면 차종 이름으로 기본값
-const vehicleCapacity = (v) => {
-  if (Number(v.maxPax) > 0 || Number(v.maxBags) > 0) return { pax: Number(v.maxPax) || 0, bags: Number(v.maxBags) || 0 };
-  const key = CAPACITY[v.id] ? v.id : /staria/i.test(v.name) ? 'staria' : /g90/i.test(v.name) ? 'g90' : /sprinter/i.test(v.name) ? 'sprinter' : null;
-  return key ? CAPACITY[key] : null;
-};
 const usd2 = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const airlineFromFlight = (no) => {
   const m = String(no || '').toUpperCase().match(/^([A-Z0-9]{2})\s?\d/);
@@ -381,12 +370,10 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   const airportOptions = (settings?.airports || []).filter(a => a.code === 'ICN' || a.code === 'GMP');
   const airports = airportOptions.length ? airportOptions : [{ code: 'ICN' }, { code: 'GMP' }];
   const servicePrice = (id) => currentAirport?.services?.[id]?.usd ?? settings?.servicePrices?.[id]?.usd ?? DEFAULT_SERVICE_USD[id];
-  const vehicles = currentAirport?.vehicles?.length
-    ? currentAirport.vehicles.map(v => ({ id: v.id, name: cleanVehicleName(v.name || VEHICLE_NAMES[v.id] || v.id), usd: settings?.vehiclePricesUsd?.[v.id] || Number(v.priceUsd) || 0, cap: vehicleCapacity(v) }))
-    : Object.keys(DEFAULT_VEHICLE_USD).map(id => ({ id, name: VEHICLE_NAMES[id], usd: settings?.vehiclePricesUsd?.[id] || DEFAULT_VEHICLE_USD[id], cap: CAPACITY[id] }));
+  const vehicles = vehiclesFor(settings, formData.airport);
   const vehicleName = vehicles.find(v => v.id === formData.vehicleType)?.name || formData.vehicleType;
   const cap = vehicles.find(v => v.id === formData.vehicleType)?.cap;
-  const overCapacity = cap && ((cap.pax && Number(formData.passengers) > cap.pax) || (cap.bags && Number(formData.luggageCount) > cap.bags));
+  const overCapacity = isOverCapacity(cap, formData.passengers, formData.luggageCount);
 
   // 기존 결제 화면의 견적 항목 (0원 항목은 숨김)
   const L = c.lines;

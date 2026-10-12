@@ -1,0 +1,109 @@
+/* Private Journeys 플래너 — A×B Aviation Luxe 토큰 사용 */
+.jp { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 28px; align-items: start; }
+.jp-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.jp-card { background: #FFFDF8; border: 1px solid #E4DCCD; border-radius: 12px; padding: 24px; }
+.jp-h { margin: 0 0 14px; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 1.9rem; line-height: 1.1; color: #1A1712; }
+.jp-lede { margin: -4px 0 16px; color: #5E574C; font-size: 0.95rem; }
+.jp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; margin-bottom: 12px; }
+.jp-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.jp-f { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; font-weight: 600; color: #1A1712; min-width: 0; }
+.jp-f em { font-style: normal; font-weight: 400; color: #8A8172; }
+.jp-f small { font-weight: 400; color: #5E574C; font-size: 0.8rem; }
+.jp-f--full { margin-bottom: 12px; }
+.jp input, .jp select, .jp textarea { font: 500 16px 'Manrope', sans-serif; padding: 12px 13px; border: 1px solid #D9CFBD; border-radius: 8px; background: #fff; color: #1A1712; width: 100%; box-sizing: border-box; }
+.jp input:focus, .jp select:focus, .jp textarea:focus { outline: 2px solid #7A5C17; outline-offset: 1px; }
+.jp input[type="checkbox"] { width: 18px; height: 18px; padding: 0; accent-color: #0B1B33; flex: none; }
+.jp-flight { border: none; border-top: 1px solid #EFE8DB; margin: 4px 0 8px; padding: 12px 0 0; }
+.jp-flight legend { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .14em; color: #7A5C17; text-transform: uppercase; padding: 0 8px 0 0; }
+.jp-label { margin: 8px 0; font-size: 0.85rem; font-weight: 600; }
+.jp-cars { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.jp-car { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 12px; border: 1px solid #D9CFBD; border-radius: 8px; background: #fff; cursor: pointer; font: inherit; color: #1A1712; }
+.jp-car b { font-size: 0.92rem; }
+.jp-car span { font: 400 12px 'IBM Plex Mono', monospace; color: #5E574C; }
+.jp-car.is-on { border: 2px solid #0B1B33; padding: 11px; background: #F7F3EC; }
+.jp-warn { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: #FBEFED; color: #9A2B1F; font-size: 0.88rem; }
+.jp-small { margin: 8px 0 0; font-size: 0.8rem; color: #5E574C; line-height: 1.5; }
+.jp-picked { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 12px; border: 1px solid #D9CFBD; border-radius: 8px; background: #F7F3EC; font-weight: 400; }
+.jp-picked small { flex: 1 1 100%; color: #5E574C; }
+.jp-picked button { margin-left: auto; border: none; background: none; color: #7A5C17; text-decoration: underline; cursor: pointer; font: 600 13px 'Manrope', sans-serif; }
+
+.jp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.jp-chip { border: 1px solid #D9CFBD; border-radius: 999px; padding: 7px 12px; background: #fff; font: 500 13px 'Manrope', sans-serif; cursor: pointer; color: #1A1712; }
+.jp-chip:hover { border-color: #7A5C17; }
+.jp-suggest { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 18px; }
+.jp-sg { display: flex; flex-direction: column; border: 1px solid #E4DCCD; border-radius: 10px; overflow: hidden; background: #fff; }
+.jp-sg img, .jp-sg-ph { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; background: linear-gradient(135deg, #0B1B33, #1E3354); }
+.jp-sg-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.jp-sg h3 { margin: 0; font-size: 1rem; }
+.jp-sg p { margin: 0; font-size: 0.86rem; color: #3A342B; line-height: 1.5; }
+.jp-sg .jp-sg-meta { font: 400 12px 'IBM Plex Mono', monospace; color: #7A5C17; }
+.jp-sg .jp-sg-tip { color: #5E574C; font-size: 0.8rem; }
+.jp-sg-actions { margin-top: auto; padding-top: 8px; display: flex; align-items: center; gap: 12px; }
+.jp-sg-actions .btg-btn { padding: 9px 14px; font-size: 0.85rem; }
+.jp-sg-actions a { font-size: 0.85rem; color: #1A1712; }
+
+.jp-days { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.jp-day { border: 1px solid #E4DCCD; border-radius: 10px; padding: 16px; background: #fff; }
+.jp-day-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.jp-day-n { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .14em; color: #FEC74D; background: #0B1B33; border-radius: 4px; padding: 3px 7px; }
+.jp-included { margin: 0 0 10px; font-size: 0.85rem; color: #2F6B3C; }
+.jp-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+.jp-mode { padding: 10px 6px; border: 1px solid #D9CFBD; border-radius: 8px; background: #fff; font: 600 13px 'Manrope', sans-serif; cursor: pointer; color: #1A1712; }
+.jp-mode span { display: block; font: 400 11px 'IBM Plex Mono', monospace; opacity: .75; margin-top: 2px; }
+.jp-mode.is-on { background: #0B1B33; border-color: #0B1B33; color: #F4EEE2; }
+.jp-stops { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.jp-stop { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #F7F3EC; }
+.jp-stop-txt { display: flex; flex-direction: column; min-width: 0; }
+.jp-stop-txt b { font-size: 0.92rem; }
+.jp-stop-txt small { color: #5E574C; font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jp-guide { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; white-space: nowrap; }
+.jp-stop-btns { display: flex; gap: 4px; }
+.jp-stop-btns button { width: 32px; height: 32px; border: 1px solid #D9CFBD; border-radius: 6px; background: #fff; cursor: pointer; color: #1A1712; }
+.jp-stop-btns button:disabled { opacity: .35; cursor: default; }
+.jp-day-tools { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.jp-more summary { cursor: pointer; font-size: 0.85rem; color: #5E574C; font-weight: 600; }
+.jp-more[open] { display: flex; flex-direction: column; gap: 10px; }
+
+.jp-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.jp-consent { margin: 6px 0 12px; font-size: 0.82rem; color: #5E574C; }
+.jp-consent p { margin: 6px 0 0; line-height: 1.5; }
+.jp-check { display: flex; align-items: center; gap: 8px; color: #1A1712; }
+.jp-submit { width: 100%; justify-content: center; min-height: 54px; }
+
+.jp-side { position: sticky; top: 96px; }
+.jp-est { background: #FFFDF8; border: 1px solid #E4DCCD; border-radius: 14px; padding: 22px; box-shadow: 0 18px 40px rgba(11, 27, 51, .08); }
+.jp-est-sub { margin: -6px 0 8px; font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .14em; color: #7A5C17; text-transform: uppercase; }
+.jp-row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.88rem; padding: 4px 0; }
+.jp-row b { font: 500 13px 'IBM Plex Mono', monospace; white-space: nowrap; }
+.jp-row--sub { padding-left: 12px; color: #5E574C; font-size: 0.82rem; }
+.jp-row--disc { color: #2F6B3C; }
+.jp-divider { border-top: 1px dashed #D9CFBD; margin: 10px 0; }
+.jp-total { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid #E4DCCD; margin-top: 10px; padding-top: 12px; }
+.jp-total span { font-size: 0.85rem; color: #5E574C; }
+.jp-total b { display: block; text-align: right; font: 600 2rem/1 'Cormorant Garamond', serif; }
+.jp-total small { display: block; text-align: right; font-size: 0.78rem; color: #5E574C; margin-top: 4px; }
+.jp-side-cta { width: 100%; justify-content: center; margin-top: 14px; }
+.jp-mbar { display: none; }
+
+.jp-sent { text-align: center; padding: 40px 24px; }
+.jp-sent h2 { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 2rem; margin: 0 0 10px; }
+.jp-ref span { font-family: 'IBM Plex Mono', monospace; }
+.jp-sent-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+
+@media (max-width: 980px) {
+  .jp { grid-template-columns: 1fr; padding-bottom: 80px; }
+  .jp-side { position: static; }
+  .jp-side-cta { display: none; }
+  .jp-mbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; align-items: center; gap: 12px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: #0B1B33; }
+  .jp-mbar small { display: block; color: #B9C4D4; font-size: 11px; }
+  .jp-mbar b { color: #F4EEE2; font: 600 1.3rem/1 'Cormorant Garamond', serif; }
+  .jp-mbar .btg-btn { flex: 1; justify-content: center; min-height: 48px; }
+  /* 하단 바와 겹치지 않게 챗봇 버튼을 올린다 */
+  body:has(.jp-mbar) .chatbot-fab { bottom: 92px !important; right: 16px !important; }
+}
+@media (max-width: 640px) {
+  .jp-card { padding: 18px; }
+  .jp-grid, .jp-grid--3 { grid-template-columns: 1fr 1fr; }
+  .jp-stop { grid-template-columns: minmax(0, 1fr) auto; }
+  .jp-stop-btns { grid-column: 1 / -1; justify-content: flex-end; }
+}

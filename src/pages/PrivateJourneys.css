@@ -132,3 +132,18 @@
 .pj-ref { font-family: var(--font-mono); font-size: 0.9rem; }
 .pj-ref span { color: var(--ink); font-weight: 500; }
 .pj-sent-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 8px; }
+
+/* 진행 방식 3단계 + 플래너 (2026-10 개편) */
+.pj-how { padding-top: 56px; }
+.pj-how-title { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 2.2rem; margin: 0 0 20px; }
+.pj-how-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.pj-how-list li { border-top: 2px solid var(--champagne); padding-top: 14px; }
+.pj-how-n { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .14em; color: var(--champagne); }
+.pj-how-list h3 { margin: 6px 0 6px; font-size: 1.1rem; }
+.pj-how-list p { margin: 0; color: #5E574C; font-size: 0.95rem; line-height: 1.6; }
+.pj-not { margin: 22px 0 0; padding: 14px 16px; border-radius: 10px; background: #F1EADC; color: #3A342B; font-size: 0.92rem; }
+.pj-loading { color: #5E574C; text-align: center; padding: 40px 0; }
+.pj-airport { margin-top: 28px; text-align: center; }
+@media (max-width: 760px) {
+  .pj-how-list { grid-template-columns: 1fr; }
+}
