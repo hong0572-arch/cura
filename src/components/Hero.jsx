@@ -21,16 +21,20 @@ const SERVICES = [
   { id: 'picketing', label: 'Picketing', icon: Users },
 ];
 
-const getInitialDate = () => {
+const toDateString = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const getInitialDate = () => toDateString(new Date());
+// 기본 날짜는 내일: 오늘로 두면 대부분 '24시간 이내 긴급 할증'이 붙어 가격이 갑자기 오른다
+const getDefaultDate = () => {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  d.setDate(d.getDate() + 1);
+  return toDateString(d);
 };
 
 export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'ko' }) {
   const [formData, setFormData] = useState({
     airport: 'ICN',
     serviceType: 'arrival',
-    date: getInitialDate(),
+    date: getDefaultDate(),
     adults: 1,
     children: 0,
     email: ''
@@ -66,11 +70,8 @@ export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'k
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 가격부터 보여 준다 — 이메일은 위저드의 탑승객 정보 단계에서 받는다
   const handleCheckPrice = () => {
-    if (!formData.email || !formData.email.includes('@')) {
-      alert(t?.hero?.emailRequired || 'Please enter a valid email address to proceed.');
-      return;
-    }
     onOpenWizard({
       ...formData,
       passengers: formData.adults + formData.children
@@ -313,7 +314,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'k
             </div>
 
             <button onClick={handleCheckPrice} className="btn-hero-submit">
-              Check Price
+              {lang === 'ko' ? '가격 확인·예약' : 'See price & book'}
             </button>
           </div>
 
