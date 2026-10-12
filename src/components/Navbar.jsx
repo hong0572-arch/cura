@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X, Globe } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { localizePath, stripLocale } from '../utils/locale';
+import { FEATURES } from '../config/features';
 
 export default function Navbar({ lang, setLang, t }) {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function Navbar({ lang, setLang, t }) {
 
   const navItems = [
     { id: 'ways', label: lang === 'ko' ? '서비스' : 'Services', path: '/' },
-    { id: 'journeys', label: 'Private Journeys', path: '/private-journeys' },
+    ...(FEATURES.privateJourneys ? [{ id: 'journeys', label: 'Private Journeys', path: '/private-journeys' }] : []),
     { id: 'services', label: lang === 'ko' ? '공항 의전' : (t.nav.services || 'Airport VIP'), path: '/' },
     { id: 'fleet', label: t.nav.fleet, path: '/' },
     { id: 'faq', label: t.nav.faq, path: '/' },

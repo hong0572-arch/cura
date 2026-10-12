@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { localizePath } from '../../utils/locale';
+import { FEATURES } from '../../config/features';
 
 export default function ClosingCta({ copy, lang }) {
   const navigate = useNavigate();
@@ -16,8 +17,10 @@ export default function ClosingCta({ copy, lang }) {
           <p className="closing-desc">{copy.desc}</p>
         </div>
         <div className="closing-actions">
-          <a href={localizePath('/private-journeys', lang)} onClick={(e) => go(e, '/private-journeys')} className="btg-btn btg-btn--gold btg-sheen">{copy.primary}</a>
-          <a href={localizePath('/#hero', lang)} onClick={(e) => go(e, '/#hero')} className="btg-btn closing-ghost">{copy.secondary}</a>
+          {FEATURES.privateJourneys && (
+            <a href={localizePath('/private-journeys', lang)} onClick={(e) => go(e, '/private-journeys')} className="btg-btn btg-btn--gold btg-sheen">{copy.primary}</a>
+          )}
+          <a href={localizePath('/#hero', lang)} onClick={(e) => go(e, '/#hero')} className={FEATURES.privateJourneys ? 'btg-btn closing-ghost' : 'btg-btn btg-btn--gold btg-sheen'}>{copy.secondary}</a>
         </div>
       </div>
     </section>

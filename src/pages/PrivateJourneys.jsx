@@ -1,5 +1,8 @@
 import { lazy, Suspense, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { FEATURES } from '../config/features';
+import { CONTACT } from '../components/checkout/checkoutCopy';
 import { journeysCopy } from '../content/journeysCopy';
 import { localizePath } from '../utils/locale';
 import './PrivateJourneys.css';
@@ -15,6 +18,32 @@ export default function PrivateJourneys({ lang = 'ko', settings }) {
   const c = journeysCopy[lang] || journeysCopy.ko;
   const navigate = useNavigate();
   const isClient = useIsClient();
+
+  // 비활성화 상태: 준비 중 안내만 보여 주고 검색엔진에서 제외한다
+  if (!FEATURES.privateJourneys) {
+    return (
+      <div className="pj-page">
+        <Helmet><meta name="robots" content="noindex, follow" /></Helmet>
+        <section className="pj-hero on-navy">
+          <div className="container pj-paused">
+            <p className="btg-eyebrow">{c.paused.eyebrow}</p>
+            <h1 className="pj-title">{c.paused.title}</h1>
+            <p className="pj-intro">{c.paused.body}</p>
+            <div className="pj-paused-actions">
+              <a
+                href={localizePath('/#hero', lang)}
+                onClick={(e) => { e.preventDefault(); navigate(localizePath('/#hero', lang)); }}
+                className="btg-btn btg-btn--gold btg-sheen"
+              >
+                {c.paused.book}
+              </a>
+              <a href={CONTACT.whatsapp} target="_blank" rel="noopener noreferrer" className="btg-btn btg-btn--ghost">WhatsApp</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="pj-page">

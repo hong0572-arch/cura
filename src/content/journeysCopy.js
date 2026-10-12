@@ -121,6 +121,12 @@ export const journeysCopy = {
       },
     },
     airportCta: '공항 의전만 필요하시면 지금 바로 예약할 수 있어요',
+    paused: {
+      eyebrow: 'PRIVATE JOURNEYS · 준비 중',
+      title: '맞춤 여행 서비스를\n준비하고 있습니다.',
+      body: '더 나은 서비스로 곧 찾아뵙겠습니다. 공항 의전과 전용 차량은 지금 바로 예약하실 수 있고, 여행 관련 문의는 WhatsApp으로 주세요.',
+      book: '공항 의전 예약하기',
+    },
   },
   en: {
     eyebrow: 'PRIVATE JOURNEYS · TAILOR-MADE',
@@ -241,5 +247,11 @@ export const journeysCopy = {
       },
     },
     airportCta: 'Only need airport VIP? Book it online now',
+    paused: {
+      eyebrow: 'PRIVATE JOURNEYS · COMING SOON',
+      title: 'Private Journeys\nare coming soon.',
+      body: 'We are preparing something special. Airport VIP meet & assist and private cars can be booked online now — for travel questions, message us on WhatsApp.',
+      book: 'Book airport VIP',
+    },
   },
 };

@@ -133,6 +133,10 @@
 .pj-ref span { color: var(--ink); font-weight: 500; }
 .pj-sent-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 8px; }
 
+/* 준비 중 안내 (FEATURES.privateJourneys = false) */
+.pj-paused { padding: 72px 0 96px; max-width: 720px; }
+.pj-paused-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+
 /* 진행 방식 3단계 + 플래너 (2026-10 개편) */
 .pj-how { padding-top: 56px; }
 .pj-how-title { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 2.2rem; margin: 0 0 20px; }
