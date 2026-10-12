@@ -22,6 +22,9 @@
 - 가격 계산은 `src/utils/pricing.js`의 `computeQuote` 하나로 브라우저와 서버가 공유한다. **결제 금액은 서버가 확정**하며 브라우저가 보낸 금액은 쓰지 않는다.
 - NICEPAY(원화 카드)는 카드 수수료를 고객에게 부과하지 않는다(여신전문금융업법 제19조). PayPal(USD)만 4% 수수료(`PAYPAL_FEE_RATE`)를 받는다.
 - 예약 흐름: 위저드 → `POST /api/reservations/:id`(진행 저장, 고객 토큰) → `/submit`(금액 확정·관리자 알림) → 결제 → 서버가 PG 승인 확인 후 `결제 완료` 기록 → `/success`는 상태 조회만 한다.
+- 예약 위저드(2026-10 "탑승권" 개편): 화면 3단계(일정 → 탑승객 → 확인·결제), 문구는 `BookingWizard.jsx`의 COPY(한/영), 스타일 `components/checkout/boardingPass.css`(.bp 범위). 서버는 단계 번호로 상태를 정하므로 화면 1/2/3단계를 서버 1/4/6단계로 보낸다(SERVER_STEP). 전화번호는 국가번호 포함으로 저장. 생년월일 받지 않음. 영어 화면 기본 PayPal, 한국어 기본 NICEPAY. 시안 미리보기 `/preview/boarding-pass`(개발 서버 전용).
+- 차량 권장 인원·수하물: 관리자 공항별 차량의 `maxPax`/`maxBags`(0=안내 안 함). 비어 있으면 차종 이름(Staria 4/G90 2/Sprinter 6)으로 기본값. 초과 시 위저드가 안내만 하고 막지는 않는다.
+- NICEPAY 카드 수수료(4%)는 부과하지 않기로 확정(2026-10, 여신전문금융업법 제19조). 원화 수익 조정이 필요하면 관리자 환율 설정으로 원화 가격 전체를 조정한다.
 - Firestore `reservations`는 서버(firebase-admin)만 쓴다. 규칙은 `firestore.rules`, `storage.rules`(콘솔에 수동 게시).
 - 관리자 = Firebase Auth 이메일 로그인 + `admins/{uid}` 문서. 비밀번호·API 키를 `siteData`(공개 문서)에 저장하지 않는다.
 - 서버 환경변수: `FIREBASE_SERVICE_ACCOUNT`, `GEMINI_API_KEY`, `CRON_SECRET`, `NICEPAY_SECRET_KEY`, `NICEPAY_CLIENT_ID`(또는 `VITE_NICEPAY_CLIENT_KEY`), `NICEPAY_API_BASE`(테스트 시 sandbox), `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_BASE_URL`, `SMTP_USER`, `SMTP_PASS`, `ADMIN_EMAILS`(선택)
