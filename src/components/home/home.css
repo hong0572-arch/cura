@@ -374,3 +374,62 @@
   8%, 88% { opacity: 1; }
   96%, 100% { opacity: 0.45; }
 }
+
+/* ---------- Booking wizard: conversion fixes ---------- */
+.wizard-errors {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #E8B4AE;
+  background: #FBEFED;
+  color: var(--danger);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.wizard-overlay [aria-invalid="true"],
+.sky-airline-box.is-invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
+}
+.wizard-surcharge-note {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: var(--sand);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.wizard-surcharge-note strong { color: var(--ink); }
+.wizard-surcharge-note ul { margin: 6px 0 0; padding-left: 18px; }
+.wizard-price-rules { margin: -8px 0 16px; font-size: 0.78rem; line-height: 1.5; color: var(--ink-soft); }
+
+.wizard-mobile-bar { display: none; }
+@media (max-width: 900px) {
+  .wizard-mobile-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: var(--navy);
+    box-shadow: 0 -8px 24px rgba(7, 18, 31, 0.25);
+  }
+  .wizard-mobile-price { display: flex; flex-direction: column; color: var(--on-navy-muted); font-size: 0.72rem; }
+  .wizard-mobile-price strong { color: var(--on-navy); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .wizard-mobile-next {
+    flex: 1;
+    min-height: 50px;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--gold);
+    color: var(--navy);
+    font: 700 1rem var(--font-sans);
+    cursor: pointer;
+  }
+  /* 고정 바에 가리지 않도록 여백 */
+  .wizard-overlay .wizard-body { padding-bottom: 96px; }
+}

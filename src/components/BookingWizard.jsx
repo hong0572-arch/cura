@@ -3,6 +3,7 @@ import { Check, ChevronLeft, CreditCard, ChevronDown, ChevronUp, Minus, Plus, Lu
 import { useNavigate } from 'react-router-dom';
 import { computeQuote } from '../utils/pricing';
 import { localizePath } from '../utils/locale';
+import { track } from '@vercel/analytics';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, appleProvider } from '../firebase';
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
@@ -175,6 +176,19 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     return `${displayHour.toString().padStart(2, '0')}:${m} ${ampm}`;
   };
 
+  // 적용된 할증의 이유를 그 자리에서 설명한다
+  const surchargeNotes = [
+    surcharges.nightFeeUsd > 0 && (lang === 'ko'
+      ? `야간 할증 USD ${surcharges.nightFeeUsd} — 22:00~06:00 항공편`
+      : `Night surcharge USD ${surcharges.nightFeeUsd} — flights 22:00–06:00`),
+    surcharges.urgentFeeUsd > 0 && (lang === 'ko'
+      ? `긴급 예약 할증 USD ${surcharges.urgentFeeUsd} — 항공편까지 ${surcharges.urgentWindow === '6h' ? '6' : '24'}시간 이내`
+      : `Short-notice surcharge USD ${surcharges.urgentFeeUsd} — within ${surcharges.urgentWindow === '6h' ? '6' : '24'} hours of the flight`),
+    surcharges.weekendFeeUsd > 0 && (lang === 'ko'
+      ? `주말 할증 USD ${surcharges.weekendFeeUsd} — 토·일요일`
+      : `Weekend surcharge USD ${surcharges.weekendFeeUsd} — Saturday/Sunday`),
+  ].filter(Boolean);
+
   const steps = [
     { id: 1, name: t?.wizard?.steps?.step1 || 'Select service' },
     { id: 2, name: t?.wizard?.steps?.step2 || 'Additional services' },
@@ -183,40 +197,79 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     { id: 5, name: t?.wizard?.steps?.step5 || 'Contact information' },
     { id: 6, name: t?.wizard?.steps?.step6 || 'Payment details' }
   ];
+  // 단계별 진입 기록 → 어느 단계에서 이탈하는지 Vercel Analytics 에서 확인
+  useEffect(() => {
+    track('Booking Step', { step, service: formData.serviceType, lang });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  // 빠진 칸 표시 (팝업 대신)
+  const [missing, setMissing] = useState([]);
+  const isKo = lang === 'ko';
+  const FIELD_LABELS = {
+    transferAddress: isKo ? '차량 목적지 주소' : 'Drop-off address',
+    airline: isKo ? '항공사' : 'Airline',
+    flightNumber: isKo ? '항공편 번호' : 'Flight number',
+    flightTime: isKo ? '도착/출발 시간' : 'Flight time',
+    transferAirline: isKo ? '연결편 항공사' : 'Connecting airline',
+    transferFlightNumber: isKo ? '연결편 번호' : 'Connecting flight number',
+    transferFlightTime: isKo ? '연결편 시간' : 'Connecting flight time',
+    firstName: isKo ? '이름(영문)' : 'First name',
+    lastName: isKo ? '성(영문)' : 'Last name',
+    email: isKo ? '이메일' : 'Email',
+    phone: isKo ? '전화번호' : 'Phone',
+    contactFirst: isKo ? '연락 담당자 이름' : 'Contact first name',
+    contactLast: isKo ? '연락 담당자 성' : 'Contact last name',
+    contactEmail: isKo ? '연락 담당자 이메일' : 'Contact email',
+    contactPhone: isKo ? '연락 담당자 전화' : 'Contact phone',
+  };
+  const inv = (field) => (missing.includes(field) ? { 'aria-invalid': true } : {});
+  const showMissing = (fields) => {
+    setMissing(fields);
+    track('Booking Validation', { step, fields: fields.join(',') });
+    requestAnimationFrame(() => {
+      document.querySelector('.wizard-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+  const missingOf = (fields) => fields.filter(f => !String(formData[f] ?? '').trim());
+
   const handleNext = () => {
     if (step === 2) {
       if (formData.vehicleType !== 'none' && (!formData.transferAddress || formData.transferAddress.trim() === '')) {
-        alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
+        showMissing(['transferAddress']);
         return;
       }
     } else if (step === 3) {
-      if (!formData.airline || !formData.flightNumber || !formData.flightTime) {
-        alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
+      const gaps = missingOf(['airline', 'flightNumber', 'flightTime']);
+      if (formData.serviceType === 'transfer') gaps.push(...missingOf(['transferAirline', 'transferFlightNumber', 'transferFlightTime']));
+      if (gaps.length) {
+        showMissing(gaps);
         return;
       }
-      if (formData.serviceType === 'transfer') {
-        if (!formData.transferAirline || !formData.transferFlightNumber || !formData.transferFlightTime) {
-          alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
-          return;
-        }
-      }
     } else if (step === 4) {
-      if (!formData.firstName || !formData.lastName || !formData.dobMonth || !formData.dobDay || !formData.dobYear || !formData.email || !formData.phone) {
-        alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
+      const gaps = missingOf(['firstName', 'lastName', 'email', 'phone']);
+      if (gaps.length) {
+        showMissing(gaps);
         return;
       }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
-        alert("Please enter a valid email address.");
+        showMissing(['email']);
         return;
       }
     } else if (step === 5) {
-      if (!formData.sameAsPrimary && (!formData.contactFirst || !formData.contactLast || !formData.contactEmail || !formData.contactPhone)) {
-        alert(t?.wizard?.common?.requiredField || "Please fill in all required fields marked with *");
-        return;
+      if (!formData.sameAsPrimary) {
+        const gaps = missingOf(['contactFirst', 'contactLast', 'contactEmail', 'contactPhone']);
+        if (gaps.length) {
+          showMissing(gaps);
+          return;
+        }
       }
     }
+    setMissing([]);
     setStep(prev => Math.min(prev + 1, 6));
+    window.scrollTo({ top: 0 });
+    document.querySelector('.wizard-overlay')?.scrollTo({ top: 0 });
   };
   const handleBack = () => {
     if (step === 1) onClose();
@@ -272,6 +325,17 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
 
       <div className="wizard-body container">
         <div className="wizard-content">
+          {missing.length > 0 && (
+            <div className="wizard-errors" role="alert">
+              <strong>{isKo ? '아래 항목을 입력해 주세요' : 'Please complete'}:</strong> {missing.map(f => FIELD_LABELS[f] || f).join(', ')}
+            </div>
+          )}
+          {step >= 3 && surchargeNotes.length > 0 && (
+            <div className="wizard-surcharge-note">
+              <strong>{isKo ? '할증 안내' : 'Surcharge applied'}</strong>
+              <ul>{surchargeNotes.map(note => <li key={note}>{note}</li>)}</ul>
+            </div>
+          )}
 
           {step === 1 && (
             <div className="step-panel">
@@ -639,7 +703,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                     <label className="sky-form-label">{t?.wizard?.step3?.airlineLabel || 'Airline'} *</label>
                     <div className="sky-airline-input-wrap">
                       <div
-                        className={`sky-airline-box ${isAirlineOpen ? 'active' : ''}`}
+                        className={`sky-airline-box ${isAirlineOpen ? 'active' : ''} ${missing.includes('airline') ? 'is-invalid' : ''}`}
                         onClick={() => setIsAirlineOpen(!isAirlineOpen)}
                       >
                         <Search size={16} className="sky-search-icon" />
@@ -694,6 +758,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                       placeholder=""
                       value={formData.flightNumber}
                       onChange={(e) => updateForm('flightNumber', e.target.value)}
+                      {...inv('flightNumber')}
                       className="sky-text-input"
                     />
                     <p className="sky-field-note mt-8">
@@ -710,6 +775,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                       type="time"
                       value={formData.flightTime}
                       onChange={(e) => updateForm('flightTime', e.target.value)}
+                      {...inv('flightTime')}
                       className="sky-text-input"
                     />
                     <p className="sky-field-note mt-8">
@@ -923,6 +989,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                       placeholder={t?.wizard?.step4?.firstName || "Enter first name"}
                       value={formData.firstName}
                       onChange={(e) => updateForm('firstName', e.target.value)}
+                      {...inv('firstName')}
                       className="sky-text-input"
                     />
                   </div>
@@ -933,6 +1000,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                       placeholder={t?.wizard?.step4?.lastName || "Enter last name"}
                       value={formData.lastName}
                       onChange={(e) => updateForm('lastName', e.target.value)}
+                      {...inv('lastName')}
                       className="sky-text-input"
                     />
                   </div>
@@ -941,7 +1009,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                 {/* Row 2: Date of Birth & Class of Travel */}
                 <div className="sky-flight-form-row mb-20">
                   <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step4?.dob || 'Date of birth'} *</label>
+                    <label className="sky-form-label">{t?.wizard?.step4?.dob || 'Date of birth'} <span className="sky-optional-tag">{isKo ? '선택' : 'optional'}</span></label>
                     <div className="sky-dob-grid">
                       <select
                         value={formData.dobMonth}
@@ -1004,6 +1072,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                       placeholder={t?.wizard?.step4?.email || "Enter email"}
                       value={formData.email}
                       onChange={(e) => updateForm('email', e.target.value)}
+                      {...inv('email')}
                       className="sky-text-input"
                     />
                     <button
@@ -1051,6 +1120,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                         placeholder="— — — — —"
                         value={formData.phone}
                         onChange={(e) => updateForm('phone', e.target.value)}
+                        {...inv('phone')}
                         className="sky-phone-input"
                       />
                     </div>
@@ -1586,6 +1656,13 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                 <div className="sky-fee-note mb-20">
                   {t?.wizard?.sidebar?.totalPaypal || 'PayPal (USD, incl. 4% fee)'}: USD {paypalTotalUsd.toFixed(2)}
                 </div>
+                {step < 3 && (
+                  <p className="wizard-price-rules">
+                    {isKo
+                      ? '항공편 시간에 따라 야간(22~06시)·24시간 이내·주말에는 할증이 붙을 수 있으며, 항공편 시간을 입력하면 금액과 이유가 바로 표시됩니다.'
+                      : 'Night (22:00–06:00), short-notice and weekend surcharges may apply; the amount and reason appear as soon as you enter your flight time.'}
+                  </p>
+                )}
 
                 <button onClick={handleNext} className="btn-sky-book-now">
                   {step === 1 ? (t?.wizard?.sidebar?.btnStep1 || 'Select & Book Now') : step === 5 ? (t?.wizard?.sidebar?.btnStep5 || 'Proceed to Pay') : (t?.wizard?.sidebar?.btnContinue || 'Continue')}
@@ -1594,12 +1671,6 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                 <div className="sky-terms-text text-center mt-24">
                   {t?.wizard?.sidebar?.termsAck?.replace('SkyVip', 'Beyond the Gate') || 'By clicking the button I acknowledge that I agree with Beyond the Gate'} <a href={localizePath('/terms', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.termsLink || 'Terms & Conditions'}</a> & <a href={localizePath('/privacy', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.privacyLink || 'Privacy Policy'}</a>.
                 </div>
-              </div>
-
-              {/* Coupon Box */}
-              <div className="sky-sidebar-box mb-16">
-                <span>🎟 {t?.wizard?.sidebar?.coupon || 'Have a coupon?'}</span>
-                <button className="btn-text-blue">{t?.wizard?.sidebar?.couponAdd || 'Add'}</button>
               </div>
 
               {/* Question Box */}
@@ -1611,6 +1682,19 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
           )}
         </div>
       </div>
+
+      {/* 휴대폰: 금액과 '계속' 버튼을 화면 아래에 고정 */}
+      {step < 6 && (
+        <div className="wizard-mobile-bar">
+          <div className="wizard-mobile-price">
+            <span>{isKo ? '국내 카드' : 'Korean card'}</span>
+            <strong>₩{nicepayTotalKrw.toLocaleString()}</strong>
+          </div>
+          <button type="button" onClick={handleNext} className="wizard-mobile-next">
+            {step === 5 ? (isKo ? '결제 단계로' : 'Go to payment') : (isKo ? '계속' : 'Continue')} ({step}/6)
+          </button>
+        </div>
+      )}
     </div>
   );
 }
