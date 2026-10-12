@@ -1,50 +1,242 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Check, ChevronLeft, CreditCard, ChevronDown, ChevronUp, Minus, Plus, Luggage, PlaneTakeoff, Search, Ticket, UploadCloud, Plane, User, UserPlus, Trash2, Users } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { computeQuote } from '../utils/pricing';
 import { localizePath } from '../utils/locale';
 import { track } from '@vercel/analytics';
 import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider, appleProvider } from '../firebase';
+import { auth, googleProvider } from '../firebase';
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
+import { AIRLINES } from '../utils/airlines';
+import './checkout/boardingPass.css';
+
+// 예약 위저드 — "탑승권" 디자인 3단계 (일정 → 탑승객 → 확인·결제).
+// 입력할 때마다 오른쪽(휴대폰은 위쪽) 탑승권이 채워지고, 금액 내역은 탑승권 아래 영수증에 표시된다.
+// 저장·금액 확정·결제 이동은 기존과 같다: POST /api/reservations/:id → /submit(서버가 금액 확정) → 결제 페이지.
 
 const libraries = ['places'];
 
+// 화면 단계(3) → 서버 단계(6) : 서버는 단계로 상태(draft/abandoned/pending)를 정하므로 기존 의미를 유지한다
+const SERVER_STEP = { 1: 1, 2: 4, 3: 6 };
+
 const COUNTRY_CODES = [
-  { code: '+82', flag: '🇰🇷', name: 'South Korea' },
   { code: '+1', flag: '🇺🇸', name: 'USA/Canada' },
+  { code: '+82', flag: '🇰🇷', name: 'South Korea' },
   { code: '+44', flag: '🇬🇧', name: 'UK' },
   { code: '+81', flag: '🇯🇵', name: 'Japan' },
   { code: '+86', flag: '🇨🇳', name: 'China' },
+  { code: '+852', flag: '🇭🇰', name: 'Hong Kong' },
+  { code: '+886', flag: '🇹🇼', name: 'Taiwan' },
+  { code: '+65', flag: '🇸🇬', name: 'Singapore' },
+  { code: '+61', flag: '🇦🇺', name: 'Australia' },
   { code: '+33', flag: '🇫🇷', name: 'France' },
   { code: '+49', flag: '🇩🇪', name: 'Germany' },
   { code: '+31', flag: '🇳🇱', name: 'Netherlands' },
-  { code: '+61', flag: '🇦🇺', name: 'Australia' },
-  { code: '+65', flag: '🇸🇬', name: 'Singapore' },
   { code: '+971', flag: '🇦🇪', name: 'UAE' },
 ];
 
-import { AIRLINES } from '../utils/airlines';
+const DEFAULT_SERVICE_USD = { arrival: 250, departure: 270, transfer: 340, picketing: 140 };
+const DEFAULT_VEHICLE_USD = { staria: 130, g90: 200, sprinter: 200 };
+// 차량 권장 인원·수하물 (차량 예약 페이지와 같은 기준)
+const CAPACITY = { staria: { pax: 4, bags: 4 }, g90: { pax: 2, bags: 2 }, sprinter: { pax: 6, bags: 6 } };
+const VEHICLE_NAMES = { staria: 'Hyundai Staria', g90: 'Genesis G90', sprinter: 'Mercedes Sprinter' };
+const AIRPORT_NAMES = { ICN: { en: 'Seoul Incheon', ko: '인천국제공항' }, GMP: { en: 'Seoul Gimpo', ko: '김포국제공항' } };
+
+const COPY = {
+  en: {
+    steps: ['Trip', 'Guests', 'Review & pay'],
+    close: 'Close', back: 'Back',
+    s1Title: 'Where should we meet you?',
+    s1Lede: 'All times are Seoul time (KST). Your price updates on the pass as you type.',
+    service: 'Service',
+    services: { arrival: 'Arrival', departure: 'Departure', transfer: 'Transfer', picketing: 'Picketing' },
+    airport: 'Airport', date: (dep) => `Date (${dep ? 'leaving' : 'arriving in'} Seoul)`,
+    flightNo: 'Flight number', flightNoHint: 'e.g. KE082 — we recognise the airline.',
+    airline: 'Airline', airlinePick: 'Select airline',
+    time: (dep) => `${dep ? 'Departure' : 'Landing'} time (KST)`,
+    seoulNow: (t) => `It is ${t} in Seoul now.`,
+    connNo: 'Connecting flight number', connTime: 'Connecting departure (KST)', connAirline: 'Connecting airline',
+    guests: 'Guests', guestsHint: 'Base price covers 2 guests.',
+    bags: 'Checked bags', bagsHint: '5+ bags include a porter.',
+    car: (dep) => `Private car ${dep ? 'to the airport' : 'from the airport'}`,
+    noCar: 'No car', noCarNote: 'Meet & assist only',
+    carNote: (c) => `Recommended up to ${c.pax} guests · ${c.bags} bags`,
+    overCap: 'Your party is larger than this car is recommended for. Consider a bigger car, or WhatsApp us and we will arrange it.',
+    address: (dep) => (dep ? 'Pick-up address' : 'Drop-off address'),
+    addressPh: 'Hotel name or address in Seoul',
+    surchargeNote: 'Supplements apply — the reason for each one is shown on your pass.',
+    included: "What's included & cancellation policy",
+    s2Title: 'Who are we welcoming?',
+    s2Lede: 'Lead guest only — exactly as printed in the passport. No date of birth or passport number needed.',
+    given: 'Given name(s)', surname: 'Surname',
+    email: 'Email for your confirmation', google: 'Fill in with Google',
+    phone: 'Mobile number', phoneHint: 'Your agent contacts you on WhatsApp or by phone.',
+    nameBoard: 'Name board will read',
+    yourName: 'your name',
+    optional: 'Optional — class of travel, wheelchair, requests, booking for someone else',
+    travelClass: 'Class of travel', classes: { '': 'Not specified', first: 'First', business: 'Business', premium_economy: 'Premium Economy', economy: 'Economy' },
+    assistance: 'Assistance', wheelchair: 'Wheelchair needed',
+    requests: 'Special requests', requestsPh: 'Child seat, flowers, dietary needs…',
+    someoneElse: 'I am booking for someone else',
+    cFirst: 'Your given name', cLast: 'Your surname', cEmail: 'Your email', cPhone: 'Your mobile',
+    s3Title: 'Review & pay',
+    s3Lede: 'Everything is on your pass. Every fee is shown before you pay.',
+    order: 'ORDER', invoice: 'INVOICE', unpaid: 'UNPAID',
+    paypal: 'PayPal', paypalSub: 'International · pay in USD · includes 4% PayPal fee',
+    nicepay: 'NICEPAY', nicepaySub: 'Korean-issued cards · charged in KRW · no fee',
+    feeNote: 'NICEPAY (Korean cards, KRW) has no fee. The 4% applies to PayPal only.',
+    trust: [['Free cancellation', 'up to 48 h before service'], ['Flight delayed?', 'We track it and wait for you'], ['Quote by email', 'sent to you right now']],
+    terms: (a, b) => <>By paying you agree to our {a} and {b}.</>,
+    termsWord: 'Terms', privacyWord: 'Privacy policy',
+    cta: { 1: 'Continue — guest details', 2: 'Review & pay' },
+    pay: (p) => `Pay ${p}`, payShort: 'Pay now', paying: 'Preparing secure payment…',
+    continue: 'Continue', total: 'Total',
+    missing: 'Please complete',
+    payError: 'Something went wrong while saving your reservation. Please try again or contact us on WhatsApp.',
+    priceDetails: (p) => `Price details · ${p}`, hideDetails: 'Hide price details',
+    pass: { title: 'VIP MEET & ASSIST', draft: 'DRAFT', passenger: 'PASSENGER', guestsBags: 'GUESTS · BAGS', date: 'DATE', lands: 'LANDS KST', departs: 'DEPARTS KST', meet: 'MEET AT', gate: 'GATE', curb: 'CURB', conn: 'CONNECTING', car: 'PRIVATE CAR', contact: 'CONTACT', bookedBy: 'BOOKED BY', addMobile: 'ADD MOBILE', addConn: 'ADD CONNECTING FLIGHT', flight: 'FLIGHT', enterFlight: 'Enter flight', placeholderName: 'SURNAME / GIVEN', wheelchair: 'WHEELCHAIR', taxRefund: 'TAX REFUND ASSIST' },
+    lines: {
+      base: (s) => `${s} meet & assist (1–2 guests)`,
+      car: (n) => `Car · ${n}`, carWhy: (dep, a) => `${dep ? 'Pick-up from' : 'Drop-off at'} ${a}`,
+      extraPax: (n) => `Extra guests × ${n}`, extraPaxWhy: 'Base price covers 2 guests',
+      extraBags: (n) => `Extra bags × ${n}`, extraBagsWhy: 'One bag per guest is included (min. 2)',
+      porter: (n) => `Porter × ${n}`, porterWhy: (b) => `${b} bags — a porter carries them for you`,
+      night: 'Night supplement', nightWhy: (dep, t) => `Flight ${dep ? 'departs' : 'lands'} ${t} — between 22:00 and 06:00`,
+      urgent: 'Short-notice supplement', urgentWhy: (h) => `Booked within ${h} hours of the flight`,
+      weekend: 'Weekend supplement', weekendWhy: 'Saturday or Sunday flight',
+      paypalFee: 'PayPal fee (4%)',
+      totalVia: (p) => (p ? 'PayPal, USD' : 'NICEPAY, KRW'),
+      orNicepay: (k) => `or ${k} with NICEPAY`, orPaypal: (u) => `or ${u} with PayPal`,
+    },
+    labels: {
+      transferAddress: 'Car address', airline: 'Airline', flightNumber: 'Flight number', flightTime: 'Flight time',
+      transferAirline: 'Connecting airline', transferFlightNumber: 'Connecting flight number', transferFlightTime: 'Connecting flight time',
+      firstName: 'Given name', lastName: 'Surname', email: 'Email', phoneLocal: 'Mobile number',
+      contactFirst: 'Your given name', contactLast: 'Your surname', contactEmail: 'Your email', contactPhoneLocal: 'Your mobile',
+    },
+  },
+  ko: {
+    steps: ['일정', '탑승객', '확인·결제'],
+    close: '닫기', back: '이전',
+    s1Title: '어디에서 모실까요?',
+    s1Lede: '모든 시간은 한국 시간(KST)입니다. 입력하는 대로 탑승권에 금액이 바로 반영됩니다.',
+    service: '서비스',
+    services: { arrival: '입국', departure: '출국', transfer: '환승', picketing: '피켓팅' },
+    airport: '공항', date: (dep) => `날짜 (${dep ? '출국' : '도착'}일)`,
+    flightNo: '항공편 번호', flightNoHint: '예: KE082 — 항공사는 자동으로 인식합니다.',
+    airline: '항공사', airlinePick: '항공사 선택',
+    time: (dep) => `${dep ? '출발' : '도착'} 시간 (KST)`,
+    seoulNow: (t) => `지금 서울은 ${t}입니다.`,
+    connNo: '연결편 번호', connTime: '연결편 출발 시간 (KST)', connAirline: '연결편 항공사',
+    guests: '인원', guestsHint: '기본 요금에 2명까지 포함됩니다.',
+    bags: '위탁 수하물', bagsHint: '5개 이상이면 포터가 포함됩니다.',
+    car: (dep) => (dep ? '공항까지 전용 차량' : '공항에서 전용 차량'),
+    noCar: '차량 없음', noCarNote: '의전만',
+    carNote: (c) => `권장 ${c.pax}명 · 수하물 ${c.bags}개`,
+    overCap: '선택한 차량의 권장 인원·수하물보다 많습니다. 더 큰 차량을 고르시거나 WhatsApp으로 문의해 주세요.',
+    address: (dep) => (dep ? '픽업 주소' : '도착지 주소'),
+    addressPh: '호텔 이름 또는 서울 내 주소',
+    surchargeNote: '할증이 적용됩니다 — 항목별 이유는 탑승권에 표시됩니다.',
+    included: '포함 내역 및 취소 규정',
+    s2Title: '어느 분을 모실까요?',
+    s2Lede: '대표 탑승객 한 분만, 여권에 적힌 영문 그대로 입력해 주세요. 생년월일·여권번호는 필요 없습니다.',
+    given: '이름 (영문)', surname: '성 (영문)',
+    email: '확인 메일을 받을 이메일', google: 'Google 계정으로 채우기',
+    phone: '휴대폰 번호', phoneHint: '담당자가 WhatsApp 또는 전화로 연락드립니다.',
+    nameBoard: '피켓에 적힐 이름',
+    yourName: '입력한 이름',
+    optional: '선택 — 좌석 등급, 휠체어, 요청사항, 다른 분을 위한 예약',
+    travelClass: '좌석 등급', classes: { '': '선택 안 함', first: '퍼스트', business: '비즈니스', premium_economy: '프리미엄 이코노미', economy: '이코노미' },
+    assistance: '도움 필요', wheelchair: '휠체어 필요',
+    requests: '요청사항', requestsPh: '유아 카시트, 꽃다발, 식이 제한 등',
+    someoneElse: '다른 분을 위해 예약합니다',
+    cFirst: '예약자 이름', cLast: '예약자 성', cEmail: '예약자 이메일', cPhone: '예약자 휴대폰',
+    s3Title: '확인 및 결제',
+    s3Lede: '예약 내용은 모두 탑승권에 있습니다. 모든 수수료는 결제 전에 표시됩니다.',
+    order: '주문번호', invoice: '청구서', unpaid: '결제 전',
+    paypal: 'PayPal', paypalSub: '해외 결제 · USD · PayPal 수수료 4% 포함',
+    nicepay: 'NICEPAY', nicepaySub: '국내 발행 카드 · 원화 결제 · 수수료 없음',
+    feeNote: 'NICEPAY(국내 카드, 원화)는 수수료가 없습니다. 4%는 PayPal에만 붙습니다.',
+    trust: [['무료 취소', '서비스 48시간 전까지'], ['항공편 지연', '실시간 확인 후 기다립니다'], ['견적서 메일', '지금 바로 발송됩니다']],
+    terms: (a, b) => <>결제하면 {a} 및 {b}에 동의하는 것으로 봅니다.</>,
+    termsWord: '이용약관', privacyWord: '개인정보 처리방침',
+    cta: { 1: '계속 — 탑승객 정보', 2: '확인 및 결제' },
+    pay: (p) => `${p} 결제하기`, payShort: '결제하기', paying: '안전한 결제를 준비하고 있습니다…',
+    continue: '계속', total: '합계',
+    missing: '아래 항목을 입력해 주세요',
+    payError: '예약 저장 중 문제가 발생했습니다. 잠시 후 다시 시도하시거나 WhatsApp으로 연락해 주세요.',
+    priceDetails: (p) => `금액 내역 · ${p}`, hideDetails: '금액 내역 접기',
+    pass: { title: 'VIP 의전', draft: '작성 중', passenger: 'PASSENGER', guestsBags: 'GUESTS · BAGS', date: 'DATE', lands: 'LANDS KST', departs: 'DEPARTS KST', meet: 'MEET AT', gate: 'GATE', curb: 'CURB', conn: 'CONNECTING', car: 'PRIVATE CAR', contact: 'CONTACT', bookedBy: 'BOOKED BY', addMobile: '휴대폰 입력', addConn: '연결편 입력', flight: 'FLIGHT', enterFlight: '항공편 입력', placeholderName: 'SURNAME / GIVEN', wheelchair: 'WHEELCHAIR', taxRefund: 'TAX REFUND' },
+    lines: {
+      base: (s) => `${s} 의전 (1~2명)`,
+      car: (n) => `차량 · ${n}`, carWhy: (dep, a) => `${dep ? '픽업' : '도착지'}: ${a}`,
+      extraPax: (n) => `추가 인원 × ${n}`, extraPaxWhy: '기본 요금에 2명 포함',
+      extraBags: (n) => `추가 수하물 × ${n}`, extraBagsWhy: '1인당 1개(최소 2개) 포함',
+      porter: (n) => `포터 × ${n}`, porterWhy: (b) => `수하물 ${b}개 — 포터가 옮겨 드립니다`,
+      night: '야간 할증', nightWhy: (dep, t) => `${dep ? '출발' : '도착'} ${t} — 22:00~06:00 항공편`,
+      urgent: '긴급 예약 할증', urgentWhy: (h) => `항공편까지 ${h}시간 이내 예약`,
+      weekend: '주말 할증', weekendWhy: '토·일요일 항공편',
+      paypalFee: 'PayPal 수수료 (4%)',
+      totalVia: (p) => (p ? 'PayPal, USD' : 'NICEPAY, 원화'),
+      orNicepay: (k) => `NICEPAY로는 ${k}`, orPaypal: (u) => `PayPal로는 ${u}`,
+    },
+    labels: {
+      transferAddress: '차량 주소', airline: '항공사', flightNumber: '항공편 번호', flightTime: '항공편 시간',
+      transferAirline: '연결편 항공사', transferFlightNumber: '연결편 번호', transferFlightTime: '연결편 시간',
+      firstName: '이름(영문)', lastName: '성(영문)', email: '이메일', phoneLocal: '휴대폰 번호',
+      contactFirst: '예약자 이름', contactLast: '예약자 성', contactEmail: '예약자 이메일', contactPhoneLocal: '예약자 휴대폰',
+    },
+  },
+};
+
+// 서비스 포함 내역 (기존 1단계 내용 요약)
+const INCLUDED = {
+  en: {
+    arrival: ['Personal greeting at the aircraft door (air-bridge) with a name board', 'Priority guidance through immigration (Fast Track only for eligible passengers*)', 'Baggage assistance and customs escort', 'Escort all the way to your driver or pick-up point', 'Real-time flight monitoring — we wait if you are delayed', 'Service duration: 3 hours'],
+    departure: ['Personal greeting on the departure floor with a name board', 'Priority guidance through check-in, security and immigration (Fast Track only for eligible passengers*)', 'Baggage assistance from your car', 'Tax refund assistance — escort to customs check and refund counters (eligibility set by Korea Customs)', 'Escort all the way to your gate', 'Service duration: 2 hours'],
+    transfer: ['Personal greeting at the arrival gate with a name sign', 'Guidance through transfer procedures (Fast Track only for eligible passengers*)', 'Baggage assistance on request', 'Escort to your connecting flight'],
+    picketing: ['Name-board greeting at the arrival hall', 'Guidance to your driver or pick-up point'],
+    notes: ['* Incheon Airport does not officially sell Fast Track; our staff take you the most efficient route available.', 'Escort support only — immigration and customs procedures are completed by the passenger.', 'Cancellation: free up to 48 h before service · 50% within 24–48 h · no refund within 24 h.'],
+  },
+  ko: {
+    arrival: ['항공기 탑승교(게이트)에서 이름 피켓으로 영접', '입국 심사 우선 안내 (패스트트랙은 대상 승객만*)', '수하물 수취 지원 및 세관 동행', '기사님·픽업 장소까지 동행', '실시간 항공편 확인 — 지연 시에도 기다립니다', '서비스 시간: 3시간'],
+    departure: ['출국장에서 이름 피켓으로 영접', '체크인·보안검색·출국심사 우선 안내 (패스트트랙은 대상 승객만*)', '차량에서부터 수하물 지원', '택스리펀드 지원 — 세관 확인·환급 창구 동행 (환급 여부는 세관 기준)', '탑승 게이트까지 동행', '서비스 시간: 2시간'],
+    transfer: ['도착 게이트에서 이름 피켓으로 영접', '환승 절차 안내 (패스트트랙은 대상 승객만*)', '요청 시 수하물 지원', '연결편 탑승구까지 동행'],
+    picketing: ['입국장에서 이름 피켓으로 영접', '기사님·픽업 장소까지 안내'],
+    notes: ['* 인천공항은 패스트트랙을 공식 판매하지 않습니다. 가능한 가장 빠른 경로로 안내합니다.', '동행 지원 서비스이며 출입국·세관 절차는 승객 본인이 진행합니다.', '취소 규정: 서비스 48시간 전까지 무료 · 24~48시간 전 50% · 24시간 이내 환불 불가'],
+  },
+};
+
+const getTomorrowString = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+// 관리자 화면에 입력된 차량 이름의 오타 보정 (기존 위저드와 같은 처리)
+const cleanVehicleName = (name) => String(name).replace(/Merces/i, 'Mercedes').replace(/Venz/i, 'Benz').replace(/Toyata/i, 'Toyota');
+const usd2 = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const airlineFromFlight = (no) => {
+  const m = String(no || '').toUpperCase().match(/^([A-Z0-9]{2})\s?\d/);
+  return m ? AIRLINES.find(a => a.code === m[1]) || null : null;
+};
 
 export default function BookingWizard({ onClose, initialData, settings, t, lang = 'en' }) {
   const navigate = useNavigate();
+  const isKo = lang === 'ko';
+  const c = COPY[isKo ? 'ko' : 'en'];
   const [step, setStep] = useState(1);
-  const [isAirlineOpen, setIsAirlineOpen] = useState(false);
-  const [airlineSearch, setAirlineSearch] = useState('');
-  const [isTransferAirlineOpen, setIsTransferAirlineOpen] = useState(false);
-  const [transferAirlineSearch, setTransferAirlineSearch] = useState('');
-  const [selectedPayment, setSelectedPayment] = useState('nicepay');
-  const [isQuoteOpen, setIsQuoteOpen] = useState(true);
+  const [selectedPayment, setSelectedPayment] = useState(isKo ? 'nicepay' : 'paypal');
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [pops, setPops] = useState({});
+  const [seoulNow, setSeoulNow] = useState('');
+  const popTimer = useRef();
+  const overlayRef = useRef(null);
   const hasSentProposal = useRef(false);
   const newBookingId = () => `BTG-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
   const [bookingId, setBookingId] = useState(newBookingId);
   // 이 예약을 수정·결제할 수 있는 고객 전용 토큰 (서버가 첫 저장 시 등록)
   const [bookingToken] = useState(() => crypto.randomUUID());
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const getTodayString = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
+  const [payError, setPayError] = useState('');
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -53,66 +245,73 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   });
   const autocompleteRef = useRef(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     airport: initialData?.airport || 'ICN',
     serviceType: initialData?.serviceType || 'arrival',
-    date: initialData?.date || getTodayString(),
+    date: initialData?.date || getTomorrowString(),
     passengers: initialData?.passengers || 1,
     email: initialData?.email || '',
-
-    // Step 1: Select Service
-    package: 'meet_greet', // meet_greet | vip_terminal
-
-    // Step 2: Additional Services
+    package: 'meet_greet',
     luggageCount: 0,
     addTransfer: false,
-
-    // Step 3: Flight Information
     airline: '',
     flightNumber: '',
     flightTime: '',
     transferAirline: '',
     transferFlightNumber: '',
     transferFlightTime: '',
-
-    // Step 4: Passenger Details
     firstName: initialData?.firstName || '',
     lastName: initialData?.lastName || '',
-    dobMonth: '',
-    dobDay: '',
-    dobYear: '',
     travelClass: '',
+    countryCode: isKo ? '+82' : '+1',
+    phoneLocal: '',
     phone: '',
     wheelchair: false,
-
-    // Step 5: Contact
     sameAsPrimary: true,
-    contactFirst: initialData?.firstName || '',
-    contactLast: initialData?.lastName || '',
-    contactEmail: initialData?.email || '',
+    contactFirst: '',
+    contactLast: '',
+    contactEmail: '',
+    contactCountryCode: isKo ? '+82' : '+1',
+    contactPhoneLocal: '',
     contactPhone: '',
     vehicleType: 'none',
     transferAddress: '',
-    specialRequests: ''
-  });
+    specialRequests: '',
+  }));
 
-  const updateForm = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
+  // 입력한 칸이 탑승권에 찍히는 효과
+  const updateForm = (key, value) => {
+    setFormData(prev => {
+      const next = { ...prev, [key]: value };
+      // 서버에는 국가번호를 포함한 전화번호를 저장한다
+      next.phone = next.phoneLocal ? `${next.countryCode} ${next.phoneLocal}`.trim() : '';
+      next.contactPhone = next.contactPhoneLocal ? `${next.contactCountryCode} ${next.contactPhoneLocal}`.trim() : '';
+      // 항공편 번호로 항공사 자동 인식
+      if (key === 'flightNumber') { const a = airlineFromFlight(value); if (a) next.airline = a.name; }
+      if (key === 'transferFlightNumber') { const a = airlineFromFlight(value); if (a) next.transferAirline = a.name; }
+      if (key === 'serviceType' && value === 'transfer') next.vehicleType = 'none';
+      return next;
+    });
+    setPops({ [key]: true });
+    clearTimeout(popTimer.current);
+    popTimer.current = setTimeout(() => setPops({}), 520);
+  };
+  const pop = (...keys) => (keys.some(k => pops[k]) ? 'pop' : '');
+
+  useEffect(() => {
+    const tick = () => setSeoulNow(new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' }));
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => { clearInterval(id); clearTimeout(popTimer.current); };
+  }, []);
 
   const handlePlaceChanged = () => {
-    if (autocompleteRef.current) {
-      const place = autocompleteRef.current.getPlace();
-      if (place && place.name) {
-        // If it's a known place/hotel, combine name and address
-        const address = place.formatted_address ? ` (${place.formatted_address})` : '';
-        // Sometimes place.name is already the full address, so we check to avoid duplication
-        if (place.formatted_address && place.formatted_address.includes(place.name)) {
-          updateForm('transferAddress', place.formatted_address);
-        } else {
-          updateForm('transferAddress', `${place.name}${address}`);
-        }
-      } else if (place && place.formatted_address) {
-        updateForm('transferAddress', place.formatted_address);
-      }
+    const place = autocompleteRef.current?.getPlace();
+    if (!place) return;
+    if (place.name && place.formatted_address && !place.formatted_address.includes(place.name)) {
+      updateForm('transferAddress', `${place.name} (${place.formatted_address})`);
+    } else if (place.formatted_address || place.name) {
+      updateForm('transferAddress', place.formatted_address || place.name);
     }
   };
 
@@ -121,7 +320,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     const res = await fetch(`/api/reservations/${bookingId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: bookingToken, step, formData }),
+      body: JSON.stringify({ token: bookingToken, step: SERVER_STEP[step], formData }),
     });
     if (res.status === 409) {
       // 다른 예약과 번호가 겹친 경우 새 번호로 다시 저장
@@ -136,7 +335,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
       try {
         const ok = await syncReservation();
         // 결제 단계 진입 시 견적서 메일 1회 발송 (서버가 내용 생성, 중복 발송 방지)
-        if (ok && step === 6 && !hasSentProposal.current && formData.email) {
+        if (ok && step === 3 && !hasSentProposal.current && formData.email) {
           hasSentProposal.current = true;
           fetch(`/api/reservations/${bookingId}/proposal`, {
             method: 'POST',
@@ -155,1551 +354,480 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, formData, bookingId]);
 
-  // Price Calculation — 서버(api/index.js)와 같은 함수로 계산하고, 실제 결제 금액은 서버가 확정한다.
-  const quote = computeQuote(formData, settings);
-  const currentAirport = settings?.airports?.find(a => a.code === formData.airport) || null;
-  const { baseFeeUsd, vehicleUsd, extraPassUsd, extraLugUsd, porterUsd, surcharges } = quote;
-  const baseTotalUsd = quote.subtotalUsd;
-  const paypalFeeUsd = quote.paypalFeeUsd;
-  const paypalTotalUsd = quote.paypalTotalUsd;
-  const nicepayTotalKrw = quote.nicepayTotalKrw;
-  const selectedTotalLabel = selectedPayment === 'paypal'
-    ? `USD ${paypalTotalUsd.toFixed(2)}`
-    : `₩${nicepayTotalKrw.toLocaleString()}`;
-
-  const formatTimeAmPm = (timeStr) => {
-    if (!timeStr) return '';
-    const [h, m] = timeStr.split(':');
-    const hour = parseInt(h, 10);
-    const ampm = hour >= 12 ? 'pm' : 'am';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour.toString().padStart(2, '0')}:${m} ${ampm}`;
-  };
-
-  // 적용된 할증의 이유를 그 자리에서 설명한다
-  const surchargeNotes = [
-    surcharges.nightFeeUsd > 0 && (lang === 'ko'
-      ? `야간 할증 USD ${surcharges.nightFeeUsd} — 22:00~06:00 항공편`
-      : `Night surcharge USD ${surcharges.nightFeeUsd} — flights 22:00–06:00`),
-    surcharges.urgentFeeUsd > 0 && (lang === 'ko'
-      ? `긴급 예약 할증 USD ${surcharges.urgentFeeUsd} — 항공편까지 ${surcharges.urgentWindow === '6h' ? '6' : '24'}시간 이내`
-      : `Short-notice surcharge USD ${surcharges.urgentFeeUsd} — within ${surcharges.urgentWindow === '6h' ? '6' : '24'} hours of the flight`),
-    surcharges.weekendFeeUsd > 0 && (lang === 'ko'
-      ? `주말 할증 USD ${surcharges.weekendFeeUsd} — 토·일요일`
-      : `Weekend surcharge USD ${surcharges.weekendFeeUsd} — Saturday/Sunday`),
-  ].filter(Boolean);
-
-  const steps = [
-    { id: 1, name: t?.wizard?.steps?.step1 || 'Select service' },
-    { id: 2, name: t?.wizard?.steps?.step2 || 'Additional services' },
-    { id: 3, name: t?.wizard?.steps?.step3 || 'Flight information' },
-    { id: 4, name: t?.wizard?.steps?.step4 || 'Passengers details' },
-    { id: 5, name: t?.wizard?.steps?.step5 || 'Contact information' },
-    { id: 6, name: t?.wizard?.steps?.step6 || 'Payment details' }
-  ];
   // 단계별 진입 기록 → 어느 단계에서 이탈하는지 Vercel Analytics 에서 확인
   useEffect(() => {
-    track('Booking Step', { step, service: formData.serviceType, lang });
+    track('Booking Step', { step, flow: 'pass', service: formData.serviceType, lang });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
+  // Price — 서버(api/index.js)와 같은 함수로 계산하고, 실제 결제 금액은 서버가 확정한다.
+  const quote = computeQuote(formData, settings);
+  const { surcharges } = quote;
+  const paypal = selectedPayment === 'paypal';
+  const krwLabel = `₩${quote.nicepayTotalKrw.toLocaleString()}`;
+  const usdLabel = `USD ${usd2(quote.paypalTotalUsd)}`;
+  const priceMain = paypal ? usdLabel : krwLabel;
+  const priceAlt = paypal ? c.lines.orNicepay(krwLabel) : c.lines.orPaypal(usdLabel);
+
+  const svc = formData.serviceType;
+  const dep = svc === 'departure';
+  const currentAirport = settings?.airports?.find(a => a.code === formData.airport) || null;
+  const airportOptions = (settings?.airports || []).filter(a => a.code === 'ICN' || a.code === 'GMP');
+  const airports = airportOptions.length ? airportOptions : [{ code: 'ICN' }, { code: 'GMP' }];
+  const servicePrice = (id) => currentAirport?.services?.[id]?.usd ?? settings?.servicePrices?.[id]?.usd ?? DEFAULT_SERVICE_USD[id];
+  const vehicles = currentAirport?.vehicles?.length
+    ? currentAirport.vehicles.map(v => ({ id: v.id, name: cleanVehicleName(v.name || VEHICLE_NAMES[v.id] || v.id), usd: settings?.vehiclePricesUsd?.[v.id] || Number(v.priceUsd) || 0 }))
+    : Object.keys(DEFAULT_VEHICLE_USD).map(id => ({ id, name: VEHICLE_NAMES[id], usd: settings?.vehiclePricesUsd?.[id] || DEFAULT_VEHICLE_USD[id] }));
+  const vehicleName = vehicles.find(v => v.id === formData.vehicleType)?.name || formData.vehicleType;
+  const cap = CAPACITY[formData.vehicleType];
+  const overCapacity = cap && (Number(formData.passengers) > cap.pax || Number(formData.luggageCount) > cap.bags);
+
+  // 기존 결제 화면의 견적 항목 (0원 항목은 숨김)
+  const L = c.lines;
+  const lines = [
+    { label: L.base(c.services[svc]), usd: quote.baseFeeUsd },
+    quote.vehicleUsd > 0 && { label: L.car(vehicleName), usd: quote.vehicleUsd, why: formData.transferAddress ? L.carWhy(dep, formData.transferAddress) : '' },
+    quote.extraPassUsd > 0 && { label: L.extraPax(quote.extraPassCount), usd: quote.extraPassUsd, why: L.extraPaxWhy },
+    quote.extraLugUsd > 0 && { label: L.extraBags(quote.extraBags), usd: quote.extraLugUsd, why: L.extraBagsWhy },
+    quote.porterUsd > 0 && { label: L.porter(formData.luggageCount >= 9 ? 2 : 1), usd: quote.porterUsd, why: L.porterWhy(formData.luggageCount) },
+    surcharges.nightFeeUsd > 0 && { label: L.night, usd: surcharges.nightFeeUsd, why: L.nightWhy(dep, formData.flightTime) },
+    surcharges.urgentFeeUsd > 0 && { label: L.urgent, usd: surcharges.urgentFeeUsd, why: L.urgentWhy(surcharges.urgentWindow === '6h' ? 6 : 24) },
+    surcharges.weekendFeeUsd > 0 && { label: L.weekend, usd: surcharges.weekendFeeUsd, why: L.weekendWhy },
+    paypal && { label: L.paypalFee, usd: quote.paypalFeeUsd },
+  ].filter(Boolean);
+  const hasSurcharge = surcharges.nightFeeUsd > 0 || surcharges.urgentFeeUsd > 0 || surcharges.weekendFeeUsd > 0;
+
   // 빠진 칸 표시 (팝업 대신)
   const [missing, setMissing] = useState([]);
-  const isKo = lang === 'ko';
-  const FIELD_LABELS = {
-    transferAddress: isKo ? '차량 목적지 주소' : 'Drop-off address',
-    airline: isKo ? '항공사' : 'Airline',
-    flightNumber: isKo ? '항공편 번호' : 'Flight number',
-    flightTime: isKo ? '도착/출발 시간' : 'Flight time',
-    transferAirline: isKo ? '연결편 항공사' : 'Connecting airline',
-    transferFlightNumber: isKo ? '연결편 번호' : 'Connecting flight number',
-    transferFlightTime: isKo ? '연결편 시간' : 'Connecting flight time',
-    firstName: isKo ? '이름(영문)' : 'First name',
-    lastName: isKo ? '성(영문)' : 'Last name',
-    email: isKo ? '이메일' : 'Email',
-    phone: isKo ? '전화번호' : 'Phone',
-    contactFirst: isKo ? '연락 담당자 이름' : 'Contact first name',
-    contactLast: isKo ? '연락 담당자 성' : 'Contact last name',
-    contactEmail: isKo ? '연락 담당자 이메일' : 'Contact email',
-    contactPhone: isKo ? '연락 담당자 전화' : 'Contact phone',
-  };
   const inv = (field) => (missing.includes(field) ? { 'aria-invalid': true } : {});
   const showMissing = (fields) => {
     setMissing(fields);
-    track('Booking Validation', { step, fields: fields.join(',') });
+    track('Booking Validation', { step, flow: 'pass', fields: fields.join(',') });
     requestAnimationFrame(() => {
-      document.querySelector('.wizard-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      overlayRef.current?.querySelector('.wizard-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   };
   const missingOf = (fields) => fields.filter(f => !String(formData[f] ?? '').trim());
+  const toTop = () => overlayRef.current?.scrollTo({ top: 0 });
 
   const handleNext = () => {
-    if (step === 2) {
-      if (formData.vehicleType !== 'none' && (!formData.transferAddress || formData.transferAddress.trim() === '')) {
-        showMissing(['transferAddress']);
-        return;
-      }
-    } else if (step === 3) {
-      const gaps = missingOf(['airline', 'flightNumber', 'flightTime']);
-      if (formData.serviceType === 'transfer') gaps.push(...missingOf(['transferAirline', 'transferFlightNumber', 'transferFlightTime']));
-      if (gaps.length) {
-        showMissing(gaps);
-        return;
-      }
-    } else if (step === 4) {
-      const gaps = missingOf(['firstName', 'lastName', 'email', 'phone']);
-      if (gaps.length) {
-        showMissing(gaps);
-        return;
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        showMissing(['email']);
-        return;
-      }
-    } else if (step === 5) {
-      if (!formData.sameAsPrimary) {
-        const gaps = missingOf(['contactFirst', 'contactLast', 'contactEmail', 'contactPhone']);
-        if (gaps.length) {
-          showMissing(gaps);
-          return;
-        }
-      }
+    if (step === 1) {
+      const gaps = missingOf(['flightNumber', 'airline', 'flightTime']);
+      if (svc === 'transfer') gaps.push(...missingOf(['transferFlightNumber', 'transferAirline', 'transferFlightTime']));
+      if (svc !== 'transfer' && formData.vehicleType !== 'none') gaps.push(...missingOf(['transferAddress']));
+      if (gaps.length) return showMissing(gaps);
+    } else if (step === 2) {
+      const gaps = missingOf(['firstName', 'lastName', 'email', 'phoneLocal']);
+      if (!formData.sameAsPrimary) gaps.push(...missingOf(['contactFirst', 'contactLast', 'contactEmail', 'contactPhoneLocal']));
+      if (gaps.length) return showMissing(gaps);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return showMissing(['email']);
     }
     setMissing([]);
-    setStep(prev => Math.min(prev + 1, 6));
-    window.scrollTo({ top: 0 });
-    document.querySelector('.wizard-overlay')?.scrollTo({ top: 0 });
+    setDetailsOpen(false);
+    setStep(prev => Math.min(prev + 1, 3));
+    toTop();
   };
   const handleBack = () => {
+    setMissing([]);
     if (step === 1) onClose();
-    else setStep(prev => prev - 1);
+    else { setStep(prev => prev - 1); toTop(); }
   };
 
-  const handlePayment = async (method) => {
+  const handlePayment = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+    setPayError('');
     try {
       // 최신 입력값을 먼저 저장한 뒤 서버에 결제 금액 확정을 요청
       if (!(await syncReservation())) throw new Error('sync failed');
       const res = await fetch(`/api/reservations/${bookingId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: bookingToken, method }),
+        body: JSON.stringify({ token: bookingToken, method: selectedPayment }),
       });
       if (!res.ok) throw new Error(`submit failed (${res.status})`);
       const checkout = await res.json();
-
+      track('Booking Pay Click', { method: selectedPayment, lang });
       navigate(checkout.method === 'paypal' ? '/payment/paypal' : '/payment', {
         state: { orderId: bookingId, token: bookingToken, checkout, lang }
       });
     } catch (err) {
       console.error('Reservation submit error:', err);
-      alert(lang === 'ko'
-        ? '예약 저장 중 문제가 발생했습니다. 잠시 후 다시 시도하시거나 고객센터로 연락해 주세요.'
-        : 'Something went wrong while saving your reservation. Please try again or contact us.');
+      setPayError(c.payError);
       setIsSubmitting(false);
     }
   };
 
+  const fillWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      if (user) {
+        const parts = user.displayName ? user.displayName.split(' ') : [];
+        if (parts[0]) updateForm('firstName', parts[0]);
+        if (parts.length > 1) updateForm('lastName', parts.slice(1).join(' '));
+        if (user.email) updateForm('email', user.email);
+      }
+    } catch (error) {
+      console.error('Google sign in failed', error);
+    }
+  };
+
+  const whatsappHref = `https://wa.me/${(t?.footer?.phone_val || '+821028533998').replace(/[^+\d]/g, '').replace(/^\+/, '').replace(/^820/, '82')}`;
+  const stepClass = (n) => (step === n ? 'on' : step > n ? 'done' : '');
+  const seg = (on) => (on ? 'on' : '');
+  const P = c.pass;
+  const airportName = (code) => AIRPORT_NAMES[code]?.[isKo ? 'ko' : 'en'] || currentAirport?.name || code;
+  const flightNo = formData.flightNumber.toUpperCase();
+  const dateShown = formData.date ? new Date(`${formData.date}T12:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase() : '—';
+  const hasName = formData.firstName || formData.lastName;
+  const passName = hasName ? `${formData.lastName.toUpperCase()} / ${formData.firstName.toUpperCase()}` : P.placeholderName;
+  const tags = [formData.wheelchair && P.wheelchair, dep && P.taxRefund, formData.travelClass && c.classes[formData.travelClass].toUpperCase()].filter(Boolean);
+  const ctaLabel = step === 3 ? (isSubmitting ? c.paying : c.pay(priceMain)) : c.cta[step];
+  const onCta = step === 3 ? handlePayment : handleNext;
+  // 경로: 입국·환승은 [항공편 → 공항], 출국은 [공항 → 항공편]
+  const flightEnd = { code: flightNo || '···', name: formData.airline || P.enterFlight, keys: ['flightNumber', 'airline'] };
+  const airportEnd = { code: formData.airport, name: airportName(formData.airport), keys: ['airport'] };
+  const [left, right] = dep ? [airportEnd, flightEnd] : [flightEnd, airportEnd];
+
+  const airlineSelect = (field, id) => (
+    <select id={id} value={formData[field]} onChange={e => updateForm(field, e.target.value)} {...inv(field)}>
+      <option value="">{c.airlinePick}</option>
+      {AIRLINES.map(a => <option key={`${a.code}-${a.name}`} value={a.name}>{a.name} ({a.code})</option>)}
+    </select>
+  );
+
   return (
-    <div className="wizard-overlay">
-      <div className="wizard-header">
-        <button onClick={handleBack} className="wizard-back-btn">
-          <ChevronLeft size={20} /> {t?.wizard?.common?.back || 'Back'}
-        </button>
-        <div className="wizard-stepper">
-          {steps.map(s => (
-            <div key={s.id} className="stepper-item">
-              <div className="step-name">
-                {s.id}. {s.name}
-              </div>
-              <div className={`step-status ${step > s.id ? 'completed' : step === s.id ? 'progress' : 'pending'}`}>
-                {step > s.id ? <><Check size={14} /> {t?.wizard?.common?.completed || 'Completed'}</> : step === s.id ? (t?.wizard?.common?.inProgress || 'In progress') : (t?.wizard?.common?.notCompleted || 'Not completed')}
-              </div>
+    <div className="wizard-overlay bp-overlay" ref={overlayRef}>
+      <div className="bp">
+        <header className="top">
+          <div className="top-in">
+            <button type="button" className="chip" onClick={handleBack}>← {step === 1 ? c.close : c.back}</button>
+            <img src="/logo.webp" alt="Beyond the Gate" className="bp-logo" />
+            <div className="top-meta">
+              <span className="hide-m mono">Seoul {seoulNow} KST</span>
+              <a className="hide-m bp-wa" href={whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              <button type="button" className="chip" onClick={onClose} aria-label={c.close}>✕</button>
             </div>
-          ))}
-        </div>
-        <button onClick={onClose} className="wizard-close-btn">✕</button>
-      </div>
+          </div>
+        </header>
 
-      <div className="wizard-body container">
-        <div className="wizard-content">
-          {missing.length > 0 && (
-            <div className="wizard-errors" role="alert">
-              <strong>{isKo ? '아래 항목을 입력해 주세요' : 'Please complete'}:</strong> {missing.map(f => FIELD_LABELS[f] || f).join(', ')}
-            </div>
-          )}
-          {step >= 3 && surchargeNotes.length > 0 && (
-            <div className="wizard-surcharge-note">
-              <strong>{isKo ? '할증 안내' : 'Surcharge applied'}</strong>
-              <ul>{surchargeNotes.map(note => <li key={note}>{note}</li>)}</ul>
-            </div>
-          )}
+        <div className="wrap">
+          <main className="main">
+            <ol className="steps">
+              {c.steps.map((name, i) => <li key={name} className={stepClass(i + 1)}>{i + 1} · {name}</li>)}
+            </ol>
 
-          {step === 1 && (
-            <div className="step-panel">
-              <div className="sky-step-header mb-24">
-                <h2 className="sky-header-title">
-                  {formData.serviceType.charAt(0).toUpperCase() + formData.serviceType.slice(1)} {formData.airport}, Incheon International Airport
-                </h2>
-                <div className="sky-header-meta">
-                  <span>📅 {formData.date || '18 Aug, 2026'}</span>
-                  <span>👥 {formData.passengers} Adult</span>
-                </div>
+            {missing.length > 0 && (
+              <div className="wizard-errors" role="alert">
+                <strong>{c.missing}:</strong> {missing.map(f => c.labels[f] || f).join(', ')}
               </div>
+            )}
 
-              <div className="package-selector mb-24" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                {[
-                  { id: 'arrival', label: 'Arrival (입국)' },
-                  { id: 'departure', label: 'Departure (출국)' },
-                  { id: 'transfer', label: 'Transfer (환승)' },
-                  { id: 'picketing', label: 'Picketing (피켓팅)' }
-                ].map(svc => (
-                  <div
-                    key={svc.id}
-                    className={`sky-pkg-card ${formData.serviceType === svc.id ? 'active' : ''}`}
-                    onClick={() => updateForm('serviceType', svc.id)}
-                  >
-                    <div className="sky-pkg-card-header">
-                      <span className="sky-pkg-title">{svc.label}</span>
-                      {formData.serviceType === svc.id && (
-                        <div className="sky-check-circle">
-                          <Check size={14} color="#fff" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="sky-pkg-desc">
-                      USD {settings?.servicePrices?.[svc.id]?.usd || (svc.id === 'arrival' ? 250 : svc.id === 'departure' ? 270 : svc.id === 'transfer' ? 340 : 140)}
+            {step === 1 && (
+              <>
+                <h1>{c.s1Title}</h1>
+                <p className="lede">{c.s1Lede}</p>
+                <div className="card">
+                  <div className="f">
+                    <label>{c.service}</label>
+                    <div className="seg seg-4">
+                      {['arrival', 'departure', 'transfer', 'picketing'].map(id => (
+                        <button key={id} type="button" className={seg(svc === id)} onClick={() => updateForm('serviceType', id)}>
+                          {c.services[id]}<span>USD {servicePrice(id)}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="sky-pkg-detail-card mb-24">
-                <div className="sky-pkg-detail-body">
-                  <div className="sky-pkg-left">
-                    <h3 className="sky-pkg-main-title">{t?.wizard?.step1?.meetGreetTitle || 'VIP Meet & Greet'}</h3>
-
-                    <div className="sky-price-section">
-                      <span className="sky-price-label">{t?.wizard?.step1?.servicePrice || 'Service price'}</span>
-                      <div className="sky-price-amount">
-                        <strong>USD {baseFeeUsd.toFixed(2)}</strong> <span className="sky-per-pass">{t?.wizard?.step1?.perPassenger || '/ 1 passenger'}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="sky-pkg-right">
-                    <div className="sky-included-title">{t?.wizard?.step1?.includedTitle || 'INCLUDED IN PACKAGE:'}</div>
-                    <ul className="sky-included-list">
-                      {formData.serviceType === 'arrival' ? (
-                        <>
-                          <li>
-                            <span className="sky-inc-icon">👤</span>
-                            <div><strong>Personal greeting</strong> at the arrival air-bridge by your Beyond the Gate agent with a name-board welcome</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🏃</span>
-                            <div>
-                              <strong>Fast-track immigration</strong> through priority lanes (where available)<br />
-                              Priority guidance through airport procedures (Fast Track lanes available only for eligible passengers)<br />
-                              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
-                                <strong>* Fast Track Notice:</strong> Incheon Airport does not offer commercial Fast Track officially. Fast Track access is limited to airport-authorized passengers only. Our staff will guide you through the most efficient route available.
-                              </div>
-                            </div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🧳</span>
-                            <div><strong>Baggage assistance:</strong> Escort will assist with baggage retrieval and guide you to your vehicle.</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🛂</span>
-                            <div><strong>Customs clearance & escort assistance</strong></div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🚶</span>
-                            <div><strong>Escort all the way</strong> to your driver, hotel shuttle, or curbside pick-up point</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">✈️</span>
-                            <div><strong>Real-time flight monitoring</strong> — we wait for you, even if you are delayed</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">⏱️</span>
-                            <div><strong>Service Duration: 3 hours:</strong> The service duration is 3 hours, and processing times may vary depending on airport congestion</div>
-                          </li>
-                        </>
-                      ) : formData.serviceType === 'departure' ? (
-                        <>
-                          <li>
-                            <span className="sky-inc-icon">👤</span>
-                            <div><strong>Personal greeting</strong> at the departure floor by your Beyond the Gate agent with a name-board welcome</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🏃</span>
-                            <div>
-                              <strong>Fast-track immigration</strong> through priority lanes (where available)<br />
-                              Priority guidance through airport procedures (Fast Track lanes available only for eligible passengers)<br />
-                              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
-                                <strong>* Fast Track Notice:</strong> Incheon Airport does not offer commercial Fast Track officially. Fast Track access is limited to airport-authorized passengers only. Our staff will guide you through the most efficient route available.
-                              </div>
-                            </div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🧳</span>
-                            <div><strong>Baggage assistance:</strong> Escort will assist with baggage retrieval and guide you from your vehicle.</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🛂</span>
-                            <div><strong>Customs clearance & escort assistance</strong></div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🧾</span>
-                            <div>{lang === 'ko'
-                              ? <><strong>택스리펀드 지원:</strong> 외국인 고객의 부가세 환급 절차 안내 및 세관 확인·환급 창구 동행 (환급 여부·금액은 세관 및 환급사업자 기준)</>
-                              : <><strong>Tax refund assistance:</strong> guidance through the VAT refund process for international guests, with escort to the customs check and refund counters (eligibility set by Korea Customs and refund operators)</>}</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🚶</span>
-                            <div><strong>Escort all the way</strong> to your flight</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">✈️</span>
-                            <div><strong>Real-time flight monitoring</strong> — we wait for you, even if you are delayed</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">⏱️</span>
-                            <div><strong>Service Duration: 2 hours:</strong> The service duration is 3 hours, and processing times may vary depending on airport congestion</div>
-                          </li>
-                        </>
-                      ) : (
-                        <>
-                          <li>
-                            <span className="sky-inc-icon">👤</span>
-                            <div><strong>Personal Greeting</strong> at the arrival gate with a name sign</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🏃</span>
-                            <div>
-                              <strong>Fast track</strong> through the airport formalities<br />
-                              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
-                                <strong>* Fast Track Notice:</strong> Incheon Airport does not offer commercial Fast Track officially. Fast Track access is limited to airport-authorized passengers only. Our staff will guide you through the most efficient route available.
-                              </div>
-                            </div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🧳</span>
-                            <div><strong>Baggage Handling</strong> luggage assistance upon request</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🚶</span>
-                            <div><strong>Airport Exiting</strong> accompanying to the curbside area</div>
-                          </li>
-                          <li>
-                            <span className="sky-inc-icon">🚗</span>
-                            <div><strong>Transfer Service</strong> luxury vehicle from the airport for an additional fee</div>
-                          </li>
-                        </>
-                      )}
-
-                      <li style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #eee' }}>
-                        <span className="sky-inc-icon">📍</span>
-                        <div><strong>Meeting Point:</strong> At the arrival gate (airbridge) or designated arrival hall depending on airport regulations</div>
-                      </li>
-                      <li>
-                        <span className="sky-inc-icon">ℹ️</span>
-                        <div><strong>Escort support only;</strong> immigration and customs procedures must be completed by the passenger.</div>
-                      </li>
-                      <li>
-                        <span className="sky-inc-icon">📅</span>
-                        <div>
-                          <strong>Cancellation Policy:</strong><br />
-                          <ul style={{ paddingLeft: '20px', margin: '4px 0 0 0', color: '#555', fontSize: '0.9rem', listStyleType: 'disc' }}>
-                            <li>Free cancellation up to 48 hours before service</li>
-                            <li>50% charge within 24–48 hours</li>
-                            <li>No refund within 24 hours</li>
-                          </ul>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="sky-notice-box mt-24">
-                  <span className="sky-notice-icon">ℹ</span>
-                  <div className="sky-notice-text">
-                    {t?.wizard?.step1?.noticeText || 'The transfer rates provided are applicable for travel to city center with MPV. If you require a transfer to a different destination or upgrade a car class, please feel free to contact us, and we will be happy to assist you with a personalized quote'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="step-panel">
-              <h2 className="sky-step2-title">{t?.wizard?.step2?.title || 'Additional Services'}</h2>
-              <p className="sky-step2-sub mb-24">{t?.wizard?.step2?.subtitle || "Tell us more about your trip and pick anything you'd like us to handle."}</p>
-
-              <div className="sky-addon-card mb-24">
-                <div className="sky-addon-img-wrap">
-                  <div style={{ width: '100%', height: '100%', background: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Users size={48} color="#6366f1" />
-                  </div>
-                </div>
-                <div className="sky-addon-content">
-                  <h3 className="sky-addon-title">{t?.wizard?.step4?.title || 'Passengers'}</h3>
-                  <p className="sky-addon-sub">{t?.wizard?.step4?.morePeopleSub?.replace('{n}', formData.passengers) || `Total ${formData.passengers} passenger(s). Add or remove passengers.`}</p>
-
-                  <div className="sky-counter-box mt-16">
-                    <div className="sky-counter-label">
-                      <Users size={18} className="sky-bag-icon" />
-                      <span>{t?.wizard?.step4?.title || 'Passengers'}</span>
-                    </div>
-                    <div className="sky-counter-controls">
-                      <button
-                        className="sky-counter-btn"
-                        onClick={() => updateForm('passengers', Math.max(1, formData.passengers - 1))}
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="sky-counter-value">{formData.passengers}</span>
-                      <button
-                        className="sky-counter-btn"
-                        onClick={() => updateForm('passengers', formData.passengers + 1)}
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sky-addon-card mb-24">
-                <div className="sky-addon-img-wrap">
-                  <img src="/luggage_assistance.webp" alt="Luggage Assistance" className="sky-addon-img" />
-                </div>
-                <div className="sky-addon-content">
-                  <h3 className="sky-addon-title">{t?.wizard?.step2?.luggageTitle || 'Luggage Assistance'}</h3>
-                  <p className="sky-addon-sub">{t?.wizard?.step2?.luggageSub || 'We will handle your luggage for you'}</p>
-
-                  <div className="sky-counter-box mt-16">
-                    <div className="sky-counter-label">
-                      <Luggage size={18} className="sky-bag-icon" />
-                      <span>{t?.wizard?.step2?.bagsLabel || 'Amount of bags'}</span>
-                    </div>
-                    <div className="sky-counter-controls">
-                      <button
-                        className="sky-counter-btn"
-                        onClick={() => updateForm('luggageCount', Math.max(0, formData.luggageCount - 1))}
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="sky-counter-value">{formData.luggageCount}</span>
-                      <button
-                        className="sky-counter-btn"
-                        onClick={() => updateForm('luggageCount', formData.luggageCount + 1)}
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chauffeur Vehicle Card */}
-              {formData.serviceType !== 'transfer' && (
-                <div className="sky-addon-card mb-24">
-                  <div className="sky-addon-img-wrap">
-                    <img src="/luxury_fleet.webp" alt="Chauffeur Vehicle" className="sky-addon-img" />
-                  </div>
-                  <div className="sky-addon-content">
-                    <h3 className="sky-addon-title">{t?.wizard?.step2?.vehicleTitle || 'Chauffeur Vehicle'}</h3>
-                    <p className="sky-addon-sub">{t?.wizard?.step2?.vehicleSub || 'Private transfer within the city to your destination'}</p>
-
-                    <div className="sky-counter-box mt-16">
-                      <select
-                        value={formData.vehicleType}
-                        onChange={e => updateForm('vehicleType', e.target.value)}
-                        className="sky-vehicle-select"
-                      >
-                        <option value="none">{t?.wizard?.step2?.vehicleNone || 'None (No Chauffeur Vehicle)'}</option>
-                        {currentAirport?.vehicles && currentAirport.vehicles.length > 0 ? (
-                          currentAirport.vehicles.map(v => (
-                            <option key={v.id} value={v.id}>
-                              {v.name || (v.id === 'staria' ? 'Staria' : v.id === 'g90' ? 'G90' : 'Benz Sprinter')} USD {settings?.vehiclePricesUsd?.[v.id] || v.priceUsd}
-                            </option>
-                          ))
-                        ) : (
-                          <>
-                            <option value="staria">Staria USD {settings?.vehiclePricesUsd?.staria || 130}</option>
-                            <option value="g90">G90 USD {settings?.vehiclePricesUsd?.g90 || 200}</option>
-                            <option value="sprinter">Benz Sprinter USD {settings?.vehiclePricesUsd?.sprinter || 200}</option>
-                          </>
-                        )}
+                  <div className="row">
+                    <div className="f">
+                      <label htmlFor="bp-airport">{c.airport}</label>
+                      <select id="bp-airport" value={formData.airport} onChange={e => updateForm('airport', e.target.value)}>
+                        {airports.map(a => <option key={a.code} value={a.code}>{airportName(a.code)} ({a.code})</option>)}
                       </select>
                     </div>
-
-                    {/* Address Input (Conditional based on vehicle selection) */}
-                    {formData.vehicleType !== 'none' && (
-                      <div className="sky-form-group mt-16" style={{ width: '100%' }}>
-                        <label className="sky-form-label">
-                          {formData.serviceType === 'arrival'
-                            ? (t?.wizard?.step2?.dropoffAddress || 'Drop-off Address (Hotel/Destination)')
-                            : (t?.wizard?.step2?.pickupAddress || 'Pick-up Address (Origin/Hotel)')}
-                          {' '}*
-                        </label>
-                        {isLoaded ? (
-                          <Autocomplete
-                            onLoad={(autocomplete) => { autocompleteRef.current = autocomplete; }}
-                            onPlaceChanged={handlePlaceChanged}
-                          >
-                            <input
-                              type="text"
-                              placeholder={formData.serviceType === 'arrival' ? 'Enter your destination address (e.g. Grand Hyatt Seoul)' : 'Enter your pick-up address'}
-                              value={formData.transferAddress || ''}
-                              onChange={(e) => updateForm('transferAddress', e.target.value)}
-                              className="sky-text-input"
-                              style={{ width: '100%' }}
-                            />
-                          </Autocomplete>
-                        ) : (
-                          <input
-                            type="text"
-                            placeholder={formData.serviceType === 'arrival' ? 'Enter your destination address (e.g. Grand Hyatt Seoul)' : 'Enter your pick-up address'}
-                            value={formData.transferAddress || ''}
-                            onChange={(e) => updateForm('transferAddress', e.target.value)}
-                            className="sky-text-input"
-                            style={{ width: '100%' }}
-                          />
-                        )}
-                      </div>
-                    )}
+                    <div className="f">
+                      <label htmlFor="bp-date">{c.date(dep)}</label>
+                      <input id="bp-date" type="date" value={formData.date} onChange={e => updateForm('date', e.target.value)} />
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="step-panel">
-              <h2 className="sky-step2-title">{t?.wizard?.step3?.title || 'Flight Information'}</h2>
-              <p className="sky-step2-sub mb-24">{t?.wizard?.step3?.subtitle || 'Please add flight information below.'}</p>
-
-              {/* Flight Details Card */}
-              <div className="sky-flight-card mb-24">
-                <div className="sky-flight-header mb-20">
-                  <PlaneTakeoff size={20} className="sky-flight-icon" />
-                  <div>
-                    <h3 className="sky-flight-title">
-                      {['arrival', 'transfer', 'picketing'].includes(formData.serviceType) ? (t?.wizard?.step3?.arrivalTitle || 'Arrival flight') : formData.serviceType === 'departure' ? (t?.wizard?.step3?.departureTitle || 'Departure flight') : (t?.wizard?.step3?.connectionTitle || 'Connection flight')}
-                    </h3>
-                    <p className="sky-flight-sub">{t?.wizard?.step3?.flightSub || 'Please provide us with your airline details and the flight number'}</p>
+                  <div className="row">
+                    <div className="f">
+                      <label htmlFor="bp-flight">{c.flightNo}</label>
+                      <input id="bp-flight" value={formData.flightNumber} onChange={e => updateForm('flightNumber', e.target.value.toUpperCase())} placeholder="KE082" autoComplete="off" {...inv('flightNumber')} />
+                      <small>{formData.airline && airlineFromFlight(formData.flightNumber) ? `✓ ${formData.airline}` : c.flightNoHint}</small>
+                    </div>
+                    <div className="f">
+                      <label htmlFor="bp-time">{c.time(dep)}</label>
+                      <input id="bp-time" type="time" value={formData.flightTime} onChange={e => updateForm('flightTime', e.target.value)} {...inv('flightTime')} />
+                      {seoulNow && <small>{c.seoulNow(seoulNow)}</small>}
+                    </div>
                   </div>
-                </div>
-
-                <div className="sky-flight-form-row">
-                  {/* Airline Search Dropdown */}
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step3?.airlineLabel || 'Airline'} *</label>
-                    <div className="sky-airline-input-wrap">
-                      <div
-                        className={`sky-airline-box ${isAirlineOpen ? 'active' : ''} ${missing.includes('airline') ? 'is-invalid' : ''}`}
-                        onClick={() => setIsAirlineOpen(!isAirlineOpen)}
-                      >
-                        <Search size={16} className="sky-search-icon" />
-                        <input
-                          type="text"
-                          placeholder={t?.wizard?.step3?.airlinePlaceholder || "Search for your airline"}
-                          value={formData.airline || airlineSearch}
-                          onChange={(e) => {
-                            updateForm('airline', e.target.value);
-                            setAirlineSearch(e.target.value);
-                            setIsAirlineOpen(true);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          onFocus={() => setIsAirlineOpen(true)}
-                          className="sky-airline-input"
-                        />
-                        <ChevronDown size={16} className="sky-chevron-icon" />
+                  {formData.flightNumber && !airlineFromFlight(formData.flightNumber) && (
+                    <div className="f">
+                      <label htmlFor="bp-airline">{c.airline}</label>
+                      {airlineSelect('airline', 'bp-airline')}
+                    </div>
+                  )}
+                  {svc === 'transfer' && (
+                    <>
+                      <div className="row">
+                        <div className="f">
+                          <label htmlFor="bp-conn">{c.connNo}</label>
+                          <input id="bp-conn" value={formData.transferFlightNumber} onChange={e => updateForm('transferFlightNumber', e.target.value.toUpperCase())} placeholder="KE901" autoComplete="off" {...inv('transferFlightNumber')} />
+                        </div>
+                        <div className="f">
+                          <label htmlFor="bp-conn-time">{c.connTime}</label>
+                          <input id="bp-conn-time" type="time" value={formData.transferFlightTime} onChange={e => updateForm('transferFlightTime', e.target.value)} {...inv('transferFlightTime')} />
+                        </div>
                       </div>
-
-                      {isAirlineOpen && (
-                        <div className="sky-airline-dropdown">
-                          {AIRLINES.filter(a =>
-                            a.name.toLowerCase().includes((formData.airline || airlineSearch).toLowerCase()) ||
-                            a.code.toLowerCase().includes((formData.airline || airlineSearch).toLowerCase())
-                          ).map(a => (
-                            <div
-                              key={a.code}
-                              className="sky-airline-item"
-                              onClick={() => {
-                                updateForm('airline', a.name);
-                                setAirlineSearch(a.name);
-                                setIsAirlineOpen(false);
-                              }}
-                            >
-                              <div className="sky-airline-item-left">
-                                <Plane size={14} className="sky-plane-icon" />
-                                <span>{a.name}</span>
-                              </div>
-                              <span className="sky-airline-code">{a.code}</span>
-                            </div>
+                      {formData.transferFlightNumber && !airlineFromFlight(formData.transferFlightNumber) && (
+                        <div className="f">
+                          <label htmlFor="bp-conn-airline">{c.connAirline}</label>
+                          {airlineSelect('transferAirline', 'bp-conn-airline')}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="row">
+                    <div className="f">
+                      <label htmlFor="bp-guests">{c.guests}</label>
+                      <select id="bp-guests" value={formData.passengers} onChange={e => updateForm('passengers', parseInt(e.target.value, 10))}>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                      <small>{c.guestsHint}</small>
+                    </div>
+                    <div className="f">
+                      <label htmlFor="bp-bags">{c.bags}</label>
+                      <select id="bp-bags" value={formData.luggageCount} onChange={e => updateForm('luggageCount', parseInt(e.target.value, 10))}>
+                        {Array.from({ length: 16 }, (_, n) => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                      <small>{c.bagsHint}</small>
+                    </div>
+                  </div>
+                  {svc !== 'transfer' && (
+                    <>
+                      <div className="f">
+                        <label>{c.car(dep)}</label>
+                        <div className="seg seg-4">
+                          <button type="button" className={seg(formData.vehicleType === 'none')} onClick={() => updateForm('vehicleType', 'none')}>{c.noCar}<span>{c.noCarNote}</span></button>
+                          {vehicles.map(v => (
+                            <button key={v.id} type="button" className={seg(formData.vehicleType === v.id)} onClick={() => updateForm('vehicleType', v.id)}>
+                              {v.name}<span>USD {v.usd}{CAPACITY[v.id] ? ` · ${c.carNote(CAPACITY[v.id])}` : ''}</span>
+                            </button>
                           ))}
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Flight Number */}
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step3?.flightNumLabel || 'Flight number'} *</label>
-                    <input
-                      type="text"
-                      placeholder=""
-                      value={formData.flightNumber}
-                      onChange={(e) => updateForm('flightNumber', e.target.value)}
-                      {...inv('flightNumber')}
-                      className="sky-text-input"
-                    />
-                    <p className="sky-field-note mt-8">
-                      {t?.wizard?.step3?.flightNumNote || 'You can find your flight number on your ticket, please provide us with numbers only.'}
-                    </p>
-                  </div>
-
-                  {/* Flight Time */}
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">
-                      {formData.serviceType === 'arrival' ? 'Arrival time' : formData.serviceType === 'departure' ? 'Departure time' : 'Flight time'} *
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.flightTime}
-                      onChange={(e) => updateForm('flightTime', e.target.value)}
-                      {...inv('flightTime')}
-                      className="sky-text-input"
-                    />
-                    <p className="sky-field-note mt-8">
-                      Please enter the arrival or departure time of your flight.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {formData.serviceType === 'transfer' && (
-                <div className="sky-flight-card mb-24">
-                  <div className="sky-flight-header mb-20">
-                    <PlaneTakeoff size={20} className="sky-flight-icon" />
-                    <div>
-                      <h3 className="sky-flight-title">Departure flight (출발 항공편)</h3>
-                      <p className="sky-flight-sub">{t?.wizard?.step3?.flightSub || 'Please provide us with your airline details and the flight number'}</p>
-                    </div>
-                  </div>
-
-                  <div className="sky-flight-form-row">
-                    {/* Airline Search Dropdown */}
-                    <div className="sky-form-group">
-                      <label className="sky-form-label">{t?.wizard?.step3?.airlineLabel || 'Airline'} *</label>
-                      <div className="sky-airline-input-wrap">
-                        <div
-                          className={`sky-airline-box ${isTransferAirlineOpen ? 'active' : ''}`}
-                          onClick={() => setIsTransferAirlineOpen(!isTransferAirlineOpen)}
-                        >
-                          <Search size={16} className="sky-search-icon" />
-                          <input
-                            type="text"
-                            placeholder={t?.wizard?.step3?.airlinePlaceholder || "Search for your airline"}
-                            value={formData.transferAirline || transferAirlineSearch}
-                            onChange={(e) => {
-                              updateForm('transferAirline', e.target.value);
-                              setTransferAirlineSearch(e.target.value);
-                              setIsTransferAirlineOpen(true);
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            onFocus={() => setIsTransferAirlineOpen(true)}
-                            className="sky-airline-input"
-                          />
-                          <ChevronDown size={16} className="sky-chevron-icon" />
+                      </div>
+                      {overCapacity && <p className="note">{c.overCap}</p>}
+                      {formData.vehicleType !== 'none' && (
+                        <div className="f">
+                          <label htmlFor="bp-address">{c.address(dep)}</label>
+                          {isLoaded ? (
+                            <Autocomplete onLoad={(ac) => { autocompleteRef.current = ac; }} onPlaceChanged={handlePlaceChanged}>
+                              <input id="bp-address" value={formData.transferAddress} onChange={e => updateForm('transferAddress', e.target.value)} placeholder={c.addressPh} {...inv('transferAddress')} />
+                            </Autocomplete>
+                          ) : (
+                            <input id="bp-address" value={formData.transferAddress} onChange={e => updateForm('transferAddress', e.target.value)} placeholder={c.addressPh} {...inv('transferAddress')} />
+                          )}
                         </div>
+                      )}
+                    </>
+                  )}
+                  {hasSurcharge && <p className="note"><b>{c.surchargeNote}</b></p>}
+                </div>
+                <details className="card more">
+                  <summary>{c.included}</summary>
+                  <ul className="included">
+                    {(INCLUDED[isKo ? 'ko' : 'en'][svc] || []).map(x => <li key={x}>{x}</li>)}
+                  </ul>
+                  <ul className="included small">
+                    {INCLUDED[isKo ? 'ko' : 'en'].notes.map(x => <li key={x}>{x}</li>)}
+                  </ul>
+                </details>
+              </>
+            )}
 
-                        {isTransferAirlineOpen && (
-                          <div className="sky-airline-dropdown">
-                            {AIRLINES.filter(a =>
-                              a.name.toLowerCase().includes((formData.transferAirline || transferAirlineSearch).toLowerCase()) ||
-                              a.code.toLowerCase().includes((formData.transferAirline || transferAirlineSearch).toLowerCase())
-                            ).map(a => (
-                              <div
-                                key={a.code}
-                                className="sky-airline-item"
-                                onClick={() => {
-                                  updateForm('transferAirline', a.name);
-                                  setTransferAirlineSearch(a.name);
-                                  setIsTransferAirlineOpen(false);
-                                }}
-                              >
-                                <div className="sky-airline-item-left">
-                                  <Plane size={14} className="sky-plane-icon" />
-                                  <span>{a.name}</span>
-                                </div>
-                                <span className="sky-airline-code">{a.code}</span>
-                              </div>
-                            ))}
+            {step === 2 && (
+              <>
+                <h1>{c.s2Title}</h1>
+                <p className="lede">{c.s2Lede}</p>
+                <div className="card">
+                  <div className="row">
+                    <div className="f"><label htmlFor="bp-given">{c.given}</label><input id="bp-given" value={formData.firstName} onChange={e => updateForm('firstName', e.target.value)} autoComplete="given-name" {...inv('firstName')} /></div>
+                    <div className="f"><label htmlFor="bp-sur">{c.surname}</label><input id="bp-sur" value={formData.lastName} onChange={e => updateForm('lastName', e.target.value)} autoComplete="family-name" {...inv('lastName')} /></div>
+                  </div>
+                  <div className="f">
+                    <label htmlFor="bp-email">{c.email}</label>
+                    <input id="bp-email" type="email" value={formData.email} onChange={e => updateForm('email', e.target.value)} autoComplete="email" {...inv('email')} />
+                    <button type="button" className="bp-google" onClick={fillWithGoogle}>
+                      <img src="https://www.google.com/favicon.ico" alt="" width="14" height="14" /> {c.google}
+                    </button>
+                  </div>
+                  <div className="f">
+                    <label htmlFor="bp-phone">{c.phone}</label>
+                    <div className="phone-row">
+                      <select aria-label="Country code" value={formData.countryCode} onChange={e => updateForm('countryCode', e.target.value)}>
+                        {COUNTRY_CODES.map(cc => <option key={cc.code} value={cc.code}>{cc.flag} {cc.code}</option>)}
+                      </select>
+                      <input id="bp-phone" type="tel" value={formData.phoneLocal} onChange={e => updateForm('phoneLocal', e.target.value)} autoComplete="tel-national" {...inv('phoneLocal')} />
+                    </div>
+                    <small>{c.phoneHint}</small>
+                  </div>
+                  <p className="note">{c.nameBoard}: <b>{formData.lastName ? `${formData.firstName.toUpperCase()} ${formData.lastName.toUpperCase()}`.trim() : c.yourName}</b></p>
+                </div>
+
+                <details className="card more" open={!formData.sameAsPrimary || undefined}>
+                  <summary>{c.optional}</summary>
+                  <div className="row" style={{ marginTop: 16 }}>
+                    <div className="f">
+                      <label htmlFor="bp-class">{c.travelClass}</label>
+                      <select id="bp-class" value={formData.travelClass} onChange={e => updateForm('travelClass', e.target.value)}>
+                        {Object.entries(c.classes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div className="f">
+                      <label>{c.assistance}</label>
+                      <label className="check"><input type="checkbox" checked={formData.wheelchair} onChange={e => updateForm('wheelchair', e.target.checked)} /> {c.wheelchair}</label>
+                    </div>
+                  </div>
+                  <div className="f">
+                    <label htmlFor="bp-req">{c.requests}</label>
+                    <input id="bp-req" value={formData.specialRequests} onChange={e => updateForm('specialRequests', e.target.value)} placeholder={c.requestsPh} />
+                  </div>
+                  <label className="check"><input type="checkbox" checked={!formData.sameAsPrimary} onChange={e => updateForm('sameAsPrimary', !e.target.checked)} /> {c.someoneElse}</label>
+                  {!formData.sameAsPrimary && (
+                    <>
+                      <div className="row" style={{ marginTop: 12 }}>
+                        <div className="f"><label htmlFor="bp-cfirst">{c.cFirst}</label><input id="bp-cfirst" value={formData.contactFirst} onChange={e => updateForm('contactFirst', e.target.value)} {...inv('contactFirst')} /></div>
+                        <div className="f"><label htmlFor="bp-clast">{c.cLast}</label><input id="bp-clast" value={formData.contactLast} onChange={e => updateForm('contactLast', e.target.value)} {...inv('contactLast')} /></div>
+                      </div>
+                      <div className="row">
+                        <div className="f"><label htmlFor="bp-cemail">{c.cEmail}</label><input id="bp-cemail" type="email" value={formData.contactEmail} onChange={e => updateForm('contactEmail', e.target.value)} {...inv('contactEmail')} /></div>
+                        <div className="f">
+                          <label htmlFor="bp-cphone">{c.cPhone}</label>
+                          <div className="phone-row">
+                            <select aria-label="Country code" value={formData.contactCountryCode} onChange={e => updateForm('contactCountryCode', e.target.value)}>
+                              {COUNTRY_CODES.map(cc => <option key={cc.code} value={cc.code}>{cc.flag} {cc.code}</option>)}
+                            </select>
+                            <input id="bp-cphone" type="tel" value={formData.contactPhoneLocal} onChange={e => updateForm('contactPhoneLocal', e.target.value)} {...inv('contactPhoneLocal')} />
                           </div>
-                        )}
+                        </div>
                       </div>
-                    </div>
+                    </>
+                  )}
+                </details>
+              </>
+            )}
 
-                    {/* Flight Number */}
-                    <div className="sky-form-group">
-                      <label className="sky-form-label">{t?.wizard?.step3?.flightNumLabel || 'Flight number'} *</label>
-                      <input
-                        type="text"
-                        placeholder=""
-                        value={formData.transferFlightNumber}
-                        onChange={(e) => updateForm('transferFlightNumber', e.target.value)}
-                        className="sky-text-input"
-                      />
-                      <p className="sky-field-note mt-8">
-                        {t?.wizard?.step3?.flightNumNote || 'You can find your flight number on your ticket, please provide us with numbers only.'}
-                      </p>
-                    </div>
-
-                    {/* Flight Time */}
-                    <div className="sky-form-group">
-                      <label className="sky-form-label">Departure time *</label>
-                      <input
-                        type="time"
-                        value={formData.transferFlightTime}
-                        onChange={(e) => updateForm('transferFlightTime', e.target.value)}
-                        className="sky-text-input"
-                      />
-                      <p className="sky-field-note mt-8">
-                        Local time at {formData.airport}
-                      </p>
-                    </div>
+            {step === 3 && (
+              <>
+                <h1>{c.s3Title}</h1>
+                <p className="lede">{c.s3Lede}</p>
+                <div className="card">
+                  <div className="order-bar">
+                    <div><span className="k">{c.order}</span><b className="mono">{bookingId}</b></div>
+                    <div><span className="k">{c.invoice}</span><b className="mono">INV{bookingId.substring(3)}</b></div>
+                    <span className="badge-unpaid">{c.unpaid}</span>
+                  </div>
+                  <div className="pay">
+                    <button type="button" className={`pay-opt ${seg(paypal)}`} onClick={() => setSelectedPayment('paypal')} aria-pressed={paypal}>
+                      <div><b>{c.paypal}</b><span>{c.paypalSub}</span><div className="marks"><em>PayPal</em><em>USD</em></div></div>
+                      <i>{usdLabel}</i>
+                    </button>
+                    <button type="button" className={`pay-opt ${seg(!paypal)}`} onClick={() => setSelectedPayment('nicepay')} aria-pressed={!paypal}>
+                      <div><b>{c.nicepay}</b><span>{c.nicepaySub}</span><div className="marks"><em>NICEPAY</em><em>KRW</em></div></div>
+                      <i>{krwLabel}</i>
+                    </button>
+                  </div>
+                  <p className="note" style={{ marginTop: 14 }}>{c.feeNote}</p>
+                  <div className="trust">
+                    {c.trust.map(([a, b]) => <div key={a}><b>{a}</b>{b}</div>)}
                   </div>
                 </div>
+                {payError && <div className="wizard-errors" role="alert">{payError} <a href={whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a></div>}
+              </>
+            )}
+
+            <div className="desk-cta">
+              <button type="button" className={`btn ${step === 3 ? 'btn-gold' : 'btn-navy'}`} onClick={onCta} disabled={isSubmitting}>{ctaLabel}</button>
+              {step === 3 && (
+                <p className="terms">{c.terms(
+                  <a href={localizePath('/terms', lang)} target="_blank" rel="noopener noreferrer">{c.termsWord}</a>,
+                  <a href={localizePath('/privacy', lang)} target="_blank" rel="noopener noreferrer">{c.privacyWord}</a>
+                )}</p>
               )}
-
-              {/* Surcharge Table */}
-              <div className="sky-flight-card mb-24">
-                <div className="sky-flight-header mb-16">
-                  <div>
-                    <h3 className="sky-flight-title">Additional Surcharges (추가 요금 안내)</h3>
-                    <p className="sky-flight-sub">Certain requests may incur an additional surcharge based on time and urgency.</p>
-                  </div>
-                </div>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid #eee' }}>
-                        <th style={{ padding: '12px 8px' }}>{lang === 'ko' ? '구분' : 'Category'}</th>
-                        <th style={{ padding: '12px 8px' }}>{lang === 'ko' ? '목적' : 'Description'}</th>
-                        <th style={{ padding: '12px 8px' }}>{lang === 'ko' ? '추가요금 (KRW)' : 'Surcharge (KRW)'}</th>
-                        <th style={{ padding: '12px 8px' }}>{lang === 'ko' ? '추가요금 (USD)' : 'Surcharge (USD)'}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>{lang === 'ko' ? '야간 요금' : 'Night Service'}</td>
-                        <td style={{ padding: '12px 8px', color: '#666' }}>22:00~06:00</td>
-                        <td style={{ padding: '12px 8px' }}>KRW 50,000</td>
-                        <td style={{ padding: '12px 8px' }}>40</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>{lang === 'ko' ? '긴급 요청' : 'Urgent Request'}</td>
-                        <td style={{ padding: '12px 8px', color: '#666' }}>{lang === 'ko' ? '서비스 시작 24시간 이내 요청' : 'Request within 24 hours of service start'}</td>
-                        <td style={{ padding: '12px 8px' }}>KRW 50,000</td>
-                        <td style={{ padding: '12px 8px' }}>40</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>{lang === 'ko' ? '초긴급 요청' : 'Super Urgent Request'}</td>
-                        <td style={{ padding: '12px 8px', color: '#666' }}>{lang === 'ko' ? '서비스 시작 6시간 이내 요청' : 'Request within 6 hours of service start'}</td>
-                        <td style={{ padding: '12px 8px' }}>KRW 60,000</td>
-                        <td style={{ padding: '12px 8px' }}>48</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '12px 8px', fontWeight: '500' }}>{lang === 'ko' ? '주말/공휴일' : 'Weekend/Holiday'}</td>
-                        <td style={{ padding: '12px 8px', color: '#666' }}></td>
-                        <td style={{ padding: '12px 8px' }}>KRW 25,000</td>
-                        <td style={{ padding: '12px 8px' }}>20</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Upload Flight Tickets Card */}
-              <div className="sky-flight-card mb-24">
-                <div className="sky-flight-header mb-16">
-                  <Ticket size={20} className="sky-flight-icon" />
-                  <div>
-                    <h3 className="sky-flight-title">
-                      {t?.wizard?.step3?.uploadTitle || 'Upload your Flight Tickets'} <span className="sky-optional-tag">{t?.wizard?.common?.optional || 'optional'}</span>
-                    </h3>
-                    <p className="sky-flight-sub">{t?.wizard?.step3?.uploadSub || 'You can upload your tickets now, or our team will contact you about this later on.'}</p>
-                  </div>
-                </div>
-
-                <div className="sky-dropzone-box">
-                  <UploadCloud size={28} className="sky-upload-icon mb-12" />
-                  <div className="sky-dropzone-text">
-                    {t?.wizard?.step3?.dropzoneText || 'Drag & drop your files or click here to select files'}
-                  </div>
-                  <div className="sky-dropzone-sub mt-4">
-                    {t?.wizard?.step3?.dropzoneSub || 'JPEG, PNG, PDF files supported, up to 5MB'}
-                  </div>
-                </div>
-              </div>
+              {step > 1 && <button type="button" className="btn btn-ghost" onClick={handleBack}>← {c.back}</button>}
             </div>
-          )}
+          </main>
 
-          {step === 4 && (
-            <div className="step-panel">
-              <h2 className="sky-step2-title">{t?.wizard?.step4?.title || 'Enter Passengers Details'}</h2>
-              <p className="sky-step2-sub mb-24">{t?.wizard?.step4?.subtitle || 'Add and review the number of passengers and their personal details.'}</p>
-
-
-              {/* Primary Passenger Card */}
-              <div className="sky-flight-card mb-24">
-                <div className="sky-pax-card-header mb-24">
-                  <div className="sky-pax-header-left">
-                    <User size={20} className="sky-flight-icon" />
-                    <div>
-                      <h3 className="sky-flight-title">{t?.wizard?.step4?.primaryTitle || 'Primary passenger'}</h3>
-                      <p className="sky-flight-sub">{t?.wizard?.step4?.primarySub || 'We need each passenger details to book a service for you'}</p>
-                    </div>
-                  </div>
-
-                  <select
-                    value={formData.paxCategory || 'adult'}
-                    onChange={(e) => updateForm('paxCategory', e.target.value)}
-                    className="sky-pax-type-select"
-                  >
-                    <option value="adult">{t?.wizard?.step4?.adultLabel || 'Adult (7+ years)'}</option>
-                    <option value="child">{t?.wizard?.step4?.childLabel || 'Child (0-7 years)'}</option>
-                  </select>
-                </div>
-
-                {/* Row 1: First Name & Last Name */}
-                <div className="sky-flight-form-row mb-20">
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step4?.firstName || 'First Name'} *</label>
-                    <input
-                      type="text"
-                      placeholder={t?.wizard?.step4?.firstName || "Enter first name"}
-                      value={formData.firstName}
-                      onChange={(e) => updateForm('firstName', e.target.value)}
-                      {...inv('firstName')}
-                      className="sky-text-input"
-                    />
-                  </div>
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step4?.lastName || 'Last Name'} *</label>
-                    <input
-                      type="text"
-                      placeholder={t?.wizard?.step4?.lastName || "Enter last name"}
-                      value={formData.lastName}
-                      onChange={(e) => updateForm('lastName', e.target.value)}
-                      {...inv('lastName')}
-                      className="sky-text-input"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 2: Date of Birth & Class of Travel */}
-                <div className="sky-flight-form-row mb-20">
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step4?.dob || 'Date of birth'} <span className="sky-optional-tag">{isKo ? '선택' : 'optional'}</span></label>
-                    <div className="sky-dob-grid">
-                      <select
-                        value={formData.dobMonth}
-                        onChange={(e) => updateForm('dobMonth', e.target.value)}
-                        className="sky-select-input"
-                      >
-                        <option value="">Month</option>
-                        <option value="01">Jan</option>
-                        <option value="02">Feb</option>
-                        <option value="03">Mar</option>
-                        <option value="04">Apr</option>
-                        <option value="05">May</option>
-                        <option value="06">Jun</option>
-                        <option value="07">Jul</option>
-                        <option value="08">Aug</option>
-                        <option value="09">Sep</option>
-                        <option value="10">Oct</option>
-                        <option value="11">Nov</option>
-                        <option value="12">Dec</option>
-                      </select>
-                      <input
-                        type="text"
-                        placeholder="Day"
-                        value={formData.dobDay}
-                        onChange={(e) => updateForm('dobDay', e.target.value)}
-                        className="sky-text-input center-text"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Year"
-                        value={formData.dobYear}
-                        onChange={(e) => updateForm('dobYear', e.target.value)}
-                        className="sky-text-input center-text"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step4?.travelClass || 'Class of travel'} <span className="sky-optional-tag">{t?.wizard?.common?.optional || 'optional'}</span></label>
-                    <select
-                      value={formData.travelClass}
-                      onChange={(e) => updateForm('travelClass', e.target.value)}
-                      className="sky-select-input"
-                    >
-                      <option value="">Select</option>
-                      <option value="first">First Class</option>
-                      <option value="business">Business Class</option>
-                      <option value="premium_economy">Premium Economy</option>
-                      <option value="economy">Economy Class</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 3: Email & Phone Number */}
-                <div className="sky-flight-form-row mb-24">
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step4?.email || 'Email'} *</label>
-                    <input
-                      type="email"
-                      placeholder={t?.wizard?.step4?.email || "Enter email"}
-                      value={formData.email}
-                      onChange={(e) => updateForm('email', e.target.value)}
-                      {...inv('email')}
-                      className="sky-text-input"
-                    />
-                    <button
-                      type="button"
-                      className="btn-sky-social mt-8"
-                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: '500', marginTop: '12px' }}
-                      onClick={async () => {
-                        try {
-                          const result = await signInWithPopup(auth, googleProvider);
-                          const user = result.user;
-                          if (user) {
-                            const nameParts = user.displayName ? user.displayName.split(' ') : [];
-                            const firstName = nameParts[0] || '';
-                            const lastName = nameParts.slice(1).join(' ') || '';
-                            updateForm('firstName', firstName);
-                            updateForm('lastName', lastName);
-                            updateForm('email', user.email || '');
-                          }
-                        } catch (error) {
-                          console.error("Google sign in failed", error);
-                          alert("Google Login Failed: " + error.message);
-                        }
-                      }}
-                    >
-                      <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: 16, height: 16 }} />
-                      Continue with Google
-                    </button>
-                  </div>
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step4?.phone || 'Phone number'} *</label>
-                    <div className="sky-phone-input-wrap">
-                      <select
-                        value={formData.countryCode || '+1'}
-                        onChange={(e) => updateForm('countryCode', e.target.value)}
-                        className="sky-country-code-select"
-                      >
-                        {COUNTRY_CODES.map(c => (
-                          <option key={c.code} value={c.code}>
-                            {c.flag} {c.code}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="tel"
-                        placeholder="— — — — —"
-                        value={formData.phone}
-                        onChange={(e) => updateForm('phone', e.target.value)}
-                        {...inv('phone')}
-                        className="sky-phone-input"
-                      />
-                    </div>
-                    <p className="sky-field-note mt-8">
-                      {t?.wizard?.step4?.smsUpdateNote || 'You may receive SMS updates about your booking'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Toggle Switch: Wheelchair */}
-                <div className="sky-toggle-row">
-                  <label className="sky-switch">
-                    <input
-                      type="checkbox"
-                      checked={formData.wheelchair}
-                      onChange={(e) => updateForm('wheelchair', e.target.checked)}
-                    />
-                    <span className="sky-slider round"></span>
-                  </label>
-                  <span className="sky-toggle-label">{t?.wizard?.step4?.wheelchairLabel || 'Wheelchair requested from the airline'}</span>
-                </div>
+          <aside className={`side ${step === 3 || detailsOpen ? 'show-stub' : ''}`}>
+            <div className="pass">
+              <div className="pass-head">
+                <span className="mono"><span className="hide-narrow">{P.title} · </span>{c.services[svc].toUpperCase()}</span>
+                <span className="mono" style={{ color: '#B9C4D4' }}>{step === 3 ? `${bookingId} · ${c.unpaid}` : P.draft}</span>
               </div>
-
-              {/* Additional Passenger Cards (if passengers > 1) */}
-              {Array.from({ length: Math.max(0, formData.passengers - 1) }).map((_, idx) => {
-                const paxNum = idx + 2;
-                return (
-                  <div key={paxNum} className="sky-flight-card mb-24">
-                    <div className="sky-pax-card-header mb-24">
-                      <div className="sky-pax-header-left">
-                        <User size={20} className="sky-flight-icon" />
-                        <div>
-                          <h3 className="sky-flight-title">{t?.wizard?.step4?.passengerTitle || 'Passenger'} #{paxNum}</h3>
-                          <p className="sky-flight-sub">{t?.wizard?.step4?.additionalSub || 'Additional passenger details'}</p>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <select
-                          value={formData[`paxCategory_${paxNum}`] || 'adult'}
-                          onChange={(e) => updateForm(`paxCategory_${paxNum}`, e.target.value)}
-                          className="sky-pax-type-select"
-                        >
-                          <option value="adult">{t?.wizard?.step4?.adultLabel || 'Adult (7+ years)'}</option>
-                          <option value="child">{t?.wizard?.step4?.childLabel || 'Child (0-7 years)'}</option>
-                        </select>
-
-                        <button
-                          type="button"
-                          onClick={() => updateForm('passengers', formData.passengers - 1)}
-                          className="btn-sky-remove-pax"
-                          title="Remove passenger"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="sky-flight-form-row mb-20">
-                      <div className="sky-form-group">
-                        <label className="sky-form-label">{t?.wizard?.step4?.firstName || 'First Name'}</label>
-                        <input
-                          type="text"
-                          placeholder={t?.wizard?.step4?.firstName || "Enter first name"}
-                          value={formData[`firstName_${paxNum}`] || ''}
-                          onChange={(e) => updateForm(`firstName_${paxNum}`, e.target.value)}
-                          className="sky-text-input"
-                        />
-                      </div>
-                      <div className="sky-form-group">
-                        <label className="sky-form-label">{t?.wizard?.step4?.lastName || 'Last Name'}</label>
-                        <input
-                          type="text"
-                          placeholder={t?.wizard?.step4?.lastName || "Enter last name"}
-                          value={formData[`lastName_${paxNum}`] || ''}
-                          onChange={(e) => updateForm(`lastName_${paxNum}`, e.target.value)}
-                          className="sky-text-input"
-                        />
-                      </div>
-                    </div>
+              <div className="pass-body">
+                <div className="route">
+                  <div><div className={`code ${pop(...left.keys)}`}>{left.code}</div><small>{left.name}</small></div>
+                  <div className="mid">
+                    <span>{svc === 'transfer' ? 'TRANSFER' : P.flight}</span>
+                    <div className="line"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A5C17" strokeWidth="1.6" aria-hidden="true"><path d="M2 13.5l8-1.5 5-9 2 .5-2.5 8.5 6-1 1.5 2-7.5 1.5" /></svg></div>
+                    <span>{formData.flightTime ? `${formData.flightTime} KST` : ''}</span>
                   </div>
-                );
-              })}
-
-              {/* Bottom Card: More people traveling? */}
-              <div className="sky-addon-card sky-more-people-card mb-24">
-                <div className="sky-more-people-left">
-                  <UserPlus size={24} className="sky-flight-icon" />
-                  <div>
-                    <h4 className="sky-more-title">{t?.wizard?.step4?.morePeopleTitle || 'More people traveling?'}</h4>
-                    <p className="sky-more-sub">
-                      {t?.wizard?.step4?.morePeopleSub || 'Total {n} passenger(s). Add or remove passengers from your booking.'}
-                    </p>
-                  </div>
+                  <div style={{ textAlign: 'right' }}><div className={`code ${pop(...right.keys)}`}>{right.code}</div><small>{right.name}</small></div>
                 </div>
-
-                <div className="sky-pax-action-btns">
-                  {formData.passengers > 1 && (
-                    <button
-                      type="button"
-                      className="btn-sky-add-pax remove-btn"
-                      onClick={() => updateForm('passengers', Math.max(1, formData.passengers - 1))}
-                    >
-                      <Minus size={16} /> {t?.wizard?.common?.remove || 'Remove'}
-                    </button>
+                <div className="grid">
+                  <div className="cell two"><div className="k">{P.passenger}</div><div className={`v ${pop('firstName', 'lastName')} ${hasName ? '' : 'empty'}`}>{passName}</div></div>
+                  <div className="cell"><div className="k">{P.guestsBags}</div><div className={`v ${pop('passengers', 'luggageCount')}`}>{formData.passengers} · {formData.luggageCount}</div></div>
+                  <div className="cell"><div className="k">{P.date}</div><div className={`v ${pop('date')}`}>{dateShown}</div></div>
+                  <div className="cell"><div className="k">{dep ? P.departs : P.lands}</div><div className={`v ${pop('flightTime')} ${formData.flightTime ? '' : 'empty'}`}>{formData.flightTime || '--:--'}</div></div>
+                  <div className="cell"><div className="k">{P.meet}</div><div className="v">{dep ? P.curb : P.gate}</div></div>
+                  {svc === 'transfer' && (
+                    <div className="cell wide"><div className="k">{P.conn}</div><div className={`v ${pop('transferFlightNumber', 'transferFlightTime')} ${formData.transferFlightNumber ? '' : 'empty'}`}>{formData.transferFlightNumber ? `${formData.transferFlightNumber} · ${formData.transferFlightTime || '--:--'} KST` : P.addConn}</div></div>
                   )}
-                  <button
-                    type="button"
-                    className="btn-sky-add-pax"
-                    onClick={() => updateForm('passengers', formData.passengers + 1)}
-                  >
-                    <UserPlus size={16} /> {t?.wizard?.common?.addPassenger || 'Add passenger'}
-                  </button>
+                  {svc !== 'transfer' && formData.vehicleType !== 'none' && (
+                    <div className="cell wide"><div className="k">{P.car}</div><div className={`v ${pop('vehicleType', 'transferAddress')}`}>{vehicleName.toUpperCase()}{formData.transferAddress ? ` → ${formData.transferAddress.toUpperCase()}` : ''}</div></div>
+                  )}
+                  <div className="cell wide hide-compact"><div className="k">{P.contact}</div><div className={`v ${pop('phoneLocal', 'countryCode', 'email')} ${formData.phoneLocal ? '' : 'empty'}`}>{formData.phoneLocal ? formData.phone : P.addMobile}</div></div>
+                  {!formData.sameAsPrimary && formData.contactFirst && (
+                    <div className="cell wide hide-compact"><div className="k">{P.bookedBy}</div><div className={`v ${pop('contactFirst', 'contactLast')}`}>{`${formData.contactFirst} ${formData.contactLast}`.toUpperCase()}</div></div>
+                  )}
                 </div>
+                {tags.length > 0 && <div className="tags">{tags.map(x => <span key={x}>{x}</span>)}</div>}
+                {formData.specialRequests && <p className="req">“{formData.specialRequests}”</p>}
+              </div>
+              <div className="perf" aria-hidden="true" />
+              <div className="stub">
+                <div className="lines">
+                  {lines.map(l => (
+                    <div key={l.label} className="line-item">
+                      <div><span>{l.label}</span><span className="mono">USD {usd2(l.usd)}</span></div>
+                      {l.why && <div className="why">{l.why}</div>}
+                    </div>
+                  ))}
+                </div>
+                <div className="total">
+                  <span style={{ fontSize: 13, color: '#5E574C' }}>{c.total} · {L.totalVia(paypal)}</span>
+                  <div><div className="amt">{priceMain}</div><small>{priceAlt}</small></div>
+                </div>
+                <div className="barcode" aria-hidden="true" />
               </div>
             </div>
-          )}
-
-          {step === 5 && (
-            <div className="step-panel">
-              <h2 className="sky-step2-title">{t?.wizard?.step5?.title || 'Contact Information'}</h2>
-              <p className="sky-step2-sub mb-24">{t?.wizard?.step5?.subtitle || 'The best point of contact for this reservation.'}</p>
-
-              <button type="button" className="sky-signin-btn mb-24">
-                {t?.wizard?.step5?.signIn || 'Sign in'}
+            {step < 3 && (
+              <button type="button" className="details-toggle" onClick={() => setDetailsOpen(o => !o)} aria-expanded={detailsOpen}>
+                {detailsOpen ? c.hideDetails : c.priceDetails(priceMain)}
               </button>
-
-              <div className="sky-or-divider mb-24">
-                <span>{t?.wizard?.step5?.or || 'OR'}</span>
-              </div>
-
-              <div className="sky-flight-card mb-24">
-                <label className="sky-checkbox-wrap mb-24">
-                  <input
-                    type="checkbox"
-                    checked={formData.sameAsPrimary}
-                    onChange={(e) => {
-                      const isSame = e.target.checked;
-                      updateForm('sameAsPrimary', isSame);
-                      if (isSame) {
-                        updateForm('contactFirst', formData.firstName);
-                        updateForm('contactLast', formData.lastName);
-                        updateForm('contactEmail', formData.email);
-                        updateForm('contactPhone', formData.phone);
-                      }
-                    }}
-                  />
-                  <span className="sky-checkbox-custom"></span>
-                  <span className="sky-checkbox-label">{t?.wizard?.step5?.sameAsPrimary || 'Same as a primary passenger'}</span>
-                </label>
-
-                {/* Row 1: First Name & Last Name */}
-                <div className="sky-flight-form-row mb-20">
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step5?.firstName || 'First Name'} *</label>
-                    <input
-                      type="text"
-                      placeholder=""
-                      value={formData.sameAsPrimary ? formData.firstName : formData.contactFirst}
-                      onChange={(e) => !formData.sameAsPrimary && updateForm('contactFirst', e.target.value)}
-                      readOnly={formData.sameAsPrimary}
-                      className="sky-text-input"
-                    />
-                  </div>
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step5?.lastName || 'Last Name'} *</label>
-                    <input
-                      type="text"
-                      placeholder=""
-                      value={formData.sameAsPrimary ? formData.lastName : formData.contactLast}
-                      onChange={(e) => !formData.sameAsPrimary && updateForm('contactLast', e.target.value)}
-                      readOnly={formData.sameAsPrimary}
-                      className="sky-text-input"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 2: Email & Phone Number */}
-                <div className="sky-flight-form-row">
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step5?.email || 'Email'} *</label>
-                    <input
-                      type="email"
-                      placeholder=""
-                      value={formData.sameAsPrimary ? formData.email : formData.contactEmail}
-                      onChange={(e) => !formData.sameAsPrimary && updateForm('contactEmail', e.target.value)}
-                      readOnly={formData.sameAsPrimary}
-                      className="sky-text-input"
-                    />
-                  </div>
-                  <div className="sky-form-group">
-                    <label className="sky-form-label">{t?.wizard?.step5?.phone || 'Phone number'} *</label>
-                    <div className="sky-phone-input-wrap">
-                      <select
-                        value={formData.contactCountryCode || formData.countryCode || '+82'}
-                        onChange={(e) => updateForm('contactCountryCode', e.target.value)}
-                        className="sky-country-code-select"
-                      >
-                        {COUNTRY_CODES.map(c => (
-                          <option key={c.code} value={c.code}>
-                            {c.flag} {c.code}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="tel"
-                        placeholder="— — — — —"
-                        value={formData.sameAsPrimary ? formData.phone : formData.contactPhone}
-                        onChange={(e) => !formData.sameAsPrimary && updateForm('contactPhone', e.target.value)}
-                        readOnly={formData.sameAsPrimary}
-                        className="sky-phone-input"
-                      />
-                    </div>
-                    <p className="sky-field-note mt-8">
-                      {t?.wizard?.step5?.smsConsent || 'By adding your number you agree to receive text messages.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Row 3: Special Requests */}
-                <div className="sky-flight-form-row mt-24">
-                  <div className="sky-form-group" style={{ width: '100%' }}>
-                    <label className="sky-form-label">{t?.wizard?.step5?.specialRequests || 'Special Requests'} <span className="sky-optional-tag">{t?.wizard?.common?.optional || 'optional'}</span></label>
-                    <textarea
-                      placeholder={t?.wizard?.step5?.specialRequestsPlaceholder || "Please let us know if you have oversized luggage, require a baby seat, or have any other specific needs."}
-                      value={formData.specialRequests}
-                      onChange={(e) => updateForm('specialRequests', e.target.value)}
-                      className="sky-text-input"
-                      style={{ minHeight: '80px', resize: 'vertical', paddingTop: '12px' }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 6 && (
-            <div className="step-panel">
-              {/* Order ID Top Bar */}
-              <div className="sky-order-header mb-24">
-                <h2 className="sky-order-id-title">{t?.wizard?.step6?.orderId || 'Order ID'}: {bookingId}</h2>
-                <span className="sky-unpaid-badge">
-                  <span className="sky-dollar-icon">$</span> {t?.wizard?.step6?.unpaid || 'UNPAID'}
-                </span>
-              </div>
-
-              {/* Payment Details Card */}
-              <div className="sky-flight-card mb-24">
-                <h3 className="sky-flight-title mb-16">{t?.wizard?.step6?.paymentDetailsTitle || 'Payment details'}</h3>
-
-                {/* Quote Service Accordion */}
-                <div className="sky-quote-accordion mb-24">
-                  <div
-                    className="sky-quote-accordion-header"
-                    onClick={() => setIsQuoteOpen(!isQuoteOpen)}
-                  >
-                    <span>{t?.wizard?.step6?.quoteForService || 'QUOTE FOR SERVICE (USD)'}</span>
-                    {isQuoteOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </div>
-
-                  {isQuoteOpen && (
-                    <div className="sky-quote-accordion-body mt-12">
-                      <div className="sky-quote-accordion-row">
-                        <span>{formData.serviceType === 'departure' ? 'Departure' : formData.serviceType === 'arrival' ? 'Arrival' : 'Connection'} Escort Base (1-2 pax)</span>
-                        <span>USD {baseFeeUsd.toFixed(2)}</span>
-                      </div>
-                      {vehicleUsd > 0 && (
-                        <div className="sky-quote-accordion-row">
-                          <span>Vehicle Fee ({
-                            formData.vehicleType === 'g90' ? 'G90' :
-                            formData.vehicleType === 'staria' ? 'Staria' :
-                            formData.vehicleType === 'sprinter' ? 'Benz Sprinter' :
-                            String(formData.vehicleType).replace(/Venz/i, 'Benz')
-                          })</span>
-                          <span>USD {vehicleUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {extraPassUsd > 0 && (
-                        <div className="sky-quote-accordion-row">
-                          <span>Extra Passengers ({Math.max(0, formData.passengers - 2)} pax)</span>
-                          <span>USD {extraPassUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {extraLugUsd > 0 && (
-                        <div className="sky-quote-accordion-row">
-                          <span>Extra Baggage ({Math.max(0, formData.luggageCount - Math.max(2, formData.passengers))} ea)</span>
-                          <span>USD {extraLugUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {porterUsd > 0 && (
-                        <div className="sky-quote-accordion-row">
-                          <span>Porter Service ({formData.luggageCount >= 9 ? '2 porters' : '1 porter'})</span>
-                          <span>USD {porterUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {surcharges.nightFeeUsd > 0 && (
-                        <div className="sky-quote-accordion-row">
-                          <span>Night Surcharge ({formatTimeAmPm(formData.flightTime)})</span>
-                          <span>USD {surcharges.nightFeeUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {surcharges.urgentFeeUsd > 0 && (
-                        <div className="sky-quote-accordion-row">
-                          <span>Urgent Surcharge ({surcharges.urgentFeeUsd === 48 ? '< 6 hours' : '< 24 hours'})</span>
-                          <span>USD {surcharges.urgentFeeUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {surcharges.weekendFeeUsd > 0 && (
-                        <div className="sky-quote-accordion-row">
-                          <span>Weekend Surcharge</span>
-                          <span>USD {surcharges.weekendFeeUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {selectedPayment === 'paypal' && (
-                        <div className="sky-quote-accordion-row">
-                          <span>{t?.wizard?.step6?.paypalFee || 'PayPal Fee (4%)'}</span>
-                          <span>USD {paypalFeeUsd.toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div className="sky-quote-accordion-total mt-16 pt-12">
-                        <strong>{t?.wizard?.step6?.total || 'Total'}:</strong>
-                        <strong className="sky-quote-total-val">{selectedTotalLabel}</strong>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Selectable Payment Methods */}
-                <div className="sky-payment-methods mb-24">
-                  {/* Option 1: Nicepay (Domestic Card / 국내 결제) */}
-                  <div
-                    className={`sky-payment-option ${selectedPayment === 'nicepay' ? 'selected' : ''}`}
-                    onClick={() => setSelectedPayment('nicepay')}
-                  >
-                    <div className="sky-payment-left">
-                      <div className="sky-radio-circle">
-                        {selectedPayment === 'nicepay' && <div className="sky-radio-inner" />}
-                      </div>
-                      <CreditCard size={22} className="sky-pay-icon" />
-                      <div>
-                        <span className="sky-pay-label">Nicepay</span>
-                        <span className="sky-pay-sublabel"> (Domestic Card / 국내 결제)</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Option 2: PayPal (International / 해외 결제) */}
-                  <div
-                    className={`sky-payment-option ${selectedPayment === 'paypal' ? 'selected' : ''}`}
-                    onClick={() => setSelectedPayment('paypal')}
-                  >
-                    <div className="sky-payment-left">
-                      <div className="sky-radio-circle">
-                        {selectedPayment === 'paypal' && <div className="sky-radio-inner" />}
-                      </div>
-                      <span className="sky-paypal-badge">PayPal</span>
-                      <div>
-                        <span className="sky-pay-label">PayPal</span>
-                        <span className="sky-pay-sublabel"> (International / 해외 결제)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit Payment Button */}
-                <button
-                  type="button"
-                  onClick={() => handlePayment(selectedPayment)}
-                  className="btn-sky-submit-payment mb-16"
-                  disabled={isSubmitting}
-                >
-                  {t?.wizard?.step6?.submitPayment || 'Submit payment'}
-                </button>
-
-                <div className="sky-terms-text text-center mt-24">
-                  {t?.wizard?.step6?.termsNote?.replace('SkyVip', 'Beyond the Gate') || 'By clicking "Submit payment" I acknowledge that I agree with Beyond the Gate'} <a href={localizePath('/terms', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.termsLink || 'Terms & Conditions'}</a> & <a href={localizePath('/privacy', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.privacyLink || 'Privacy Policy'}</a>
-                </div>
-              </div>
-
-              {/* Airport Banner Header */}
-              <div className="sky-airport-banner mb-24">
-                <h3 className="sky-banner-title">
-                  {formData.airport === 'ICN' ? 'Incheon International Airport, ICN' : `${formData.airport} Airport`}
-                </h3>
-                <div className="sky-banner-meta mt-8">
-                  <span>📅 {formData.date || '18 Aug, 2026'}</span>
-                  <span>👥 {formData.passengers} Adult</span>
-                </div>
-              </div>
-
-              {/* Order Summary Card */}
-              <div className="sky-flight-card mb-24">
-                <h3 className="sky-flight-title mb-4">{t?.wizard?.step6?.orderSummaryTitle || 'Order summary'}</h3>
-                <p className="sky-flight-sub mb-20">{t?.wizard?.step6?.invoiceNote || 'Invoices related to your order'} {""}</p>
-
-                <div className="sky-invoice-box">
-                  <div className="sky-invoice-row mb-12">
-                    <div className="sky-invoice-left">
-                      <span className="sky-inv-code">INV{bookingId.substring(3)}</span>
-                      <span className="sky-unpaid-badge sm">
-                        <span className="sky-dollar-icon">$</span> {t?.wizard?.step6?.unpaid || 'UNPAID'}
-                      </span>
-                    </div>
-                    <span className="sky-inv-amount">{selectedTotalLabel}</span>
-                  </div>
-
-                  <p className="sky-inv-desc mb-16">
-                    VIP {formData.serviceType === 'departure' ? 'Departure' : formData.serviceType === 'arrival' ? 'Arrival' : 'Connection'} in {formData.airport}
-                  </p>
-
-                  <div className="sky-invoice-total pt-12">
-                    <span>{t?.wizard?.step6?.total || 'Total'}:</span>
-                    <strong>{selectedTotalLabel}</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
+            )}
+          </aside>
         </div>
 
-        {/* Cart Sidebar */}
-        <div className="wizard-sidebar">
-          {step === 6 ? (
-            /* Screenshot 1 Right Sidebar: Any questions left? */
-            <div className="sky-sidebar-card p-24">
-              <h3 className="sky-questions-title mb-8">{t?.wizard?.sidebar?.questionsTitle || 'Any questions left?'}</h3>
-              <p className="sky-questions-sub mb-20">
-                {t?.wizard?.sidebar?.questionsSub || 'Feel free to reach out, our team of professionals is online 24/7 and ready to help!'}
-              </p>
-
-              <div className="sky-contact-item mb-12">
-                <span className="sky-contact-emoji">☎️</span>
-                <a href={`tel:${(t?.footer?.phone_val || '+821028533998').replace(/[^+\d]/g, '').replace(/^\+820/, '+82')}`} className="sky-contact-link">
-                  {t?.footer?.phone_val || '+82 10-2853-3998'}
-                </a>
-              </div>
-
-              <div className="sky-contact-item mb-20">
-                <span className="sky-contact-emoji">📬</span>
-                <a href={`mailto:${t?.footer?.email_val || 'cura@beyondthegate.kr'}`} className="sky-contact-link">
-                  {t?.footer?.email_val || 'cura@beyondthegate.kr'}
-                </a>
-              </div>
-
-              <a
-                href={`https://wa.me/${(t?.footer?.phone_val || '+821028533998').replace(/[^+\d]/g, '').replace(/^\+/, '').replace(/^820/, '82')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-sky-whatsapp"
-              >
-                <span className="whatsapp-dot">💬</span> {t?.wizard?.sidebar?.whatsappBtn || 'Contact us via WhatsApp'}
-              </a>
-            </div>
-          ) : (
-            /* Standard Cart Sidebar for Steps 1 - 5 */
-            <>
-              <div className="sky-sidebar-card mb-16">
-                <h3 className="sky-sidebar-title">Meet & Greet - {formData.serviceType.charAt(0).toUpperCase() + formData.serviceType.slice(1)}</h3>
-                <p className="sky-sidebar-sub">At {formData.airport}, Incheon International Airport</p>
-
-                <div className="sky-sidebar-meta mb-20">
-                  <span>📅 {formData.date || '18 Aug, 2026'}</span>
-                  <span>👥 {formData.passengers} Adult</span>
-                </div>
-
-                <div className="sky-quote-section">
-                  <div className="sky-quote-header">
-                    <span>{t?.wizard?.sidebar?.quoteTitle || 'QUOTE FOR SERVICE'}</span>
-                    <ChevronDown size={14} />
-                  </div>
-                  <div className="sky-quote-row">
-                    <span>Escort Base (1-2 pax):</span>
-                    <span>USD {baseFeeUsd.toFixed(2)}</span>
-                  </div>
-                  {vehicleUsd > 0 && (
-                    <div className="sky-quote-row">
-                      <span>Vehicle Fee ({
-                        formData.vehicleType === 'g90' ? 'G90' :
-                        formData.vehicleType === 'staria' ? 'Staria' :
-                        formData.vehicleType === 'sprinter' ? 'Benz Sprinter' :
-                        String(formData.vehicleType).replace(/Venz/i, 'Benz')
-                      }):</span>
-                      <span>USD {vehicleUsd.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {extraPassUsd > 0 && (
-                    <div className="sky-quote-row">
-                      <span>Extra Passengers ({Math.max(0, formData.passengers - 2)} pax):</span>
-                      <span>USD {extraPassUsd.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {extraLugUsd > 0 && (
-                    <div className="sky-quote-row">
-                      <span>Extra Baggage ({Math.max(0, formData.luggageCount - Math.max(2, formData.passengers))} ea):</span>
-                      <span>USD {extraLugUsd.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {porterUsd > 0 && (
-                    <div className="sky-quote-row">
-                      <span>Porter Service ({formData.luggageCount >= 9 ? '2 porters' : '1 porter'}):</span>
-                      <span>USD {porterUsd.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {surcharges.nightFeeUsd > 0 && (
-                    <div className="sky-quote-row">
-                      <span>Night Service Surcharge ({formatTimeAmPm(formData.flightTime)}):</span>
-                      <span>USD {surcharges.nightFeeUsd.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {surcharges.urgentFeeUsd > 0 && (
-                    <div className="sky-quote-row">
-                      <span>Urgent Surcharge ({surcharges.urgentFeeUsd === 48 ? '< 6 hours' : '< 24 hours'}):</span>
-                      <span>USD {surcharges.urgentFeeUsd.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {surcharges.weekendFeeUsd > 0 && (
-                    <div className="sky-quote-row">
-                      <span>Weekend Surcharge:</span>
-                      <span>USD {surcharges.weekendFeeUsd.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="sky-quote-row font-medium mt-8">
-                    <span>{t?.wizard?.sidebar?.subtotal || 'Subtotal'}:</span>
-                    <span>USD {baseTotalUsd.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div className="sky-total-row mt-20">
-                  <span className="sky-total-label">{t?.wizard?.sidebar?.totalKrwCard || 'Korean card (KRW)'}:</span>
-                  <span className="sky-total-amount">₩{nicepayTotalKrw.toLocaleString()}</span>
-                </div>
-                <div className="sky-fee-note mb-20">
-                  {t?.wizard?.sidebar?.totalPaypal || 'PayPal (USD, incl. 4% fee)'}: USD {paypalTotalUsd.toFixed(2)}
-                </div>
-                {step < 3 && (
-                  <p className="wizard-price-rules">
-                    {isKo
-                      ? '항공편 시간에 따라 야간(22~06시)·24시간 이내·주말에는 할증이 붙을 수 있으며, 항공편 시간을 입력하면 금액과 이유가 바로 표시됩니다.'
-                      : 'Night (22:00–06:00), short-notice and weekend surcharges may apply; the amount and reason appear as soon as you enter your flight time.'}
-                  </p>
-                )}
-
-                <button onClick={handleNext} className="btn-sky-book-now">
-                  {step === 1 ? (t?.wizard?.sidebar?.btnStep1 || 'Select & Book Now') : step === 5 ? (t?.wizard?.sidebar?.btnStep5 || 'Proceed to Pay') : (t?.wizard?.sidebar?.btnContinue || 'Continue')}
-                </button>
-
-                <div className="sky-terms-text text-center mt-24">
-                  {t?.wizard?.sidebar?.termsAck?.replace('SkyVip', 'Beyond the Gate') || 'By clicking the button I acknowledge that I agree with Beyond the Gate'} <a href={localizePath('/terms', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.termsLink || 'Terms & Conditions'}</a> & <a href={localizePath('/privacy', lang)} target="_blank" rel="noopener noreferrer">{t?.wizard?.step6?.privacyLink || 'Privacy Policy'}</a>.
-                </div>
-              </div>
-
-              {/* Question Box */}
-              <div className="sky-sidebar-box vertical">
-                <h4>{t?.wizard?.sidebar?.questionsTitle || 'Any questions left?'}</h4>
-                <p>{t?.wizard?.sidebar?.questionsSub || 'Feel free to reach out, our team of professionals is online 24/7 and ready to help!'}</p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* 휴대폰: 금액과 '계속' 버튼을 화면 아래에 고정 */}
-      {step < 6 && (
-        <div className="wizard-mobile-bar">
-          <div className="wizard-mobile-price">
-            <span>{isKo ? '국내 카드' : 'Korean card'}</span>
-            <strong>₩{nicepayTotalKrw.toLocaleString()}</strong>
-          </div>
-          <button type="button" onClick={handleNext} className="wizard-mobile-next">
-            {step === 5 ? (isKo ? '결제 단계로' : 'Go to payment') : (isKo ? '계속' : 'Continue')} ({step}/6)
+        <div className="mbar">
+          <div className="p">{c.total}<b>{priceMain}</b></div>
+          <button type="button" className={`btn ${step === 3 ? 'btn-gold' : 'btn-navy'}`} onClick={onCta} disabled={isSubmitting}>
+            {step === 3 ? (isSubmitting ? c.paying : c.payShort) : `${c.continue} (${step}/3)`}
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
-}
-
-// Temporary CheckCircle component for styling
-function CheckCircle({ className }) {
-  return <Check className={className} size={18} />;
 }
