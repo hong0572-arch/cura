@@ -7,7 +7,7 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { GoogleGenAI } from "@google/genai";
-import { computeQuote, computeVehicleQuote, haversineKm, VEHICLE_ROAD_FACTOR, VEHICLE_TYPES } from '../src/utils/pricing.js';
+import { computeQuote, computeVehicleQuote, computeJourneyQuote, haversineKm, VEHICLE_ROAD_FACTOR, VEHICLE_TYPES } from '../src/utils/pricing.js';
 import { generateProposalHtml } from '../src/utils/emailTemplate.js';
 
 dotenv.config();
@@ -613,6 +613,220 @@ Reply to this email to answer the guest directly.`;
   } catch (error) {
     console.error('Enquiry email failed:', error);
     res.status(500).json({ error: 'Failed to send enquiry' });
+  }
+});
+
+// --- Private Journeys planner ---
+// 고객이 날짜별로 가고 싶은 곳을 고르면(AI 추천 + 구글 지도) 차량·가이드 예상 견적과 함께 요청을 받는다.
+// 숙소·식당 예약은 하지 않는다. 확정 금액은 관리자가 배정 확인 후 회신한다.
+
+const suggestHits = new Map();
+const SUGGEST_LIMIT = 30; // IP당 시간당 AI 추천 횟수
+function tooManySuggests(ip) {
+  const now = Date.now();
+  const recent = (suggestHits.get(ip) || []).filter(t => now - t < 3_600_000);
+  recent.push(now);
+  suggestHits.set(ip, recent);
+  if (suggestHits.size > 5000) suggestHits.clear();
+  return recent.length > SUGGEST_LIMIT;
+}
+const clientIp = (req) => String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+
+// AI 장소 추천: 개인정보 없이 관심사·지역·이미 고른 장소만 보낸다
+app.post('/api/journeys/suggest', async (req, res) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'AI is not configured' });
+  if (tooManySuggests(clientIp(req))) return res.status(429).json({ error: 'Too many requests' });
+
+  const str = (v, max) => String(v ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, max);
+  const lang = req.body.lang === 'ko' ? 'ko' : 'en';
+  const interests = str(req.body.interests, 300);
+  const area = str(req.body.area, 80);
+  const date = str(req.body.date, 10);
+  const party = str(req.body.party, 60);
+  const already = (Array.isArray(req.body.already) ? req.body.already : []).slice(0, 15).map(v => str(v, 80)).filter(Boolean);
+  if (!interests && !area) return res.status(400).json({ error: 'Tell us what you would like to do' });
+
+  const prompt = `You help international travellers plan a private chauffeured day trip anywhere in South Korea.
+Suggest up to 6 real, currently operating places that match the request. Prefer well-known, verifiable places that a private car can reach.
+Rules:
+- Places to visit: sights, neighbourhoods, markets, museums, nature, experiences, food streets. Do NOT suggest hotels.
+- We do NOT book restaurants or hotels; if you suggest a food place, it must be a market or food street that needs no reservation.
+- Group nearby places so the day makes sense by car.${area ? `\n- Focus area: ${area}.` : ''}${date ? `\n- Travel date: ${date} (consider season and that many palaces/museums close one weekday).` : ''}${party ? `\n- Party: ${party}.` : ''}${already.length ? `\n- Already chosen (do not repeat): ${already.join('; ')}.` : ''}
+- Write "why" and "tip" in ${lang === 'ko' ? 'Korean' : 'English'}; keep "name" as the official English name and "name_ko" in Korean.
+Return JSON only, no markdown:
+{"places":[{"name":"","name_ko":"","search":"query for Google Maps, include city","region":"city or province in English","why":"one sentence","hours":1.5,"tip":"short practical tip"}]}
+
+Request: ${interests || 'Highlights'}`;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: TEXT_MODEL,
+      contents: prompt,
+      config: { responseMimeType: 'application/json', maxOutputTokens: 1200, temperature: 0.6 },
+    });
+    const raw = (response.text || '').replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+    const parsed = JSON.parse(raw);
+    const places = (Array.isArray(parsed?.places) ? parsed.places : []).slice(0, 6).map(p => ({
+      name: str(p.name, 100),
+      nameKo: str(p.name_ko, 100),
+      search: str(p.search || p.name, 140),
+      region: str(p.region, 60),
+      why: str(p.why, 220),
+      tip: str(p.tip, 160),
+      hours: Math.min(8, Math.max(0.5, Number(p.hours) || 1.5)),
+    })).filter(p => p.name);
+    res.status(200).json({ places });
+  } catch (error) {
+    console.error('Journey suggest failed:', error);
+    res.status(500).json({ error: 'Suggestion failed' });
+  }
+});
+
+function sanitizePlace(p = {}) {
+  const str = (v, max) => String(v ?? '').trim().slice(0, max);
+  const lat = Number(p.lat), lng = Number(p.lng);
+  return {
+    name: str(p.name, 120),
+    address: str(p.address, 300),
+    placeId: str(p.placeId, 200),
+    ...(Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : {}),
+  };
+}
+
+function sanitizeJourneyPlan(b = {}) {
+  const str = (v, max) => String(v ?? '').trim().slice(0, max);
+  const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
+  const time = (v) => (/^\d{2}:\d{2}$/.test(String(v || '')) ? String(v) : '');
+  const flight = (f = {}) => ({ date: date(f.date), time: time(f.time), flight: str(f.flight, 20).toUpperCase() });
+  const days = (Array.isArray(b.days) ? b.days : []).slice(0, 30).map(d => ({
+    date: date(d.date),
+    mode: ['free', 'half', 'full'].includes(d.mode) ? d.mode : 'free',
+    ...(d.hotel && d.hotel.name ? { hotel: sanitizePlace(d.hotel) } : {}),
+    note: str(d.note, 500),
+    stops: (Array.isArray(d.stops) ? d.stops : []).slice(0, 12).map(s => ({ ...sanitizePlace(s), guide: Boolean(s.guide) })).filter(s => s.name),
+  }));
+  return {
+    airport: ['ICN', 'GMP'].includes(b.airport) ? b.airport : 'ICN',
+    arrival: flight(b.arrival),
+    departure: flight(b.departure),
+    adults: Math.min(30, Math.max(1, parseInt(b.adults, 10) || 1)),
+    children: Math.min(30, Math.max(0, parseInt(b.children, 10) || 0)),
+    bags: Math.min(60, Math.max(0, parseInt(b.bags, 10) || 0)),
+    vehicleId: str(b.vehicleId, 120),
+    vehicleName: str(b.vehicleName, 120),
+    hotel: b.hotel ? sanitizePlace(b.hotel) : null,
+    guideLanguage: ['en', 'ja', 'zh', 'es', 'fr', 'de', 'other'].includes(b.guideLanguage) ? b.guideLanguage : 'en',
+    days,
+  };
+}
+
+const money = (n) => (n === null || n === undefined ? 'to be quoted' : `USD ${Number(n).toFixed(2)}`);
+
+app.post('/api/journey-requests', async (req, res) => {
+  const b = req.body || {};
+  if (b.company) return res.status(200).json({ success: true, id: 'PJ-OK' }); // 숨김 필드 → 봇
+  const str = (v, max) => String(v ?? '').trim().slice(0, max);
+  const contact = {
+    lang: b.lang === 'ko' ? 'ko' : 'en',
+    name: str(b.name, 100),
+    email: str(b.email, 200),
+    phone: str(b.phone, 40),
+    country: str(b.country, 60),
+    message: str(b.message, 3000),
+    consent: b.consent === true,
+  };
+  if (!contact.name || !EMAIL_RE.test(contact.email)) return res.status(400).json({ error: 'Name and a valid email are required' });
+  if (!contact.consent) return res.status(400).json({ error: 'Consent is required' });
+  const plan = sanitizeJourneyPlan(b.plan);
+  if (!plan.arrival.date || !plan.departure.date || plan.departure.date < plan.arrival.date) {
+    return res.status(400).json({ error: 'Arrival and departure dates are required' });
+  }
+  if (tooManyEnquiries(clientIp(req))) return res.status(429).json({ error: 'Too many requests' });
+
+  const settings = await loadSettings().catch(() => ({}));
+  const quote = computeJourneyQuote(plan, settings);
+  const id = `PJ-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  const createdAt = new Date().toISOString();
+
+  try {
+    await db.collection('journeyRequests').doc(id).set({
+      id, ...contact, plan,
+      estimate: { totalUsd: quote.totalUsd, totalKrw: quote.totalKrw, packageUsd: quote.packageUsd, discountUsd: quote.discountUsd, tripUsd: quote.tripUsd, pending: quote.pending },
+      createdAt, status: 'new',
+    });
+  } catch (error) {
+    console.error('Journey request save failed:', error.message);
+  }
+
+  const dayLines = plan.days.map((d, i) => {
+    const q = quote.days[i] || {};
+    const stops = d.stops.map(s => `    · ${s.name}${s.guide ? ' [GUIDE]' : ''}${s.address ? ` — ${s.address}` : ''}`).join('\n') || '    · (no stops)';
+    return `- ${d.date} · ${d.mode === 'free' ? 'FREE DAY (no car)' : d.mode === 'half' ? 'HALF-DAY CAR' : 'FULL-DAY CAR'}${q.jeju ? ' · JEJU (custom quote)' : ''}${q.longDistance ? ` · LONG DISTANCE ~${q.farKm} km` : ''}${d.hotel ? ` · hotel tonight: ${d.hotel.name}` : ''}
+${stops}${d.note ? `\n    note: ${d.note}` : ''}
+    car ${money(q.vehicleUsd)} · long-distance ${money(q.longUsd)} · guides ${money(q.guideUsd)} · driver overnight ${money(q.overnightUsd)}`;
+  }).join('\n');
+
+  const text = `New Private Journey request — ${id}
+
+[Guest]
+- Name: ${contact.name}
+- Email: ${contact.email}
+- Phone / WhatsApp: ${contact.phone || '-'}
+- Country: ${contact.country || '-'}
+- Page language: ${contact.lang}
+
+[Trip]
+- Airport: ${plan.airport}
+- Arrival: ${plan.arrival.date} ${plan.arrival.time || ''} ${plan.arrival.flight || ''}
+- Departure: ${plan.departure.date} ${plan.departure.time || ''} ${plan.departure.flight || ''}
+- Travellers: ${plan.adults} adults, ${plan.children} children · bags ${plan.bags}
+- Vehicle: ${plan.vehicleName || plan.vehicleId || '-'}
+- Hotel: ${plan.hotel ? `${plan.hotel.name} — ${plan.hotel.address}` : 'not decided'}
+- Guide language: ${plan.guideLanguage}
+
+[Days]
+${dayLines || '-'}
+
+[Estimate shown to the guest]
+- Package (arrival + departure meet & assist, airport↔hotel car): USD ${quote.packageUsd.toFixed(2)}
+- Package discount (${quote.discountPct}%): -USD ${quote.discountUsd.toFixed(2)}
+- Cars, guides and distance during the trip: USD ${quote.tripUsd.toFixed(2)}
+- Estimated total: USD ${quote.totalUsd.toFixed(2)} (≈ ₩${quote.totalKrw.toLocaleString()})
+- Items to quote manually: ${quote.pending.join(', ') || 'none'}
+
+[Message]
+${contact.message || '-'}
+
+Received ${createdAt} · consent to personal data collection: yes
+Reply to this email to answer the guest directly.`;
+
+  try {
+    const { primary } = await adminRecipients();
+    const { user, transporter } = getTransporter();
+    await transporter.sendMail({
+      from: `"BTG Private Journeys" <${user}>`,
+      to: primary,
+      replyTo: contact.email,
+      subject: `[Private Journeys] ${contact.name} · ${plan.arrival.date} → ${plan.departure.date} · est. USD ${quote.totalUsd.toFixed(0)}`,
+      text,
+    });
+    // 고객 접수 확인 메일 (실패해도 접수는 완료)
+    const ko = contact.lang === 'ko';
+    transporter.sendMail({
+      from: `"Beyond the Gate" <${user}>`,
+      to: contact.email,
+      replyTo: primary,
+      subject: ko ? `[Beyond the Gate] 맞춤 여행 요청이 접수되었습니다 (${id})` : `[Beyond the Gate] We received your Private Journey request (${id})`,
+      text: ko
+        ? `${contact.name}님, 맞춤 여행 요청을 보내 주셔서 감사합니다.\n\n접수 번호: ${id}\n일정: ${plan.arrival.date} ~ ${plan.departure.date}\n예상 금액: USD ${quote.totalUsd.toFixed(2)} (약 ₩${quote.totalKrw.toLocaleString()})\n\n담당자가 차량·가이드 배정을 확인한 뒤 확정 금액과 결제 안내를 보내드립니다. 숙소·식당 예약은 포함되지 않습니다.\n급한 문의: WhatsApp +82 10-2853-3998 / cura@beyondthegate.kr`
+        : `Dear ${contact.name},\n\nThank you for your Private Journey request.\n\nReference: ${id}\nDates: ${plan.arrival.date} – ${plan.departure.date}\nEstimate: USD ${quote.totalUsd.toFixed(2)}\n\nOur team will confirm car and guide availability and send your final price with a secure payment link. Hotel and restaurant bookings are not included.\nUrgent questions: WhatsApp +82 10-2853-3998 / cura@beyondthegate.kr`,
+    }).catch(err => console.error('Journey confirmation mail failed:', err.message));
+    res.status(200).json({ success: true, id, estimate: { totalUsd: quote.totalUsd, totalKrw: quote.totalKrw } });
+  } catch (error) {
+    console.error('Journey request email failed:', error);
+    res.status(500).json({ error: 'Failed to send request' });
   }
 });
 

@@ -179,3 +179,85 @@ export function computeVehicleQuote(form, distanceKm, settings) {
     totalKrw: Math.round(totalUsd * exRate),
   };
 }
+
+// --- Private Journeys (맞춤 여행) 예상 견적 ---
+// 기본 패키지 = 입국 의전 + 출국 의전 + 공항↔숙소 차량 왕복(각 의전에 차량 1회 포함) − 패키지 할인.
+// 여행 중 차량은 날짜별 반일·종일 대절, 가이드는 목적지별 동행 옵션. 금액은 관리자 settings.journeys 에서 관리한다.
+// 고객에게는 "예상 금액"으로만 보여 주고, 확정 금액은 관리자가 차량·가이드 배정을 확인한 뒤 정한다.
+export const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
+export const JOURNEY_DEFAULTS = {
+  packageDiscountPct: 0,
+  halfDayHours: 5,
+  fullDayHours: 10,
+  longDistanceKm: 80,
+  longDistanceUsd: 0,
+  driverOvernightUsd: 0,
+  guidePerStopUsd: 0,
+  vehicleRates: {},
+};
+export const JOURNEY_MODES = ['free', 'half', 'full'];
+
+export function journeySettings(settings) {
+  return { ...JOURNEY_DEFAULTS, ...(settings?.journeys || {}) };
+}
+
+const hasCoords = (p) => p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
+const kmFromSeoul = (p) => (hasCoords(p) ? haversineKm(SEOUL_CENTER, { lat: Number(p.lat), lng: Number(p.lng) }) : 0);
+// 제주도는 차량으로 갈 수 없어 별도 견적 (위도 33.1~33.6, 경도 126.1~127)
+export const isJeju = (p) => hasCoords(p) && Number(p.lat) < 33.65 && Number(p.lat) > 33.0 && Number(p.lng) > 126.0 && Number(p.lng) < 127.1;
+
+export function computeJourneyQuote(plan, settings, now = new Date()) {
+  const j = journeySettings(settings);
+  const exRate = settings?.exchangeRate || 1350;
+  const passengers = Math.max(1, (parseInt(plan.adults, 10) || 1) + (parseInt(plan.children, 10) || 0));
+  const common = { airport: plan.airport || 'ICN', passengers, luggageCount: plan.bags || 0, vehicleType: plan.vehicleId || 'none' };
+  const arrival = computeQuote({ ...common, serviceType: 'arrival', date: plan.arrival?.date, flightTime: plan.arrival?.time }, settings, now);
+  const departure = computeQuote({ ...common, serviceType: 'departure', date: plan.departure?.date, flightTime: plan.departure?.time }, settings, now);
+  const packageUsd = round2(arrival.subtotalUsd + departure.subtotalUsd);
+  const discountUsd = round2(packageUsd * (Number(j.packageDiscountPct) || 0) / 100);
+
+  const rates = j.vehicleRates?.[plan.vehicleId] || {};
+  const pending = [];
+  const days = (plan.days || []).map((day) => {
+    const stops = day.stops || [];
+    const mode = JOURNEY_MODES.includes(day.mode) ? day.mode : 'free';
+    const jeju = stops.some(isJeju);
+    const farKm = Math.max(0, ...stops.map(kmFromSeoul));
+    const longDistance = mode !== 'free' && !jeju && farKm > (Number(j.longDistanceKm) || 80);
+    let vehicleUsd = 0;
+    if (mode !== 'free') {
+      const rate = Number(mode === 'half' ? rates.halfDayUsd : rates.fullDayUsd) || 0;
+      if (jeju || !rate) { vehicleUsd = null; pending.push(jeju ? 'jeju' : 'vehicleRate'); } else vehicleUsd = rate;
+    }
+    const longUsd = longDistance ? (Number(j.longDistanceUsd) || null) : 0;
+    if (longUsd === null) pending.push('longDistance');
+    const guides = stops.filter(s => s.guide).length;
+    const guideUsd = guides ? (Number(j.guidePerStopUsd) ? guides * Number(j.guidePerStopUsd) : null) : 0;
+    if (guideUsd === null) pending.push('guide');
+    // 그날 밤 숙소가 수도권 밖이면 기사 숙박비
+    const overnightAway = mode !== 'free' && hasCoords(day.hotel) && kmFromSeoul(day.hotel) > (Number(j.longDistanceKm) || 80);
+    const overnightUsd = overnightAway ? (Number(j.driverOvernightUsd) || null) : 0;
+    if (overnightUsd === null) pending.push('overnight');
+    return { date: day.date, mode, jeju, longDistance, farKm: Math.round(farKm), guides, vehicleUsd, longUsd, guideUsd, overnightAway, overnightUsd };
+  });
+
+  const sum = (key) => days.reduce((t, d) => t + (Number(d[key]) || 0), 0);
+  const tripUsd = round2(sum('vehicleUsd') + sum('longUsd') + sum('guideUsd') + sum('overnightUsd'));
+  const totalUsd = round2(packageUsd - discountUsd + tripUsd);
+  return {
+    exRate,
+    passengers,
+    arrival,
+    departure,
+    packageUsd,
+    discountPct: Number(j.packageDiscountPct) || 0,
+    discountUsd,
+    days,
+    tripUsd,
+    totalUsd,
+    totalKrw: Math.round(totalUsd * exRate),
+    pending: [...new Set(pending)],
+    hours: { half: j.halfDayHours, full: j.fullDayHours },
+    overtimeUsd: Number(rates.overtimeUsd) || 0,
+  };
+}

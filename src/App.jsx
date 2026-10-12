@@ -393,7 +393,7 @@ function App({ initialSiteData = null }) {
           <Route path="blog" element={<Blog t={t} lang={lang} />} />
           <Route path="blog/:postId" element={<Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--ivory)' }} />}><BlogPost lang={lang} /></Suspense>} />
           <Route path="business" element={<BusinessProposal t={t} />} />
-          <Route path="private-journeys" element={<PrivateJourneys lang={lang} />} />
+          <Route path="private-journeys" element={<PrivateJourneys lang={lang} settings={settings} />} />
             </Route>
           ))}
         </Routes>

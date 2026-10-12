@@ -23,8 +23,8 @@ const PAGE_META = {
     en: { title: 'Airport Chauffeur Booking', description: 'Book a private airport transfer from Incheon or Gimpo airport. Choose Staria, Genesis G90 or Mercedes Sprinter and see your fare instantly.' },
   },
   '/private-journeys': {
-    ko: { title: 'Private Journeys · 맞춤 한국 여행 사전 상담', description: '커플·가족·소규모 단체를 위한 럭셔리 맞춤 한국 여행. 공항 의전, 전담 가이드, 전용 차량, 레스토랑과 숙소까지 일정에 맞춰 설계합니다.' },
-    en: { title: 'Private Journeys · Tailor-made Korea Trips', description: 'Luxury tailor-made trips to Korea for couples, families and small groups — airport VIP, private guides, chauffeurs, dining and stays arranged around you.' },
+    ko: { title: 'Private Journeys · 맞춤 한국 여행 플래너', description: '입국·출국 의전과 공항↔숙소 전용 차량을 기본으로, AI와 함께 가고 싶은 곳을 고르면 날짜별 전용 차량과 목적지별 가이드를 준비합니다. 예상 금액을 바로 확인하세요.' },
+    en: { title: 'Private Journeys · Plan Your Korea Trip', description: 'Arrival and departure VIP plus a private airport–hotel car are included. Choose places with our AI planner and add a private car each day and a guide wherever you want one — see your estimate instantly.' },
   },
   '/blog': {
     ko: { title: '공항 의전 가이드 블로그', description: '인천공항 이용 팁, VIP 의전 서비스 안내 등 공항 이동에 도움이 되는 정보를 전합니다.' },

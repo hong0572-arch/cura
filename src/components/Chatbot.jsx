@@ -85,6 +85,7 @@ export default function Chatbot({ settings, lang }) {
   return (
     <>
       <div
+        className="chatbot-fab"
         onClick={toggleChat}
         style={{
           position: 'fixed',
