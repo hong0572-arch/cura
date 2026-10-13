@@ -367,7 +367,7 @@ function App({ initialSiteData = null }) {
 
               <ThreeWays copy={(homeCopy[lang] || homeCopy.ko).ways} lang={lang} />
 
-              <Services t={t} />
+              <Services t={t} lang={lang} />
 
               <OpsTracker copy={(homeCopy[lang] || homeCopy.ko).ops} />
 

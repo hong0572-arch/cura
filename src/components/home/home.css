@@ -433,3 +433,105 @@
   /* 고정 바에 가리지 않도록 여백 */
   .wizard-overlay .wizard-body { padding-bottom: 96px; }
 }
+
+/* ---------- 입국·출국·환승 공항 동선 모션 (ServiceJourney) ---------- */
+.sj { margin-top: 8px; background: #0B1B33; border-radius: 14px; padding: 18px 18px 20px; color: #F4EEE2; }
+.sj-status { display: flex; align-items: center; gap: 14px; padding: 4px 4px 14px; border-bottom: 1px solid #1E3354; font-family: 'IBM Plex Mono', monospace; }
+.sj-status-k { font-size: 11px; letter-spacing: .14em; color: #8FA0B8; text-transform: uppercase; white-space: nowrap; }
+.sj-status-v { font-size: 15px; color: #FEC74D; letter-spacing: .04em; animation: sj-flip .5s cubic-bezier(.2, .8, .2, 1); }
+@keyframes sj-flip { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.sj-play { margin-left: auto; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; border: 1px solid #2B3E5C; background: transparent; color: #F4EEE2; cursor: pointer; }
+.sj-play:hover { border-color: #FEC74D; color: #FEC74D; }
+
+.sj-map { display: block; width: 100%; height: auto; margin-top: 10px; overflow: visible; }
+.sj-zone-air { fill: rgba(254, 199, 77, 0.035); }
+.sj-zone-land { fill: rgba(220, 227, 238, 0.02); }
+.sj-boundary { stroke: #2B3E5C; stroke-width: 1.5; stroke-dasharray: 6 6; }
+.sj-zone-label { fill: #8FA0B8; font: 500 12px 'IBM Plex Mono', monospace; letter-spacing: .12em; }
+.sj-zone-label--dim { fill: #5F7393; }
+.sj-route { fill: none; stroke: #2B3E5C; stroke-width: 3; stroke-dasharray: 2 9; stroke-linecap: round; stroke-linejoin: round; }
+.sj-route-done { fill: none; stroke: #FEC74D; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke-dashoffset var(--sj-move) cubic-bezier(.5, 0, .3, 1); }
+
+.sj-station { cursor: pointer; }
+.sj-pad { fill: #102440; stroke: #2B3E5C; stroke-width: 1.5; transition: fill .4s, stroke .4s; }
+.sj-icon { color: #5F7393; stroke: currentColor; fill: none; transition: color .4s; }
+.sj-pulse { fill: none; stroke: #FEC74D; stroke-width: 1.5; opacity: 0; }
+.sj-num-bg { fill: #0B1B33; stroke: #2B3E5C; stroke-width: 1.2; transition: fill .4s, stroke .4s; }
+.sj-num { fill: #8FA0B8; font: 600 11px 'IBM Plex Mono', monospace; }
+.sj-label { fill: #8FA0B8; font: 600 15px 'Manrope', 'Pretendard', sans-serif; transition: fill .4s; }
+.sj-station.is-done .sj-pad { stroke: #7A5C17; }
+.sj-station.is-done .sj-icon { color: #C9A447; }
+.sj-station.is-done .sj-num-bg { fill: #7A5C17; stroke: #7A5C17; }
+.sj-station.is-done .sj-num { fill: #0B1B33; }
+.sj-station.is-current .sj-pad { fill: #FEC74D; stroke: #FEC74D; }
+.sj-station.is-current .sj-icon { color: #0B1B33; }
+.sj-station.is-current .sj-num-bg { fill: #F4EEE2; stroke: #F4EEE2; }
+.sj-station.is-current .sj-num { fill: #0B1B33; }
+.sj-station.is-current .sj-label { fill: #F4EEE2; }
+
+.sj-mover { transition: transform var(--sj-move) cubic-bezier(.5, 0, .3, 1); }
+.sj-mover--agent { transition-delay: 140ms; }
+.sj-guest { fill: #F4EEE2; stroke: #0B1B33; stroke-width: 3; }
+.sj-agent { fill: #FEC74D; stroke: #0B1B33; stroke-width: 3; }
+.sj--instant .sj-mover, .sj--instant .sj-route-done { transition: none; }
+.sj-bridge { stroke: #2B3E5C; stroke-width: 3; stroke-dasharray: 2 9; stroke-linecap: round; }
+.sj-plane { color: #8FA0B8; stroke: currentColor; fill: none; }
+.sj-bubble rect, .sj-bubble path { fill: #F4EEE2; }
+.sj-bubble text { fill: #0B1B33; font: 600 14px 'Manrope', 'Pretendard', sans-serif; }
+@media (prefers-reduced-motion: no-preference) {
+  .sj-bubble { animation: sj-bubble .45s .25s cubic-bezier(.2, .9, .3, 1.2) both; }
+  .sj-mover circle { animation: sj-bob 1.1s ease-in-out infinite; }
+  .sj-mover--agent circle { animation-delay: -.55s; }
+  .sj-plane-float { animation: sj-plane-float 3.4s ease-in-out infinite alternate; }
+}
+@keyframes sj-bubble { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sj-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes sj-plane-float { from { transform: translate(0, 0); } to { transform: translate(3px, -3px); } }
+
+.sj-legend { display: flex; gap: 18px; list-style: none; margin: 6px 0 0; padding: 0 4px; font-size: 12px; color: #8FA0B8; }
+.sj-legend li { display: flex; align-items: center; gap: 6px; }
+.sj-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 2px solid #0B1B33; box-shadow: 0 0 0 1px #2B3E5C; }
+.sj-dot--guest { background: #F4EEE2; }
+.sj-dot--agent { background: #FEC74D; }
+
+.sj-steps { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--sj-n), minmax(0, 1fr)); gap: 8px; }
+.sj-steps button { width: 100%; height: 100%; text-align: left; display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 10px; border: 1px solid #1E3354; background: transparent; color: #8FA0B8; cursor: pointer; font: inherit; transition: border-color .4s, background .4s, color .4s; }
+.sj-steps b { color: #DCE3EE; font-size: 0.92rem; line-height: 1.3; }
+.sj-steps span { font-size: 0.8rem; line-height: 1.45; }
+.sj-step-n { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .12em; color: #5F7393; }
+.sj-steps .is-done button { border-color: #2B3E5C; }
+.sj-steps .is-done .sj-step-n { color: #C9A447; }
+.sj-steps .is-current button { border-color: #FEC74D; background: rgba(254, 199, 77, 0.08); color: #DCE3EE; }
+.sj-steps .is-current b { color: #FEC74D; }
+.sj-steps .is-current .sj-step-n { color: #FEC74D; }
+
+/* 현재 지점 둥근 물결: 움직임을 허용한 경우에만 */
+@media (prefers-reduced-motion: no-preference) {
+  .sj-station.is-current .sj-pulse { animation: sj-pulse 1.8s ease-out infinite; }
+  .sj-station.is-current .sj-pad { animation: sj-pop .5s cubic-bezier(.2, .9, .3, 1.3); transform-origin: center; transform-box: fill-box; }
+}
+@keyframes sj-pulse { 0% { opacity: .9; transform: scale(.78); } 100% { opacity: 0; transform: scale(1.35); } }
+@keyframes sj-pop { 0% { transform: scale(.82); } 100% { transform: scale(1); } }
+.sj-station .sj-pulse { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: reduce) {
+  .sj-mover, .sj-route-done, .sj-status-v { transition: none; animation: none; }
+}
+
+@media (max-width: 900px) {
+  .sj-steps { grid-template-columns: 1fr; }
+  .sj-steps button { flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: 10px; }
+  .sj-steps span { flex: 1 1 100%; padding-left: 34px; }
+}
+@media (max-width: 640px) {
+  .sj { padding: 14px 12px 16px; }
+  .sj-label { display: none; }
+  .sj-status-v { font-size: 13px; }
+}
+
+/* 휴대폰: 세로 지도 (단계 설명을 지도 옆에 함께 표시) */
+.sj--v .sj-label--v { display: block; font-size: 18px; text-anchor: start; }
+.sj--v .sj-desc-v { fill: #8FA0B8; font: 400 14px 'Manrope', 'Pretendard', sans-serif; transition: fill .4s; }
+.sj--v .sj-station.is-current .sj-desc-v { fill: #DCE3EE; }
+.sj--v .sj-zone-label { font-size: 10.5px; letter-spacing: .08em; }
+.sj--v .sj-steps { display: none; }
+.sj--v .sj-map { max-width: 420px; margin: 10px auto 0; }
