@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import FlipBoard from './home/FlipBoard';
 import { homeCopy } from '../content/homeCopy';
 import { ChevronDown, PlaneLanding, PlaneTakeoff, ArrowRightLeft, Calendar, Users, Minus, Plus, Plane, Mail } from 'lucide-react';
@@ -24,6 +24,10 @@ const SERVICES = [
 const toDateString = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const getInitialDate = () => toDateString(new Date());
 // 기본 날짜는 내일: 오늘로 두면 대부분 '24시간 이내 긴급 할증'이 붙어 가격이 갑자기 오른다
+// 날짜는 방문자 기기 기준으로 정한다. 사전 렌더링 HTML 에는 날짜를 넣지 않는다
+// (빌드한 날의 날짜가 HTML 에 굳으면 하이드레이션 불일치가 난다)
+const noSubscribe = () => () => {};
+const useClientValue = (get) => useSyncExternalStore(noSubscribe, get, () => '');
 const getDefaultDate = () => {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -34,7 +38,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'k
   const [formData, setFormData] = useState({
     airport: 'ICN',
     serviceType: 'arrival',
-    date: getDefaultDate(),
+    date: '', // 고객이 고른 날짜 (비어 있으면 내일)
     adults: 1,
     children: 0,
     email: ''
@@ -74,6 +78,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'k
   const handleCheckPrice = () => {
     onOpenWizard({
       ...formData,
+      date,
       passengers: formData.adults + formData.children
     });
   };
@@ -82,13 +87,9 @@ export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'k
   const selectedAirport = activeAirports.find(a => a.code === formData.airport) || activeAirports[0];
   const selectedService = SERVICES.find(s => s.id === formData.serviceType) || SERVICES[0];
 
-  const minDate = getInitialDate();
-
-  useEffect(() => {
-    if (!formData.date || formData.date < minDate) {
-      updateForm('date', minDate);
-    }
-  }, []);
+  const minDate = useClientValue(getInitialDate);
+  const defaultDate = useClientValue(getDefaultDate);
+  const date = formData.date && formData.date >= minDate ? formData.date : defaultDate;
 
   return (
     <section id="hero" className="hero-section">
@@ -197,14 +198,14 @@ export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'k
               >
                 <div className="input-text-area">
                   <span className="main-text">
-                    {new Date(formData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {date ? new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ' '}
                   </span>
                 </div>
                 <Calendar className="input-icon" size={16} />
                 <input
                   type="date"
-                  value={formData.date}
-                  min={minDate}
+                  value={date}
+                  min={minDate || undefined}
                   onChange={(e) => updateForm('date', e.target.value)}
                   style={{
                     position: 'absolute',
