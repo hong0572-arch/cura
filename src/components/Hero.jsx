@@ -206,7 +206,7 @@ export default function Hero({ t, customImage, onOpenWizard, settings, lang = 'k
                   type="date"
                   value={date}
                   min={minDate || undefined}
-                  onChange={(e) => updateForm('date', e.target.value)}
+                  onChange={(e) => { updateForm('date', e.target.value); window.dispatchEvent(new CustomEvent('btg:trip-date', { detail: e.target.value })); }}
                   style={{
                     position: 'absolute',
                     top: 0,
