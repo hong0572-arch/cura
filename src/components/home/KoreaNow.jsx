@@ -44,7 +44,12 @@ const fmtRange = (start, end) => {
 };
 const mapLink = (c) => (c.lat && c.lng ? `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.title} Korea`)}`);
 
-export default function KoreaNow({ onBook }) {
+const previewFlag = () => (new URLSearchParams(window.location.search).get('korea') === '1' ? 'on' : '');
+const usePreview = () => useSyncExternalStore(noSubscribe, previewFlag, () => '');
+
+export default function KoreaNow({ onBook, enabled = true }) {
+  const preview = usePreview();
+  const show = enabled || preview === 'on';
   const thisMonth = useCurrentMonth();
   const [tripMonth, setTripMonth] = useState(0);
   const month = tripMonth || thisMonth;
@@ -60,28 +65,29 @@ export default function KoreaNow({ onBook }) {
   }, []);
 
   useEffect(() => {
+    if (!show) return undefined;
     let alive = true;
     fetch('/api/korea/weather').then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(d => alive && setWeather({ status: 'ok', cities: d.cities || [] }))
       .catch(() => alive && setWeather({ status: 'error', cities: [] }));
     return () => { alive = false; };
-  }, []);
+  }, [show]);
 
   useEffect(() => {
-    if (!month) return undefined;
+    if (!month || !show) return undefined;
     let alive = true;
     fetch(`/api/korea/highlights?month=${month}`).then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(d => alive && setTour({ status: 'ok', month, festivals: d.festivals || [], spots: d.spots || [] }))
       .catch(() => alive && setTour(t => ({ ...t, status: 'error' })));
     return () => { alive = false; };
-  }, [month]);
+  }, [month, show]);
 
   const temp = (c) => (c == null ? '–' : unit === 'C' ? `${Math.round(c)}°` : `${Math.round(c * 9 / 5 + 32)}°`);
   const cards = [...tour.festivals.map(f => ({ ...f, kind: 'Festival' })), ...tour.spots.map(s => ({ ...s, kind: 'Place to see' }))];
   const hasTour = tour.status === 'ok' && cards.length > 0;
   const hasWeather = weather.status === 'ok' && weather.cities.length > 0;
   // 공공데이터 키가 아직 없거나 둘 다 실패하면 섹션을 숨긴다
-  if (weather.status === 'error' && tour.status === 'error') return null;
+  if (!show || (weather.status === 'error' && tour.status === 'error')) return null;
 
   return (
     <section id="korea-now" className="home-section kn" aria-labelledby="kn-title">

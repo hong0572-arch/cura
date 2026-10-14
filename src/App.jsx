@@ -34,6 +34,7 @@ const BlogPost = lazy(() => import('./pages/BlogPost'));
 import SEOMeta from './components/SEOMeta';
 import ThreeWays from './components/home/ThreeWays';
 import KoreaNow from './components/home/KoreaNow';
+import { FEATURES } from './config/features';
 import OpsTracker from './components/home/OpsTracker';
 import ClosingCta from './components/home/ClosingCta';
 import './components/home/home.css';
@@ -369,7 +370,7 @@ function App({ initialSiteData = null }) {
               <ThreeWays copy={(homeCopy[lang] || homeCopy.ko).ways} lang={lang} />
 
               {/* 영어 홈: 공공데이터(기상청·한국관광공사)로 이달의 날씨·축제·명소 */}
-              {lang === 'en' && <KoreaNow onBook={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })} />}
+              {lang === 'en' && <KoreaNow enabled={FEATURES.koreaNow} onBook={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })} />}
 
               <Services t={t} lang={lang} />
 
