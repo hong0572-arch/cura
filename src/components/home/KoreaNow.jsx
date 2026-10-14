@@ -150,7 +150,7 @@ export default function KoreaNow({ onBook, enabled = true }) {
                 {cards.slice(0, 6).map(card => (
                   <article key={`${card.kind}-${card.id}`} className="kn-card">
                     {card.image
-                      ? <img src={card.image} alt="" loading="lazy" width="480" height="320" referrerPolicy="no-referrer" />
+                      ? <img src={card.image} alt="" loading="lazy" width="480" height="320" referrerPolicy="no-referrer" className={card.imageFit === 'contain' ? 'kn-img-contain' : ''} />
                       : <div className="kn-card-ph" aria-hidden="true"><MapPin size={26} /></div>}
                     <div className="kn-card-body">
                       <span className="kn-tag">{card.kind}</span>
@@ -165,7 +165,7 @@ export default function KoreaNow({ onBook, enabled = true }) {
               </div>
             )}
             <div className="kn-foot">
-              <p className="kn-source">Festival and place information: Korea Tourism Organization (TourAPI). Photos: KOGL Type 1, Korea Tourism Organization. Dates can change — please check with organisers.</p>
+              <p className="kn-source">Festival and place information: Korea Tourism Organization (TourAPI). Photos: Korea Tourism Organization (KOGL Type 1/3). Dates can change — please check with organisers.</p>
               <button type="button" className="btg-btn btg-btn--gold btg-sheen" onClick={onBook}>Book airport VIP for your trip</button>
             </div>
           </div>

@@ -564,6 +564,7 @@
 .kn-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .kn-card { display: flex; flex-direction: column; background: #FFFDF8; border: 1px solid #E4DCCD; border-radius: 12px; overflow: hidden; }
 .kn-card img, .kn-card-ph { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; }
+.kn-card img.kn-img-contain { object-fit: contain; background: #0B1B33; } /* 공공누리 3유형: 변형(자르기) 없이 */
 .kn-card-ph { display: grid; place-items: center; background: linear-gradient(135deg, #0B1B33, #1E3354); color: #FEC74D; }
 .kn-card-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
 .kn-tag { font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #7A5C17; }
