@@ -901,8 +901,8 @@ const WEATHER_CITIES = [
   { id: 'jeju', name: 'Jeju', nx: 53, ny: 38 },
 ];
 // 가장 최근 발표 시각 (02·05·08·11·14·17·20·23시, 발표 후 15분 여유)
-function kmaBase(now = new Date()) {
-  const kst = new Date(now.getTime() + 9 * 3600_000 - 15 * 60_000);
+function kmaBase(now = new Date(), stepsBack = 0) {
+  const kst = new Date(now.getTime() + 9 * 3600_000 - 15 * 60_000 - stepsBack * 3 * 3600_000);
   const hours = [23, 20, 17, 14, 11, 8, 5, 2];
   let h = hours.find(x => kst.getUTCHours() >= x);
   if (h === undefined) { kst.setUTCDate(kst.getUTCDate() - 1); h = 23; }
@@ -943,13 +943,23 @@ function summarizeForecast(items, now = new Date()) {
 
 app.get('/api/korea/weather', async (req, res) => {
   try {
-    const base = kmaBase();
-    const data = await cached(`wx-${base.base_date}${base.base_time}`, 30 * 60_000, async () => Promise.all(WEATHER_CITIES.map(async (c) => {
-      const items = await dataGoKr('/1360000/VilageFcstInfoService_2.0/getVilageFcst', {
-        pageNo: '1', numOfRows: '1000', dataType: 'JSON', ...base, nx: String(c.nx), ny: String(c.ny),
-      });
-      return { id: c.id, name: c.name, ...summarizeForecast(items) };
-    })));
+    // 최신 발표분이 아직 없으면(03 NO_DATA) 이전 발표 시각으로 최대 3번까지 거슬러 간다
+    let base = kmaBase();
+    const fetchCity = async (c) => {
+      for (let back = 0; back < 4; back++) {
+        const b = kmaBase(new Date(), back);
+        try {
+          const items = await dataGoKr('/1360000/VilageFcstInfoService_2.0/getVilageFcst', {
+            pageNo: '1', numOfRows: '1000', dataType: 'JSON', ...b, nx: String(c.nx), ny: String(c.ny),
+          });
+          if (items.length) { base = b; return { id: c.id, name: c.name, ...summarizeForecast(items) }; }
+        } catch (e) {
+          if (!/NO_DATA|03/.test(e.message) || back === 3) throw e;
+        }
+      }
+      throw new Error('KMA: no forecast data');
+    };
+    const data = await cached(`wx-${base.base_date}${base.base_time}`, 30 * 60_000, () => Promise.all(WEATHER_CITIES.map(fetchCity)));
     res.set('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=3600');
     res.json({ cities: data, issued: base, source: 'Korea Meteorological Administration (KMA) via data.go.kr' });
   } catch (error) {
@@ -974,8 +984,10 @@ const tourDate = (s) => (s && s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)
 const cleanTitle = (t) => String(t || '').replace(/\s*\((?=[^()]*[가-힣]).*$/, '').trim();
 // 공공누리 1유형만 사진을 쓴다 (출처 표시, 변형 허용). 3유형은 변형 금지라 잘라 쓰지 않도록 제외
 const isType1 = (code) => String(code || '').toLowerCase() === 'type1';
+const isType3 = (code) => String(code || '').toLowerCase() === 'type3';
 const toCard = (it) => {
-  const image = isType1(it.cpyrhtDivCd) ? httpsImg(it.firstimage || it.firstimage2) : '';
+  const ok = isType1(it.cpyrhtDivCd) || isType3(it.cpyrhtDivCd);
+  const image = ok ? httpsImg(it.firstimage || it.firstimage2) : '';
   return {
     id: String(it.contentid || ''),
     title: cleanTitle(it.title),
@@ -983,6 +995,7 @@ const toCard = (it) => {
     start: tourDate(it.eventstartdate),
     end: tourDate(it.eventenddate),
     image,
+    imageFit: image && isType3(it.cpyrhtDivCd) ? 'contain' : 'cover',
     lat: Number(it.mapy) || null,
     lng: Number(it.mapx) || null,
   };
@@ -991,10 +1004,11 @@ const TOUR_COMMON = { MobileOS: 'ETC', MobileApp: 'BeyondTheGate', _type: 'json'
 const days = (a, b) => (a && b ? (Date.parse(b) - Date.parse(a)) / 86400000 : 0);
 
 // 사진 라이선스를 목록에서 확인할 수 없으면 상세 이미지 정보(공공누리 유형 포함)에서 1유형 사진을 찾는다
-async function type1Photo(contentId) {
+async function licensedPhoto(contentId) {
   const imgs = await dataGoKr('/B551011/EngService2/detailImage2', { ...TOUR_COMMON, contentId, imageYN: 'Y', numOfRows: '5', pageNo: '1' }).catch(() => []);
-  const hit = imgs.find(i => isType1(i.cpyrhtDivCd) && (i.originimgurl || i.smallimageurl));
-  return hit ? httpsImg(hit.smallimageurl || hit.originimgurl) : '';
+  const usable = imgs.filter(i => i.originimgurl || i.smallimageurl);
+  const hit = usable.find(i => isType1(i.cpyrhtDivCd)) || usable.find(i => isType3(i.cpyrhtDivCd));
+  return hit ? { url: httpsImg(hit.originimgurl || hit.smallimageurl), fit: isType1(hit.cpyrhtDivCd) ? 'cover' : 'contain' } : null;
 }
 
 async function festivalsFor(year, month) {
@@ -1008,7 +1022,7 @@ async function festivalsFor(year, month) {
     .filter(f => f.title && f.start && f.start <= to && (!f.end || f.end >= from) && days(f.start, f.end) <= MAX_FESTIVAL_DAYS)
     .sort((a, b) => a.start.localeCompare(b.start))
     .slice(0, 6);
-  await Promise.all(list.map(async (f) => { if (!f.image && f.id) f.image = await type1Photo(f.id); }));
+  await Promise.all(list.map(async (f) => { if (!f.image && f.id) { const p = await licensedPhoto(f.id); if (p) { f.image = p.url; f.imageFit = p.fit; } } }));
   return list.sort((a, b) => Number(Boolean(b.image)) - Number(Boolean(a.image)));
 }
 
@@ -1022,7 +1036,7 @@ app.get('/api/korea/highlights', async (req, res) => {
       let festivals = await festivalsFor(year, month);
       let usual = false;
       // 내년 행사는 아직 등록 전인 경우가 많다 → 올해 같은 달 행사를 "보통 이맘때"로 보여 준다
-      if (!festivals.length && year > nowKst.getUTCFullYear()) {
+      if (!festivals.length) {
         festivals = (await festivalsFor(year - 1, month)).map(f => ({ ...f, start: '', end: '' }));
         usual = festivals.length > 0;
       }
