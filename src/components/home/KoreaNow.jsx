@@ -83,7 +83,9 @@ export default function KoreaNow({ onBook, enabled = true }) {
   }, [month, show]);
 
   const temp = (c) => (c == null ? '–' : unit === 'C' ? `${Math.round(c)}°` : `${Math.round(c * 9 / 5 + 32)}°`);
-  const cards = [...tour.festivals.map(f => ({ ...f, kind: 'Festival' })), ...tour.spots.map(s => ({ ...s, kind: 'Place to see' }))];
+  // 축제 최대 4개 + 명소로 채워 6장 (축제가 적으면 명소를 더 보여 준다)
+  const fest = tour.festivals.slice(0, 4).map(f => ({ ...f, kind: 'Festival' }));
+  const cards = [...fest, ...tour.spots.slice(0, 6 - fest.length).map(s => ({ ...s, kind: 'Place to see' }))];
   const hasTour = tour.status === 'ok' && cards.length > 0;
   const hasWeather = weather.status === 'ok' && weather.cities.length > 0;
   // 공공데이터 키가 아직 없거나 둘 다 실패하면 섹션을 숨긴다
