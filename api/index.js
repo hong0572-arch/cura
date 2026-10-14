@@ -860,6 +860,160 @@ Reply to this email to answer the guest directly.`;
   }
 });
 
+// --- Korea this month (공공데이터: 한국관광공사 영문 관광정보 TourAPI, 기상청 단기예보) ---
+// 키: DATA_GO_KR_KEY (공공데이터포털 "일반 인증키(Decoding)"). 브라우저에는 노출하지 않는다.
+// 호출량 보호: Vercel CDN 캐시(s-maxage) + 인스턴스 메모리 캐시. 개발계정 TourAPI 1,000건/일.
+const DATA_GO_KR = 'https://apis.data.go.kr';
+const memo = new Map();
+async function cached(key, ttlMs, fn) {
+  const hit = memo.get(key);
+  if (hit && Date.now() - hit.at < ttlMs) return hit.value;
+  const value = await fn();
+  memo.set(key, { value, at: Date.now() });
+  if (memo.size > 200) memo.clear();
+  return value;
+}
+
+async function dataGoKr(path, params) {
+  const key = process.env.DATA_GO_KR_KEY;
+  if (!key) { const e = new Error('DATA_GO_KR_KEY missing'); e.code = 503; throw e; }
+  const qs = new URLSearchParams({ ...params, serviceKey: key });
+  const res = await fetch(`${DATA_GO_KR}${path}?${qs}`, { signal: AbortSignal.timeout(8000) });
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); } catch {
+    // 키 오류 등은 XML 로 온다
+    throw new Error(`data.go.kr ${path}: ${text.slice(0, 160)}`);
+  }
+  const header = json?.response?.header;
+  if (header && header.resultCode !== '0000' && header.resultCode !== '00') throw new Error(`data.go.kr ${path}: ${header.resultCode} ${header.resultMsg}`);
+  const items = json?.response?.body?.items?.item;
+  return Array.isArray(items) ? items : items ? [items] : [];
+}
+
+// 날씨 — 기상청 단기예보 (격자 좌표)
+const WEATHER_CITIES = [
+  { id: 'seoul', name: 'Seoul', nx: 60, ny: 127 },
+  { id: 'busan', name: 'Busan', nx: 98, ny: 76 },
+  { id: 'jeju', name: 'Jeju', nx: 53, ny: 38 },
+];
+// 가장 최근 발표 시각 (02·05·08·11·14·17·20·23시, 발표 후 15분 여유)
+function kmaBase(now = new Date()) {
+  const kst = new Date(now.getTime() + 9 * 3600_000 - 15 * 60_000);
+  const hours = [23, 20, 17, 14, 11, 8, 5, 2];
+  let h = hours.find(x => kst.getUTCHours() >= x);
+  if (h === undefined) { kst.setUTCDate(kst.getUTCDate() - 1); h = 23; }
+  const d = kst.toISOString().slice(0, 10).replace(/-/g, '');
+  return { base_date: d, base_time: `${String(h).padStart(2, '0')}00` };
+}
+function summarizeForecast(items, now = new Date()) {
+  const kstNow = new Date(now.getTime() + 9 * 3600_000);
+  const nowKey = `${kstNow.toISOString().slice(0, 10).replace(/-/g, '')}${String(kstNow.getUTCHours()).padStart(2, '0')}00`;
+  const byDate = new Map();
+  let current = null;
+  for (const it of items) {
+    const d = it.fcstDate;
+    if (!byDate.has(d)) byDate.set(d, { tmp: [], tmn: null, tmx: null, pop: 0, noon: {} });
+    const day = byDate.get(d);
+    const v = it.fcstValue;
+    if (it.category === 'TMP') {
+      day.tmp.push(Number(v));
+      // 지금 시각 이전의 가장 최근 예보값 (없으면 가장 이른 값)
+      const k = `${it.fcstDate}${it.fcstTime}`;
+      if (!current || (k <= nowKey && (current.key > nowKey || k > current.key)) || (current.key > nowKey && k < current.key)) current = { key: k, temp: Number(v) };
+    }
+    if (it.category === 'TMN') day.tmn = Number(v);
+    if (it.category === 'TMX') day.tmx = Number(v);
+    if (it.category === 'POP') day.pop = Math.max(day.pop, Number(v) || 0);
+    if (it.fcstTime === '1200' && (it.category === 'SKY' || it.category === 'PTY')) day.noon[it.category] = Number(v);
+  }
+  const days = [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(0, 4).map(([date, d]) => ({
+    date: `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`,
+    min: d.tmn ?? (d.tmp.length ? Math.min(...d.tmp) : null),
+    max: d.tmx ?? (d.tmp.length ? Math.max(...d.tmp) : null),
+    sky: d.noon.SKY ?? null,   // 1 맑음, 3 구름많음, 4 흐림
+    pty: d.noon.PTY ?? 0,      // 0 없음, 1 비, 2 비/눈, 3 눈, 4 소나기
+    pop: d.pop,
+  }));
+  return { now: current?.temp ?? days[0]?.max ?? null, days };
+}
+
+app.get('/api/korea/weather', async (req, res) => {
+  try {
+    const base = kmaBase();
+    const data = await cached(`wx-${base.base_date}${base.base_time}`, 30 * 60_000, async () => Promise.all(WEATHER_CITIES.map(async (c) => {
+      const items = await dataGoKr('/1360000/VilageFcstInfoService_2.0/getVilageFcst', {
+        pageNo: '1', numOfRows: '1000', dataType: 'JSON', ...base, nx: String(c.nx), ny: String(c.ny),
+      });
+      return { id: c.id, name: c.name, ...summarizeForecast(items) };
+    })));
+    res.set('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=3600');
+    res.json({ cities: data, issued: base, source: 'Korea Meteorological Administration (KMA) via data.go.kr' });
+  } catch (error) {
+    console.error('Korea weather failed:', error.message);
+    res.status(error.code === 503 ? 503 : 502).json({ error: 'Weather unavailable' });
+  }
+});
+
+// 관광 — 한국관광공사 영문 관광정보 서비스 (축제 + 이달의 테마 명소)
+// 명소는 달마다 영문 키워드로 찾는다 (TourAPI 에는 계절 정보가 없어 키워드를 코드로 관리)
+const MONTH_KEYWORDS = {
+  1: ['Ski', 'Palace'], 2: ['Ski', 'Hot Spring'], 3: ['Plum', 'Island'], 4: ['Cherry', 'Park'],
+  5: ['Rose', 'Garden'], 6: ['Beach', 'Valley'], 7: ['Beach', 'Island'], 8: ['Beach', 'Valley'],
+  9: ['Palace', 'Hanok'], 10: ['Seoraksan', 'Naejangsan'], 11: ['Temple', 'Arboretum'], 12: ['Ski', 'Light'],
+};
+const httpsImg = (u) => (u ? String(u).replace(/^http:\/\//, 'https://') : '');
+const tourDate = (s) => (s && s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : '');
+// 공공누리 1유형만 사진을 쓴다 (출처 표시, 변형 허용). 3유형은 변형 금지라 잘라 쓰지 않도록 제외
+const photoOf = (it) => (String(it.cpyrhtDivCd || '').toLowerCase() === 'type1' ? httpsImg(it.firstimage || it.firstimage2) : '');
+const toCard = (it) => ({
+  id: String(it.contentid || ''),
+  title: String(it.title || '').trim(),
+  address: String(it.addr1 || '').trim(),
+  start: tourDate(it.eventstartdate),
+  end: tourDate(it.eventenddate),
+  image: photoOf(it),
+  license: photoOf(it) ? 'KOGL Type 1' : '',
+  lat: Number(it.mapy) || null,
+  lng: Number(it.mapx) || null,
+});
+const TOUR_COMMON = { MobileOS: 'ETC', MobileApp: 'BeyondTheGate', _type: 'json' };
+
+app.get('/api/korea/highlights', async (req, res) => {
+  const month = Math.min(12, Math.max(1, parseInt(req.query.month, 10) || (new Date(Date.now() + 9 * 3600_000).getUTCMonth() + 1)));
+  const nowKst = new Date(Date.now() + 9 * 3600_000);
+  // 고른 달이 이미 지났으면 내년
+  const year = month < nowKst.getUTCMonth() + 1 ? nowKst.getUTCFullYear() + 1 : nowKst.getUTCFullYear();
+  const mm = String(month).padStart(2, '0');
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  try {
+    const data = await cached(`tour-${year}${mm}`, 6 * 3600_000, async () => {
+      const festivals = (await dataGoKr('/B551011/EngService2/searchFestival2', {
+        ...TOUR_COMMON, numOfRows: '40', pageNo: '1', arrange: 'Q', eventStartDate: `${year}${mm}01`,
+      }))
+        .map(toCard)
+        // 그 달에 열리는 것만, 사진 있는 것 우선
+        .filter(f => f.title && (!f.start || f.start <= `${year}-${mm}-${lastDay}`) && (!f.end || f.end >= `${year}-${mm}-01`))
+        .sort((a, b) => Number(Boolean(b.image)) - Number(Boolean(a.image)) || a.start.localeCompare(b.start))
+        .slice(0, 6);
+      const spotLists = await Promise.all(MONTH_KEYWORDS[month].map(keyword => dataGoKr('/B551011/EngService2/searchKeyword2', {
+        ...TOUR_COMMON, numOfRows: '10', pageNo: '1', arrange: 'Q', keyword, contentTypeId: '76',
+      }).catch(() => [])));
+      const seen = new Set();
+      const spots = spotLists.flat().map(toCard)
+        .filter(s => s.title && !seen.has(s.id) && seen.add(s.id))
+        .sort((a, b) => Number(Boolean(b.image)) - Number(Boolean(a.image)))
+        .slice(0, 4);
+      return { festivals, spots };
+    });
+    res.set('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=86400');
+    res.json({ month, year, ...data, source: 'Korea Tourism Organization (TourAPI) via data.go.kr' });
+  } catch (error) {
+    console.error('Korea highlights failed:', error.message);
+    res.status(error.code === 503 ? 503 : 502).json({ error: 'Highlights unavailable' });
+  }
+});
+
 // --- Nicepay Integration ---
 // 테스트 시 NICEPAY_API_BASE=https://sandbox-api.nicepay.co.kr
 const NICEPAY_API_BASE = process.env.NICEPAY_API_BASE || 'https://api.nicepay.co.kr';

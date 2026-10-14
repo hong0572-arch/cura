@@ -535,3 +535,49 @@
 .sj--v .sj-zone-label { font-size: 10.5px; letter-spacing: .08em; }
 .sj--v .sj-steps { display: none; }
 .sj--v .sj-map { max-width: 420px; margin: 10px auto 0; }
+
+/* ---------- Korea this month (영어 홈, 공공데이터) ---------- */
+.kn .home-head { margin-bottom: 28px; }
+.kn-note { max-width: 680px; margin: 10px 0 0; color: var(--text-secondary, #5E574C); text-align: inherit; }
+.kn-cards--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kn-grid { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 24px; align-items: start; }
+.kn-weather { background: #0B1B33; color: #F4EEE2; border-radius: 14px; padding: 20px; }
+.kn-weather-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.kn-k { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .14em; color: #8FA0B8; text-transform: uppercase; }
+.kn-unit { display: flex; border: 1px solid #2B3E5C; border-radius: 999px; overflow: hidden; }
+.kn-unit button { border: none; background: transparent; color: #8FA0B8; padding: 4px 10px; font: 600 12px 'IBM Plex Mono', monospace; cursor: pointer; }
+.kn-unit button.is-on { background: #FEC74D; color: #0B1B33; }
+.kn-city { padding: 14px 0; border-bottom: 1px solid #1E3354; }
+.kn-city-main { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; color: #FEC74D; }
+.kn-city-main b { display: block; color: #F4EEE2; font-size: 1rem; }
+.kn-city-main span { color: #8FA0B8; font-size: 0.82rem; }
+.kn-now { font: 500 2rem/1 'Cormorant Garamond', serif; color: #F4EEE2; }
+.kn-days { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.kn-days li { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; border-radius: 8px; background: rgba(220, 227, 238, .04); font: 400 12px 'IBM Plex Mono', monospace; color: #DCE3EE; }
+.kn-days em { font-style: normal; color: #7DB3E8; font-size: 11px; }
+.kn-pack { margin: 14px 0 0; font-size: 0.85rem; color: #DCE3EE; }
+.kn-pack b { color: #FEC74D; }
+.kn-source { margin: 10px 0 0; font-size: 0.72rem; color: #8FA0B8; line-height: 1.5; }
+.kn-tour .kn-source { color: #8A8172; }
+.kn-muted { color: #8FA0B8; font-size: 0.9rem; }
+.kn-tour .kn-muted { color: #8A8172; }
+.kn-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.kn-card { display: flex; flex-direction: column; background: #FFFDF8; border: 1px solid #E4DCCD; border-radius: 12px; overflow: hidden; }
+.kn-card img, .kn-card-ph { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; }
+.kn-card-ph { display: grid; place-items: center; background: linear-gradient(135deg, #0B1B33, #1E3354); color: #FEC74D; }
+.kn-card-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.kn-tag { font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #7A5C17; }
+.kn-card h3 { margin: 0; font-size: 1rem; line-height: 1.3; color: #1A1712; }
+.kn-date { display: flex; align-items: center; gap: 6px; margin: 0; font: 500 12px 'IBM Plex Mono', monospace; color: #1A1712; }
+.kn-addr { margin: 0; font-size: 0.8rem; color: #5E574C; line-height: 1.4; }
+.kn-card a { margin-top: auto; padding-top: 6px; font-size: 0.85rem; color: #1A1712; }
+.kn-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+.kn-foot .kn-source { flex: 1 1 320px; margin: 0; }
+@media (max-width: 1080px) {
+  .kn-grid { grid-template-columns: 1fr; }
+  .kn-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .kn-cards { grid-template-columns: 1fr; }
+  .kn-foot .btg-btn { width: 100%; justify-content: center; }
+}
