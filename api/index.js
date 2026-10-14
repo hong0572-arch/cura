@@ -891,6 +891,9 @@ async function dataGoKr(path, params) {
   return Array.isArray(items) ? items : items ? [items] : [];
 }
 
+// 오류 원인(결과 코드·메시지)만 돌려준다 — 인증키는 절대 포함하지 않는다
+const safeDetail = (e) => String(e?.message || '').replace(/serviceKey=[^&\s]+/gi, 'serviceKey=***').slice(0, 200);
+
 // 날씨 — 기상청 단기예보 (격자 좌표)
 const WEATHER_CITIES = [
   { id: 'seoul', name: 'Seoul', nx: 60, ny: 127 },
@@ -951,66 +954,93 @@ app.get('/api/korea/weather', async (req, res) => {
     res.json({ cities: data, issued: base, source: 'Korea Meteorological Administration (KMA) via data.go.kr' });
   } catch (error) {
     console.error('Korea weather failed:', error.message);
-    res.status(error.code === 503 ? 503 : 502).json({ error: 'Weather unavailable' });
+    res.status(error.code === 503 ? 503 : 502).json({ error: 'Weather unavailable', detail: safeDetail(error) });
   }
 });
 
 // 관광 — 한국관광공사 영문 관광정보 서비스 (축제 + 이달의 테마 명소)
 // 명소는 달마다 영문 키워드로 찾는다 (TourAPI 에는 계절 정보가 없어 키워드를 코드로 관리)
 const MONTH_KEYWORDS = {
-  1: ['Ski', 'Palace'], 2: ['Ski', 'Hot Spring'], 3: ['Plum', 'Island'], 4: ['Cherry', 'Park'],
+  1: ['Ski Resort', 'Palace'], 2: ['Ski Resort', 'Hot Spring'], 3: ['Plum', 'Camellia'], 4: ['Cherry Blossom', 'Park'],
   5: ['Rose', 'Garden'], 6: ['Beach', 'Valley'], 7: ['Beach', 'Island'], 8: ['Beach', 'Valley'],
-  9: ['Palace', 'Hanok'], 10: ['Seoraksan', 'Naejangsan'], 11: ['Temple', 'Arboretum'], 12: ['Ski', 'Light'],
+  9: ['Palace', 'Hanok Village'], 10: ['Seoraksan', 'Naejangsan'], 11: ['Temple', 'Arboretum'], 12: ['Ski Resort', 'Palace'],
 };
+// 관광지가 아닌 결과(병원·숙소·상점 등) 제외
+const NOT_SIGHTS = /clinic|dermatolog|hospital|medical|dental|hotel|motel|hostel|guesthouse|residence|store|shop|mall|outlet|restaurant|cafe/i;
+const MAX_FESTIVAL_DAYS = 45; // 1년 내내 하는 공연 등은 '이달의 축제'에서 뺀다
 const httpsImg = (u) => (u ? String(u).replace(/^http:\/\//, 'https://') : '');
 const tourDate = (s) => (s && s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : '');
+// 영문 서비스 제목의 "(한글)" 부분을 뗀다
+const cleanTitle = (t) => String(t || '').replace(/\s*\((?=[^()]*[가-힣]).*$/, '').trim();
 // 공공누리 1유형만 사진을 쓴다 (출처 표시, 변형 허용). 3유형은 변형 금지라 잘라 쓰지 않도록 제외
-const photoOf = (it) => (String(it.cpyrhtDivCd || '').toLowerCase() === 'type1' ? httpsImg(it.firstimage || it.firstimage2) : '');
-const toCard = (it) => ({
-  id: String(it.contentid || ''),
-  title: String(it.title || '').trim(),
-  address: String(it.addr1 || '').trim(),
-  start: tourDate(it.eventstartdate),
-  end: tourDate(it.eventenddate),
-  image: photoOf(it),
-  license: photoOf(it) ? 'KOGL Type 1' : '',
-  lat: Number(it.mapy) || null,
-  lng: Number(it.mapx) || null,
-});
+const isType1 = (code) => String(code || '').toLowerCase() === 'type1';
+const toCard = (it) => {
+  const image = isType1(it.cpyrhtDivCd) ? httpsImg(it.firstimage || it.firstimage2) : '';
+  return {
+    id: String(it.contentid || ''),
+    title: cleanTitle(it.title),
+    address: String(it.addr1 || '').trim(),
+    start: tourDate(it.eventstartdate),
+    end: tourDate(it.eventenddate),
+    image,
+    lat: Number(it.mapy) || null,
+    lng: Number(it.mapx) || null,
+  };
+};
 const TOUR_COMMON = { MobileOS: 'ETC', MobileApp: 'BeyondTheGate', _type: 'json' };
+const days = (a, b) => (a && b ? (Date.parse(b) - Date.parse(a)) / 86400000 : 0);
 
-app.get('/api/korea/highlights', async (req, res) => {
-  const month = Math.min(12, Math.max(1, parseInt(req.query.month, 10) || (new Date(Date.now() + 9 * 3600_000).getUTCMonth() + 1)));
-  const nowKst = new Date(Date.now() + 9 * 3600_000);
-  // 고른 달이 이미 지났으면 내년
-  const year = month < nowKst.getUTCMonth() + 1 ? nowKst.getUTCFullYear() + 1 : nowKst.getUTCFullYear();
+// 사진 라이선스를 목록에서 확인할 수 없으면 상세 이미지 정보(공공누리 유형 포함)에서 1유형 사진을 찾는다
+async function type1Photo(contentId) {
+  const imgs = await dataGoKr('/B551011/EngService2/detailImage2', { ...TOUR_COMMON, contentId, imageYN: 'Y', numOfRows: '5', pageNo: '1' }).catch(() => []);
+  const hit = imgs.find(i => isType1(i.cpyrhtDivCd) && (i.originimgurl || i.smallimageurl));
+  return hit ? httpsImg(hit.smallimageurl || hit.originimgurl) : '';
+}
+
+async function festivalsFor(year, month) {
   const mm = String(month).padStart(2, '0');
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const from = `${year}-${mm}-01`, to = `${year}-${mm}-${lastDay}`;
+  const list = (await dataGoKr('/B551011/EngService2/searchFestival2', {
+    ...TOUR_COMMON, numOfRows: '60', pageNo: '1', arrange: 'Q', eventStartDate: `${year}${mm}01`,
+  })).map(toCard)
+    // 그 달에 열리고, 기간이 짧은(진짜 축제·행사) 것만
+    .filter(f => f.title && f.start && f.start <= to && (!f.end || f.end >= from) && days(f.start, f.end) <= MAX_FESTIVAL_DAYS)
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .slice(0, 6);
+  await Promise.all(list.map(async (f) => { if (!f.image && f.id) f.image = await type1Photo(f.id); }));
+  return list.sort((a, b) => Number(Boolean(b.image)) - Number(Boolean(a.image)));
+}
+
+app.get('/api/korea/highlights', async (req, res) => {
+  const nowKst = new Date(Date.now() + 9 * 3600_000);
+  const month = Math.min(12, Math.max(1, parseInt(req.query.month, 10) || (nowKst.getUTCMonth() + 1)));
+  // 고른 달이 이미 지났으면 내년
+  const year = month < nowKst.getUTCMonth() + 1 ? nowKst.getUTCFullYear() + 1 : nowKst.getUTCFullYear();
   try {
-    const data = await cached(`tour-${year}${mm}`, 6 * 3600_000, async () => {
-      const festivals = (await dataGoKr('/B551011/EngService2/searchFestival2', {
-        ...TOUR_COMMON, numOfRows: '40', pageNo: '1', arrange: 'Q', eventStartDate: `${year}${mm}01`,
-      }))
-        .map(toCard)
-        // 그 달에 열리는 것만, 사진 있는 것 우선
-        .filter(f => f.title && (!f.start || f.start <= `${year}-${mm}-${lastDay}`) && (!f.end || f.end >= `${year}-${mm}-01`))
-        .sort((a, b) => Number(Boolean(b.image)) - Number(Boolean(a.image)) || a.start.localeCompare(b.start))
-        .slice(0, 6);
+    const data = await cached(`tour-${year}-${month}`, 6 * 3600_000, async () => {
+      let festivals = await festivalsFor(year, month);
+      let usual = false;
+      // 내년 행사는 아직 등록 전인 경우가 많다 → 올해 같은 달 행사를 "보통 이맘때"로 보여 준다
+      if (!festivals.length && year > nowKst.getUTCFullYear()) {
+        festivals = (await festivalsFor(year - 1, month)).map(f => ({ ...f, start: '', end: '' }));
+        usual = festivals.length > 0;
+      }
       const spotLists = await Promise.all(MONTH_KEYWORDS[month].map(keyword => dataGoKr('/B551011/EngService2/searchKeyword2', {
-        ...TOUR_COMMON, numOfRows: '10', pageNo: '1', arrange: 'Q', keyword, contentTypeId: '76',
+        ...TOUR_COMMON, numOfRows: '20', pageNo: '1', arrange: 'Q', keyword, contentTypeId: '76',
       }).catch(() => [])));
       const seen = new Set();
       const spots = spotLists.flat().map(toCard)
-        .filter(s => s.title && !seen.has(s.id) && seen.add(s.id))
+        .filter(s => s.title && !NOT_SIGHTS.test(s.title) && !seen.has(s.id) && seen.add(s.id))
         .sort((a, b) => Number(Boolean(b.image)) - Number(Boolean(a.image)))
         .slice(0, 4);
-      return { festivals, spots };
+      return { festivals, usual, spots };
     });
     res.set('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=86400');
     res.json({ month, year, ...data, source: 'Korea Tourism Organization (TourAPI) via data.go.kr' });
   } catch (error) {
     console.error('Korea highlights failed:', error.message);
-    res.status(error.code === 503 ? 503 : 502).json({ error: 'Highlights unavailable' });
+    res.status(error.code === 503 ? 503 : 502).json({ error: 'Highlights unavailable', detail: safeDetail(error) });
   }
 });
 
