@@ -1011,15 +1011,20 @@ async function licensedPhoto(contentId) {
   return hit ? { url: httpsImg(hit.originimgurl || hit.smallimageurl), fit: isType1(hit.cpyrhtDivCd) ? 'cover' : 'contain' } : null;
 }
 
-async function festivalsFor(year, month) {
+async function festivalsFor(year, month, onlyUpcoming = true) {
   const mm = String(month).padStart(2, '0');
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const from = `${year}-${mm}-01`, to = `${year}-${mm}-${lastDay}`;
+  const todayKst = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
   const list = (await dataGoKr('/B551011/EngService2/searchFestival2', {
-    ...TOUR_COMMON, numOfRows: '60', pageNo: '1', arrange: 'Q', eventStartDate: `${year}${mm}01`,
+    ...TOUR_COMMON, numOfRows: '60', pageNo: '1', arrange: 'Q',
+    // 이번 달이면 오늘부터(진행 중 행사 포함), 아니면 그 달 1일부터
+    eventStartDate: (onlyUpcoming && todayKst > from ? todayKst : from).replace(/-/g, ''),
   })).map(toCard)
     // 그 달에 열리고, 기간이 짧은(진짜 축제·행사) 것만
     .filter(f => f.title && f.start && f.start <= to && (!f.end || f.end >= from) && days(f.start, f.end) <= MAX_FESTIVAL_DAYS)
+    // 이번 달이면 이미 끝난 행사는 뺀다 (진행 중이거나 다가올 행사만)
+    .filter(f => !onlyUpcoming || (f.end || f.start) >= todayKst)
     .sort((a, b) => a.start.localeCompare(b.start))
     .slice(0, 6);
   await Promise.all(list.map(async (f) => { if (!f.image && f.id) { const p = await licensedPhoto(f.id); if (p) { f.image = p.url; f.imageFit = p.fit; } } }));
@@ -1037,7 +1042,7 @@ app.get('/api/korea/highlights', async (req, res) => {
       let usual = false;
       // 내년 행사는 아직 등록 전인 경우가 많다 → 올해 같은 달 행사를 "보통 이맘때"로 보여 준다
       if (!festivals.length) {
-        festivals = (await festivalsFor(year - 1, month)).map(f => ({ ...f, start: '', end: '' }));
+        festivals = (await festivalsFor(year - 1, month, false)).map(f => ({ ...f, start: '', end: '' }));
         usual = festivals.length > 0;
       }
       const spotLists = await Promise.all(MONTH_KEYWORDS[month].map(keyword => dataGoKr('/B551011/EngService2/searchKeyword2', {
