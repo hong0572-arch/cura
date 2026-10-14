@@ -55,7 +55,7 @@ export default function KoreaNow({ onBook, enabled = true }) {
   const month = tripMonth || thisMonth;
   const [unit, setUnit] = useState('C');
   const [weather, setWeather] = useState({ status: 'loading', cities: [] });
-  const [tour, setTour] = useState({ status: 'loading', month: 0, festivals: [], spots: [] });
+  const [tour, setTour] = useState({ status: 'loading', month: 0, festivals: [], spots: [], usual: false });
 
   // 홈 검색창에서 여행 날짜를 고르면 그 달로 바꾼다
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function KoreaNow({ onBook, enabled = true }) {
     if (!month || !show) return undefined;
     let alive = true;
     fetch(`/api/korea/highlights?month=${month}`).then(r => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then(d => alive && setTour({ status: 'ok', month, festivals: d.festivals || [], spots: d.spots || [] }))
+      .then(d => alive && setTour({ status: 'ok', month, festivals: d.festivals || [], spots: d.spots || [], usual: Boolean(d.usual) }))
       .catch(() => alive && setTour(t => ({ ...t, status: 'error' })));
     return () => { alive = false; };
   }, [month, show]);
@@ -156,6 +156,7 @@ export default function KoreaNow({ onBook, enabled = true }) {
                       <span className="kn-tag">{card.kind}</span>
                       <h3>{card.title}</h3>
                       {card.start && <p className="kn-date"><CalendarDays size={14} aria-hidden="true" /> {fmtRange(card.start, card.end)}</p>}
+                      {!card.start && card.kind === 'Festival' && tour.usual && <p className="kn-date"><CalendarDays size={14} aria-hidden="true" /> Usually in {MONTHS[month - 1]}</p>}
                       {card.address && <p className="kn-addr">{card.address}</p>}
                       <a href={mapLink(card)} target="_blank" rel="noopener noreferrer">View on map ↗</a>
                     </div>
