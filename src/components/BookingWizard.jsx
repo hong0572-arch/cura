@@ -66,6 +66,7 @@ const COPY = {
     s2Lede: 'Lead guest only — exactly as printed in the passport. No date of birth or passport number needed.',
     given: 'Given name(s)', surname: 'Surname',
     email: 'Email for your confirmation', google: 'Fill in with Google',
+    emailS1: 'Email for your quote and confirmation', emailS1Hint: 'We send your price summary here. No marketing emails.',
     phone: 'Mobile number', phoneHint: 'Your agent contacts you on WhatsApp or by phone.',
     nameBoard: 'Name board will read',
     yourName: 'your name',
@@ -107,7 +108,7 @@ const COPY = {
     labels: {
       transferAddress: 'Car address', airline: 'Airline', flightNumber: 'Flight number', flightTime: 'Flight time',
       transferAirline: 'Connecting airline', transferFlightNumber: 'Connecting flight number', transferFlightTime: 'Connecting flight time',
-      firstName: 'Given name', lastName: 'Surname', email: 'Email', phoneLocal: 'Mobile number',
+      firstName: 'Given name', lastName: 'Surname', email: 'Email (valid address)', phoneLocal: 'Mobile number',
       contactFirst: 'Your given name', contactLast: 'Your surname', contactEmail: 'Your email', contactPhoneLocal: 'Your mobile',
     },
   },
@@ -138,6 +139,7 @@ const COPY = {
     s2Lede: '대표 탑승객 한 분만, 여권에 적힌 영문 그대로 입력해 주세요. 생년월일·여권번호는 필요 없습니다.',
     given: '이름 (영문)', surname: '성 (영문)',
     email: '확인 메일을 받을 이메일', google: 'Google 계정으로 채우기',
+    emailS1: '견적과 예약 확인을 받을 이메일', emailS1Hint: '예약 금액 요약을 이 주소로 보내드립니다. 광고 메일은 보내지 않습니다.',
     phone: '휴대폰 번호', phoneHint: '담당자가 WhatsApp 또는 전화로 연락드립니다.',
     nameBoard: '피켓에 적힐 이름',
     yourName: '입력한 이름',
@@ -179,7 +181,7 @@ const COPY = {
     labels: {
       transferAddress: '차량 주소', airline: '항공사', flightNumber: '항공편 번호', flightTime: '항공편 시간',
       transferAirline: '연결편 항공사', transferFlightNumber: '연결편 번호', transferFlightTime: '연결편 시간',
-      firstName: '이름(영문)', lastName: '성(영문)', email: '이메일', phoneLocal: '휴대폰 번호',
+      firstName: '이름(영문)', lastName: '성(영문)', email: '이메일(올바른 주소)', phoneLocal: '휴대폰 번호',
       contactFirst: '예약자 이름', contactLast: '예약자 성', contactEmail: '예약자 이메일', contactPhoneLocal: '예약자 휴대폰',
     },
   },
@@ -397,7 +399,10 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     setMissing(fields);
     track('Booking Validation', { step, flow: 'pass', fields: fields.join(',') });
     requestAnimationFrame(() => {
-      overlayRef.current?.querySelector('.wizard-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 첫 번째 빠진 칸으로 이동해 바로 입력할 수 있게 한다 (없으면 안내 문구로)
+      const field = overlayRef.current?.querySelector('[aria-invalid="true"]');
+      if (field) { field.scrollIntoView({ behavior: 'smooth', block: 'center' }); field.focus({ preventScroll: true }); }
+      else overlayRef.current?.querySelector('.wizard-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   };
   const missingOf = (fields) => fields.filter(f => !String(formData[f] ?? '').trim());
@@ -408,12 +413,13 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
       const gaps = missingOf(['flightNumber', 'airline', 'flightTime']);
       if (svc === 'transfer') gaps.push(...missingOf(['transferFlightNumber', 'transferAirline', 'transferFlightTime']));
       if (svc !== 'transfer' && formData.vehicleType !== 'none') gaps.push(...missingOf(['transferAddress']));
+      // 이메일은 1단계에서 필수 (형식까지 확인)
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) gaps.push('email');
       if (gaps.length) return showMissing(gaps);
     } else if (step === 2) {
-      const gaps = missingOf(['firstName', 'lastName', 'email', 'phoneLocal']);
+      const gaps = missingOf(['firstName', 'lastName', 'phoneLocal']);
       if (!formData.sameAsPrimary) gaps.push(...missingOf(['contactFirst', 'contactLast', 'contactEmail', 'contactPhoneLocal']));
       if (gaps.length) return showMissing(gaps);
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return showMissing(['email']);
     }
     setMissing([]);
     setDetailsOpen(false);
@@ -628,6 +634,17 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                   )}
                   {hasSurcharge && <p className="note"><b>{c.surchargeNote}</b></p>}
                 </div>
+                {/* 견적을 보낼 이메일 — 1단계에서 받아 두면 중간에 떠나도 진행 내용으로 연락할 수 있다 */}
+                <div className="card">
+                  <div className="f">
+                    <label htmlFor="bp-email">{c.emailS1}</label>
+                    <input id="bp-email" type="email" inputMode="email" value={formData.email} onChange={e => updateForm('email', e.target.value)} autoComplete="email" placeholder="name@example.com" {...inv('email')} />
+                    <small>{c.emailS1Hint}</small>
+                    <button type="button" className="bp-google" onClick={fillWithGoogle}>
+                      <img src="https://www.google.com/favicon.ico" alt="" width="14" height="14" /> {c.google}
+                    </button>
+                  </div>
+                </div>
                 <details className="card more">
                   <summary>{c.included}</summary>
                   <ul className="included">
@@ -648,13 +665,6 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                   <div className="row">
                     <div className="f"><label htmlFor="bp-given">{c.given}</label><input id="bp-given" value={formData.firstName} onChange={e => updateForm('firstName', e.target.value)} autoComplete="given-name" {...inv('firstName')} /></div>
                     <div className="f"><label htmlFor="bp-sur">{c.surname}</label><input id="bp-sur" value={formData.lastName} onChange={e => updateForm('lastName', e.target.value)} autoComplete="family-name" {...inv('lastName')} /></div>
-                  </div>
-                  <div className="f">
-                    <label htmlFor="bp-email">{c.email}</label>
-                    <input id="bp-email" type="email" value={formData.email} onChange={e => updateForm('email', e.target.value)} autoComplete="email" {...inv('email')} />
-                    <button type="button" className="bp-google" onClick={fillWithGoogle}>
-                      <img src="https://www.google.com/favicon.ico" alt="" width="14" height="14" /> {c.google}
-                    </button>
                   </div>
                   <div className="f">
                     <label htmlFor="bp-phone">{c.phone}</label>
