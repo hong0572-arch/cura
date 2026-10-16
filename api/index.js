@@ -323,9 +323,7 @@ ${quote.porterUsd > 0 ? `- Porter Service: $${quote.porterUsd}\n` : ''}${s.night
 
 Sincerely,
 Beyond the Gate Automated System`;
-    adminRecipients()
-      .then(({ primary }) => sendAdminMail(`New Reservation Request - ${req.params.id}`, text, primary))
-      .catch(err => console.error('Admin notification failed:', err));
+    await mailBeforeResponse(async () => sendAdminMail(`New Reservation Request - ${req.params.id}`, text, (await adminRecipients()).primary), 'Admin notification');
 
     res.status(200).json(checkoutPayload(req.params.id, data));
   } catch (error) {
@@ -388,8 +386,17 @@ async function markPaid(ref, payment) {
     paymentError: FieldValue.delete(),
     updatedAt: new Date().toISOString(),
   });
-  // 메일은 실패해도 결제 처리에는 영향을 주지 않는다
-  ref.get().then(snap => sendPaidMails(ref.id, snap.data() || {}, payment)).catch(err => console.error('Paid mail failed:', err.message));
+  // 메일은 실패해도 결제 처리에는 영향을 주지 않는다 (단, 응답 전에 보낸다)
+  await mailBeforeResponse(async () => sendPaidMails(ref.id, (await ref.get()).data() || {}, payment), 'Paid mail');
+}
+
+// 서버리스(Vercel)는 응답을 보낸 뒤의 작업이 중단될 수 있다 → 메일은 응답 전에 보내고, 최대 8초만 기다린다
+async function mailBeforeResponse(task, label) {
+  try {
+    await Promise.race([task(), new Promise((_, reject) => setTimeout(() => reject(new Error('mail timeout')), 8000))]);
+  } catch (err) {
+    console.error(`${label} failed:`, err.message);
+  }
 }
 
 const fmtPaid = (amount, currency) => (currency === 'USD' ? `USD ${Number(amount).toFixed(2)}` : `₩${Number(amount).toLocaleString('ko-KR')}`);
@@ -400,7 +407,7 @@ async function sendPaidMails(id, d, payment) {
   const amount = fmtPaid(payment.amount, payment.currency);
   const gateway = payment.gateway === 'paypal' ? 'PayPal' : 'NICEPAY';
   const name = `${d.firstName || ''} ${d.lastName || ''}`.trim() || d.name || '-';
-  await transporter.sendMail({
+  const mails = [transporter.sendMail({
     from: `"BTG System" <${user}>`,
     to: primary,
     subject: `[Admin] 결제 완료 (${gateway}) - ${id} · ${amount}`,
@@ -413,9 +420,9 @@ async function sendPaidMails(id, d, payment) {
 - 서비스: ${String(d.serviceType || '').toUpperCase()} · ${d.airport || ''} · ${d.date || ''} ${d.flightTime || ''}
 - 항공편: ${d.airline || ''} ${d.flightNumber || ''}
 - 차량: ${d.vehicleType || 'none'}${d.transferAddress ? ` → ${d.transferAddress}` : ''}`,
-  });
+  })];
   if (d.email) {
-    await transporter.sendMail({
+    mails.push(transporter.sendMail({
       from: `"Beyond the Gate" <${user}>`,
       to: d.email,
       replyTo: primary,
@@ -429,8 +436,10 @@ Dear ${name}, your payment is confirmed and your booking is secured.
 
 담당자가 서비스 하루 전 연락드립니다. / Your agent will contact you the day before.
 문의 / Questions: WhatsApp +82 10-2853-3998 · cura@beyondthegate.kr`,
-    });
+    }));
   }
+  // 관리자·고객 메일을 동시에 보낸다
+  await Promise.all(mails);
 }
 
 // 결제 실패·오류 기록 — 관리자 화면에서 원인을 보고, 관리자에게 알린다
@@ -592,9 +601,7 @@ app.post('/api/vehicle-reservations/:id', async (req, res) => {
 - Amount to Charge: ${currency === 'USD' ? `$${amount.toFixed(2)} USD` : `₩${amount.toLocaleString()}`}
 
 Beyond the Gate Automated System`;
-    adminRecipients()
-      .then(({ primary }) => sendAdminMail(`New Vehicle Reservation - ${id}`, text, primary))
-      .catch(err => console.error('Admin notification failed:', err));
+    await mailBeforeResponse(async () => sendAdminMail(`New Vehicle Reservation - ${id}`, text, (await adminRecipients()).primary), 'Admin notification');
 
     res.status(200).json(checkoutPayload(id, data));
   } catch (error) {
@@ -939,7 +946,7 @@ Reply to this email to answer the guest directly.`;
     });
     // 고객 접수 확인 메일 (실패해도 접수는 완료)
     const ko = contact.lang === 'ko';
-    transporter.sendMail({
+    await transporter.sendMail({
       from: `"Beyond the Gate" <${user}>`,
       to: contact.email,
       replyTo: primary,
