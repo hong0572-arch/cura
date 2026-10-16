@@ -9,7 +9,7 @@ import { copy, formatAmount } from './checkout/checkoutCopy';
 export default function NicePayment() {
   const navigate = useNavigate();
   // 서버가 확정한 결제 정보 (금액은 브라우저에서 바꿀 수 없음)
-  const { checkout: orderDetails, error: checkoutError, lang } = useCheckout();
+  const { checkout: orderDetails, error: checkoutError, lang, orderId, token } = useCheckout();
   const t = copy[lang] || copy.ko;
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -62,6 +62,15 @@ export default function NicePayment() {
         fnError: function (result) {
           console.error('Nicepay Error:', result);
           setErrorMsg(result.errorMsg || '결제 중 오류가 발생했습니다.');
+          track('Payment Error', { method: 'NicePay', code: String(result?.errorCode || '') });
+          // 관리자가 원인을 볼 수 있도록 서버에 기록 (고객이 창을 닫은 경우도 포함)
+          if (orderId && token) {
+            fetch(`/api/reservations/${encodeURIComponent(orderId)}/payment-error`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token, gateway: 'nicepay', message: `${result?.errorCode || ''} ${result?.errorMsg || ''}`.trim() }),
+            }).catch(() => {});
+          }
         }
       });
     } catch (err) {

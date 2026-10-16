@@ -122,6 +122,18 @@ function draftStatus(step) {
   return STATUS_DRAFT;
 }
 
+// NICEPAY buyerTel 은 숫자만 받는다. 한국 번호는 국내 형식(010…)으로 바꾼다
+function nicepayTel(phone) {
+  const raw = String(phone || '').trim();
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  if (raw.startsWith('+82') || (digits.startsWith('82') && digits.length >= 11)) {
+    const rest = digits.slice(2);
+    return rest.startsWith('0') ? rest : `0${rest}`;
+  }
+  return digits.slice(0, 20);
+}
+
 function checkoutPayload(id, data) {
   return {
     orderId: id,
@@ -131,7 +143,7 @@ function checkoutPayload(id, data) {
     orderName: data.orderName || `VIP ${data.serviceType || 'service'} in ${data.airport || 'ICN'}`,
     customerName: data.name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
     customerEmail: data.email || '',
-    customerMobilePhone: data.phone || '',
+    customerMobilePhone: data.paymentMethod === 'nicepay' ? nicepayTel(data.phone) : (data.phone || ''),
     status: data.status,
   };
 }
@@ -336,6 +348,23 @@ app.get('/api/reservations/:id/checkout', async (req, res) => {
 });
 
 // 결제 완료 페이지용 상태 조회 (개인정보 없이 상태·금액만 반환)
+app.post('/api/reservations/:id/payment-error', async (req, res) => {
+  try {
+    const r = await loadReservation(req.params.id, String(req.body.token || ''));
+    if (r.error) return res.status(r.code).json({ error: r.error });
+    if (r.data.status === STATUS_PAID) return res.status(200).json({ ok: true });
+    await recordPaymentError(r.ref, req.params.id, {
+      gateway: req.body.gateway === 'paypal' ? 'paypal' : 'nicepay',
+      stage: 'payment window',
+      message: String(req.body.message || '').slice(0, 300),
+    });
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error('Payment error record failed:', error);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
 app.get('/api/reservations/:id/status', async (req, res) => {
   try {
     const r = await loadReservation(req.params.id);
@@ -356,8 +385,74 @@ async function markPaid(ref, payment) {
   await ref.update({
     status: STATUS_PAID,
     payment: { ...payment, paidAt: new Date().toISOString() },
+    paymentError: FieldValue.delete(),
     updatedAt: new Date().toISOString(),
   });
+  // 메일은 실패해도 결제 처리에는 영향을 주지 않는다
+  ref.get().then(snap => sendPaidMails(ref.id, snap.data() || {}, payment)).catch(err => console.error('Paid mail failed:', err.message));
+}
+
+const fmtPaid = (amount, currency) => (currency === 'USD' ? `USD ${Number(amount).toFixed(2)}` : `₩${Number(amount).toLocaleString('ko-KR')}`);
+
+async function sendPaidMails(id, d, payment) {
+  const { user, transporter } = getTransporter();
+  const { primary } = await adminRecipients();
+  const amount = fmtPaid(payment.amount, payment.currency);
+  const gateway = payment.gateway === 'paypal' ? 'PayPal' : 'NICEPAY';
+  const name = `${d.firstName || ''} ${d.lastName || ''}`.trim() || d.name || '-';
+  await transporter.sendMail({
+    from: `"BTG System" <${user}>`,
+    to: primary,
+    subject: `[Admin] 결제 완료 (${gateway}) - ${id} · ${amount}`,
+    text: `결제가 완료되었습니다.
+
+- 예약번호: ${id}
+- 결제수단: ${gateway} · 거래번호 ${payment.transactionId || '-'}
+- 결제금액: ${amount}
+- 고객: ${name} · ${d.email || '-'} · ${d.phone || '-'}
+- 서비스: ${String(d.serviceType || '').toUpperCase()} · ${d.airport || ''} · ${d.date || ''} ${d.flightTime || ''}
+- 항공편: ${d.airline || ''} ${d.flightNumber || ''}
+- 차량: ${d.vehicleType || 'none'}${d.transferAddress ? ` → ${d.transferAddress}` : ''}`,
+  });
+  if (d.email) {
+    await transporter.sendMail({
+      from: `"Beyond the Gate" <${user}>`,
+      to: d.email,
+      replyTo: primary,
+      subject: `[Beyond the Gate] 결제 완료 · Payment confirmed (${id})`,
+      text: `${name}님, 결제가 완료되어 예약이 확정되었습니다.
+Dear ${name}, your payment is confirmed and your booking is secured.
+
+예약번호 / Reference: ${id}
+결제금액 / Amount: ${amount} (${gateway})
+일정 / Date: ${d.date || ''} ${d.flightTime || ''} · ${d.airport || ''}
+
+담당자가 서비스 하루 전 연락드립니다. / Your agent will contact you the day before.
+문의 / Questions: WhatsApp +82 10-2853-3998 · cura@beyondthegate.kr`,
+    });
+  }
+}
+
+// 결제 실패·오류 기록 — 관리자 화면에서 원인을 보고, 관리자에게 알린다
+async function recordPaymentError(ref, id, info) {
+  const at = new Date().toISOString();
+  await ref.update({ paymentError: { ...info, at }, updatedAt: at }).catch(() => {});
+  try {
+    const { primary } = await adminRecipients();
+    const snap = await ref.get();
+    const d = snap.data() || {};
+    await sendAdminMail(`결제 실패 (${info.gateway}) - ${id}`, `고객이 결제를 시도했지만 완료되지 않았습니다.
+
+- 예약번호: ${id}
+- 단계: ${info.stage}
+- 사유: ${info.message || '-'}
+- 고객: ${`${d.firstName || ''} ${d.lastName || ''}`.trim() || '-'} · ${d.email || '-'} · ${d.phone || '-'}
+- 금액: ${d.amount ? fmtPaid(d.amount, d.currency) : '-'}
+
+고객에게 연락해 결제를 도와주세요.`, primary);
+  } catch (err) {
+    console.error('Payment error mail failed:', err.message);
+  }
 }
 
 // --- Vehicle-only reservations (/book-vehicle) ---
@@ -1075,17 +1170,26 @@ app.post('/api/nicepay-return', async (req, res) => {
   const nicepayClientId = process.env.NICEPAY_CLIENT_ID || process.env.VITE_NICEPAY_CLIENT_KEY;
   const fail = (message) => res.redirect(`/fail?orderId=${encodeURIComponent(orderId || '')}&message=${encodeURIComponent(message)}`);
 
-  if (!secretKey || !nicepayClientId) return fail('Nicepay keys are missing');
+  // 예약이 있으면 실패 사유를 기록한다 (관리자 화면·메일)
+  const failWith = async (stage, message) => {
+    try {
+      const r0 = await loadReservation(orderId);
+      if (!r0.error && r0.data.status !== STATUS_PAID) await recordPaymentError(r0.ref, orderId, { gateway: 'nicepay', stage, message });
+    } catch { /* 기록 실패는 무시 */ }
+    console.error('Nicepay failed', { orderId, stage, message });
+    return fail(message);
+  };
+
+  if (!secretKey || !nicepayClientId) return failWith('server config', 'Nicepay keys are missing');
 
   // authResultCode '0000' means authentication succeeded
-  if (authResultCode !== '0000') return fail(authResultMsg || 'Authentication failed');
+  if (authResultCode !== '0000') return failWith('card authentication', `${authResultCode || ''} ${authResultMsg || 'Authentication failed'}`.trim());
 
   // 인증 응답 위변조 검증: sha256(authToken + clientId + amount + secretKey)
   const expectedSignature = crypto.createHash('sha256')
     .update(`${authToken}${nicepayClientId}${amount}${secretKey}`).digest('hex');
   if (clientId !== nicepayClientId || signature !== expectedSignature) {
-    console.error('Nicepay signature mismatch', { orderId });
-    return fail('Payment verification failed');
+    return failWith('signature check', clientId !== nicepayClientId ? 'Payment verification failed (client id mismatch)' : 'Payment verification failed (signature mismatch)');
   }
 
   try {
@@ -1096,8 +1200,7 @@ app.post('/api/nicepay-return', async (req, res) => {
     }
     const expectedAmount = r.data.amount;
     if (r.data.paymentMethod !== 'nicepay' || parseInt(amount, 10) !== expectedAmount) {
-      console.error('Nicepay amount mismatch', { orderId, amount, expectedAmount });
-      return fail('Payment amount mismatch');
+      return failWith('amount check', `Payment amount mismatch (${amount} vs ${expectedAmount})`);
     }
 
     const encryptedSecretKey = Buffer.from(`${nicepayClientId}:${secretKey}`).toString('base64');
@@ -1113,8 +1216,7 @@ app.post('/api/nicepay-return', async (req, res) => {
 
     // resultCode '0000' means capture succeeded
     if (!response.ok || data.resultCode !== '0000') {
-      console.error("Nicepay Capture Failed:", data);
-      return fail(data.resultMsg || 'Capture failed');
+      return failWith('approval', `${data.resultCode || response.status} ${data.resultMsg || 'Capture failed'}`);
     }
     if (Number(data.amount) !== expectedAmount || data.orderId !== orderId) {
       console.error('Nicepay approval mismatch', { orderId, data });
@@ -1131,7 +1233,7 @@ app.post('/api/nicepay-return', async (req, res) => {
     res.redirect(`/success?gateway=nicepay&orderId=${encodeURIComponent(orderId)}`);
   } catch (error) {
     console.error('Nicepay Capture Error:', error);
-    fail('Payment capture process failed');
+    failWith('server error', `Payment capture process failed: ${String(error.message || '').slice(0, 120)}`);
   }
 });
 
