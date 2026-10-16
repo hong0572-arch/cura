@@ -1237,6 +1237,30 @@ app.post('/api/nicepay-return', async (req, res) => {
   }
 });
 
+// NICEPAY 설정 점검 (관리자 전용, Bearer CRON_SECRET) — 실제 결제 없이 키·승인 주소가 맞는지 확인한다.
+// 없는 주문번호로 거래 조회를 보내, 인증 실패(키 오류)인지 '거래 없음'(키 정상)인지만 돌려준다. 키 값은 노출하지 않는다.
+app.get('/api/nicepay/health', async (req, res) => {
+  const auth = String(req.headers.authorization || '');
+  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) return res.status(401).json({ error: 'Unauthorized' });
+  const secretKey = process.env.NICEPAY_SECRET_KEY;
+  const clientId = process.env.NICEPAY_CLIENT_ID || process.env.VITE_NICEPAY_CLIENT_KEY;
+  const out = {
+    apiBase: NICEPAY_API_BASE,
+    clientIdMode: clientId ? (clientId.startsWith('R') ? 'live (R…)' : clientId.startsWith('S') ? 'test (S…)' : 'unknown') : 'missing',
+    browserKeyMatchesServer: Boolean(clientId) && clientId === process.env.VITE_NICEPAY_CLIENT_KEY,
+    secretKeyPresent: Boolean(secretKey),
+  };
+  try {
+    const basic = Buffer.from(`${clientId}:${secretKey}`).toString('base64');
+    const r = await fetch(`${NICEPAY_API_BASE}/v1/payments/find/BTG-2026-000000`, { headers: { Authorization: `Basic ${basic}` }, signal: AbortSignal.timeout(8000) });
+    const d = await r.json().catch(() => ({}));
+    out.lookup = { httpStatus: r.status, resultCode: d.resultCode, resultMsg: d.resultMsg };
+  } catch (e) {
+    out.lookup = { error: String(e.message).slice(0, 120) };
+  }
+  res.json(out);
+});
+
 // --- PayPal Integration ---
 const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET } = process.env;
 const PAYPAL_BASE_URL = process.env.PAYPAL_BASE_URL || "https://api-m.sandbox.paypal.com"; // Use sandbox by default
