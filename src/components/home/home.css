@@ -458,7 +458,7 @@
 .sj-pulse { fill: none; stroke: #FEC74D; stroke-width: 1.5; opacity: 0; }
 .sj-num-bg { fill: #0B1B33; stroke: #2B3E5C; stroke-width: 1.2; transition: fill .4s, stroke .4s; }
 .sj-num { fill: #8FA0B8; font: 600 11px 'IBM Plex Mono', monospace; }
-.sj-label { fill: #8FA0B8; font: 600 15px 'Manrope', 'Pretendard', sans-serif; transition: fill .4s; }
+.sj-label { fill: #8FA0B8; font: 600 15px var(--font-sans); transition: fill .4s; }
 .sj-station.is-done .sj-pad { stroke: #7A5C17; }
 .sj-station.is-done .sj-icon { color: #C9A447; }
 .sj-station.is-done .sj-num-bg { fill: #7A5C17; stroke: #7A5C17; }
@@ -477,7 +477,7 @@
 .sj-bridge { stroke: #2B3E5C; stroke-width: 3; stroke-dasharray: 2 9; stroke-linecap: round; }
 .sj-plane { color: #8FA0B8; stroke: currentColor; fill: none; }
 .sj-bubble rect, .sj-bubble path { fill: #F4EEE2; }
-.sj-bubble text { fill: #0B1B33; font: 600 14px 'Manrope', 'Pretendard', sans-serif; }
+.sj-bubble text { fill: #0B1B33; font: 600 14px var(--font-sans); }
 @media (prefers-reduced-motion: no-preference) {
   .sj-bubble { animation: sj-bubble .45s .25s cubic-bezier(.2, .9, .3, 1.2) both; }
   .sj-mover circle { animation: sj-bob 1.1s ease-in-out infinite; }
@@ -530,7 +530,7 @@
 
 /* 휴대폰: 세로 지도 (단계 설명을 지도 옆에 함께 표시) */
 .sj--v .sj-label--v { display: block; font-size: 18px; text-anchor: start; }
-.sj--v .sj-desc-v { fill: #8FA0B8; font: 400 14px 'Manrope', 'Pretendard', sans-serif; transition: fill .4s; }
+.sj--v .sj-desc-v { fill: #8FA0B8; font: 400 14px var(--font-sans); transition: fill .4s; }
 .sj--v .sj-station.is-current .sj-desc-v { fill: #DCE3EE; }
 .sj--v .sj-zone-label { font-size: 10.5px; letter-spacing: .08em; }
 .sj--v .sj-steps { display: none; }
@@ -551,7 +551,7 @@
 .kn-city-main { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; color: #FEC74D; }
 .kn-city-main b { display: block; color: #F4EEE2; font-size: 1rem; }
 .kn-city-main span { color: #8FA0B8; font-size: 0.82rem; }
-.kn-now { font: 500 2rem/1 'Cormorant Garamond', serif; color: #F4EEE2; }
+.kn-now { font: 500 2rem/1 var(--font-serif); color: #F4EEE2; }
 .kn-days { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .kn-days li { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; border-radius: 8px; background: rgba(220, 227, 238, .04); font: 400 12px 'IBM Plex Mono', monospace; color: #DCE3EE; }
 .kn-days em { font-style: normal; color: #7DB3E8; font-size: 11px; }
