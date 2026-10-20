@@ -375,7 +375,7 @@ function App({ initialSiteData = null }) {
 
               <Services t={t} lang={lang} />
 
-              <ProtocolSupport copy={(homeCopy[lang] || homeCopy.ko).protocol} />
+              <ProtocolSupport copy={(homeCopy[lang] || homeCopy.ko).protocol} lang={lang} />
 
               <OpsTracker copy={(homeCopy[lang] || homeCopy.ko).ops} />
 
