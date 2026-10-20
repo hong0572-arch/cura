@@ -582,3 +582,13 @@
   .kn-cards { grid-template-columns: 1fr; }
   .kn-foot .btg-btn { width: 100%; justify-content: center; }
 }
+
+/* ---------- 서비스 섹션 제목 영역 (가독성) ---------- */
+.svc-head h2 { max-width: 900px; margin-left: auto; margin-right: auto; font-size: clamp(2.1rem, 3.6vw, 3rem); line-height: 1.15; }
+.svc-head .svc-lead { max-width: 660px; margin: 0 auto; font-size: 1.18rem; line-height: 1.65; color: var(--text-primary); white-space: normal; text-wrap: balance; }
+.svc-head .svc-sub { max-width: 640px; margin: 14px auto 0; font-size: 1rem; line-height: 1.8; color: var(--text-secondary); white-space: normal; text-wrap: pretty; }
+html[lang="ko"] .svc-head h2 { letter-spacing: -0.02em; line-height: 1.25; }
+@media (max-width: 768px) {
+  .svc-head .svc-lead { font-size: 1.05rem; }
+  .svc-head .svc-sub { font-size: 0.95rem; }
+}

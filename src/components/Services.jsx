@@ -69,19 +69,23 @@ export default function Services({ t, lang = 'ko' }) {
   return (
     <section id="services" className="services-section section-padding">
       <div className="container">
-        <div className="section-header">
-          <span className="badge-gold">{t.services.badge || 'Meet & Assist'}</span>
+        {/* 제목 영역: 꼬리표는 '·'로 구분, 설명은 첫 문장을 리드로 크게, 나머지는 한 단락으로 (문장마다 줄을 끊지 않는다) */}
+        <div className="section-header svc-head">
+          <span className="badge-gold">{String(t.services.badge || 'Meet & Assist').split(/\s*,\s*/).filter(Boolean).join(' · ')}</span>
           <h2 className="font-serif">{t.services.title}</h2>
-          <p>
-            {t.services.subtitle && typeof t.services.subtitle === 'string'
-              ? t.services.subtitle.split('. ').map((sentence, i, arr) => (
-                  <React.Fragment key={i}>
-                    {sentence}{i !== arr.length - 1 ? '.' : ''}
-                    {i !== arr.length - 1 && <br />}
-                  </React.Fragment>
-                ))
-              : t.services.subtitle}
-          </p>
+          {(() => {
+            const text = typeof t.services.subtitle === 'string' ? t.services.subtitle.replace(/\s+/g, ' ').trim() : '';
+            if (!text) return null;
+            const cut = text.search(/[.!?。](\s|$)/);
+            const lead = cut > 0 ? text.slice(0, cut + 1) : text;
+            const rest = cut > 0 ? text.slice(cut + 1).trim() : '';
+            return (
+              <>
+                <p className="svc-lead">{lead}</p>
+                {rest && <p className="svc-sub">{rest}</p>}
+              </>
+            );
+          })()}
         </div>
 
         {/* Services Grid (Image Cards) */}
