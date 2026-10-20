@@ -34,6 +34,7 @@ const BlogPost = lazy(() => import('./pages/BlogPost'));
 import SEOMeta from './components/SEOMeta';
 import ThreeWays from './components/home/ThreeWays';
 import KoreaNow from './components/home/KoreaNow';
+import ProtocolSupport from './components/home/ProtocolSupport';
 import { FEATURES } from './config/features';
 import OpsTracker from './components/home/OpsTracker';
 import ClosingCta from './components/home/ClosingCta';
@@ -373,6 +374,8 @@ function App({ initialSiteData = null }) {
               {lang === 'en' && <KoreaNow enabled={FEATURES.koreaNow} onBook={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })} />}
 
               <Services t={t} lang={lang} />
+
+              <ProtocolSupport copy={(homeCopy[lang] || homeCopy.ko).protocol} />
 
               <OpsTracker copy={(homeCopy[lang] || homeCopy.ko).ops} />
 

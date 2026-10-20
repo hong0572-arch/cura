@@ -592,3 +592,24 @@ html[lang="ko"] .svc-head h2 { letter-spacing: -0.02em; line-height: 1.25; }
   .svc-head .svc-lead { font-size: 1.05rem; }
   .svc-head .svc-sub { font-size: 0.95rem; }
 }
+
+/* ---------- 외교·정부·VIP 의전 협조 (ProtocolSupport) ---------- */
+.protocol { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; padding: 52px 56px; border-radius: 18px; background: #0B1B33; color: #F4EEE2; }
+.protocol .btg-eyebrow { color: #FEC74D; }
+.protocol-title, .protocol-desc, .protocol-points { word-break: keep-all; } /* 한글 단어 중간에서 줄이 끊기지 않게 */
+.protocol .btg-btn--ghost { color: #F4EEE2; border: 1px solid #3A5276; background: transparent; }
+.protocol .btg-btn--ghost:hover { border-color: #FEC74D; color: #FEC74D; }
+.protocol-title { margin: 10px 0 16px; color: #F4EEE2; font-size: clamp(1.8rem, 2.8vw, 2.5rem); line-height: 1.2; white-space: pre-line; text-wrap: balance; }
+.protocol-desc { margin: 0; color: #C9D2DF; font-size: 1.02rem; line-height: 1.8; text-wrap: pretty; }
+.protocol-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.protocol-actions .btg-btn { display: inline-flex; align-items: center; gap: 8px; }
+.protocol-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; align-self: center; }
+.protocol-points li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; align-items: start; padding-bottom: 18px; border-bottom: 1px solid #1E3354; }
+.protocol-points b { display: block; font-size: 1.02rem; color: #F4EEE2; margin-bottom: 4px; }
+.protocol-points p { margin: 0; color: #9FB0C6; font-size: 0.92rem; line-height: 1.6; }
+.protocol-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #7A5C17; color: #FEC74D; }
+.protocol-points .protocol-note { display: block; border: none; padding: 0; font-size: 0.8rem; color: #8FA0B8; line-height: 1.6; }
+@media (max-width: 900px) {
+  .protocol { grid-template-columns: 1fr; gap: 32px; padding: 36px 24px; }
+  .protocol-actions .btg-btn { flex: 1 1 auto; justify-content: center; }
+}

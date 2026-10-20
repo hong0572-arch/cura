@@ -48,6 +48,19 @@ export const homeCopy = {
         },
       ],
     },
+    protocol: {
+      eyebrow: 'DIPLOMATIC & VIP PROTOCOL',
+      title: '외교·정부 인사와 유명인의 공항 이용,\n사전 협조까지 맡겨 주세요.',
+      desc: '외국 외교관과 정부 인사, 유명 연예인·공인의 입출국 시 공항 당국과 관계 부처에 필요한 협조 요청을 저희가 대신 준비하고 조율합니다. 일정·동선·보안을 미리 맞춰, 당일에는 조용하고 안전하게 모십니다.',
+      points: [
+        ['공항 당국 협조', '인천국제공항공사·한국공항공사와 동선·보안을 사전에 협의합니다.'],
+        ['관계 부처 협조', '외교 의전 등 필요한 기관에 협조 요청을 대행하고 일정을 조율합니다.'],
+        ['비공개 진행', '고객 정보와 일정은 보안을 유지하며, 언론·인파 노출을 최소화합니다.'],
+      ],
+      note: '전용 통로·별도 출입 등은 해당 기관의 승인에 따라 결정됩니다. 일정이 정해지면 가능한 한 일찍 알려 주세요.',
+      cta: '협조 문의하기',
+      mailSubject: '[의전 협조 문의] 외교·정부·VIP 공항 이용',
+    },
     ops: {
       eyebrow: '운영 방식',
       title: '항공편은 저희가 지켜봅니다.',
@@ -118,6 +131,19 @@ export const homeCopy = {
           alt: 'Premium vehicles prepared for a group',
         },
       ],
+    },
+    protocol: {
+      eyebrow: 'DIPLOMATIC & VIP PROTOCOL',
+      title: 'Diplomats, officials and public figures —\nwe coordinate with the authorities for you.',
+      desc: 'For foreign diplomats, government officials, celebrities and public figures, we prepare and coordinate the cooperation requests needed with airport authorities and the relevant government ministries. Route, timing and security are agreed in advance, so the day itself is quiet and secure.',
+      points: [
+        ['Airport authorities', 'Routes and security agreed in advance with Incheon International Airport Corporation and Korea Airports Corporation.'],
+        ['Government ministries', 'Cooperation requests to the relevant ministries, including diplomatic protocol, handled and scheduled on your behalf.'],
+        ['Discreet by default', 'Client details and schedules kept confidential, with minimal exposure to press and crowds.'],
+      ],
+      note: 'Dedicated routes or separate access are subject to approval by the authorities concerned. Please share your schedule as early as possible.',
+      cta: 'Discuss a protocol request',
+      mailSubject: '[Protocol request] Diplomatic / government / VIP airport arrival',
     },
     ops: {
       eyebrow: 'How we work',

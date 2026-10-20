@@ -123,6 +123,7 @@ export default function SEOMeta({ lang, path = '/', translations }) {
           { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '출국 의전' : 'Departure Meet & Assist' } },
           { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '환승 의전' : 'Transit Assistance' } },
           { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '공항 픽업·샌딩 차량' : 'Airport Chauffeur Transfer' } },
+          { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '외교·정부 인사 및 유명인 공항 의전 협조' : 'Diplomatic, Government & VIP Airport Protocol Coordination' } },
         ],
       },
     });
