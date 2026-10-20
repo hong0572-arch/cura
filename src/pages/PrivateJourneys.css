@@ -139,7 +139,7 @@
 
 /* 진행 방식 3단계 + 플래너 (2026-10 개편) */
 .pj-how { padding-top: 56px; }
-.pj-how-title { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 2.2rem; margin: 0 0 20px; }
+.pj-how-title { font-family: var(--font-serif); font-weight: 500; font-size: 2.2rem; margin: 0 0 20px; }
 .pj-how-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .pj-how-list li { border-top: 2px solid var(--champagne); padding-top: 14px; }
 .pj-how-n { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .14em; color: var(--champagne); }
