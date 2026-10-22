@@ -176,6 +176,7 @@
   .bp .bp-notice-body { padding: 22px 20px 4px; }
   .bp .bp-notice-sec h2 { font-size: 1.4rem; }
   .bp .bp-notice-actions { padding: 12px 20px 18px; }
-  .bp .bp-notice-actions .btn { flex: 1; min-width: 0; }
+  .bp .bp-notice-actions .btn { flex: 1; min-width: 0; white-space: nowrap; }
+  .bp .bp-notice-actions .btn-ghost { flex: 0 0 auto; padding: 0 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .bp .bp-notice-backdrop { animation: none; } }

@@ -73,7 +73,7 @@ const COPY = {
     optional: 'Optional — class of travel, wheelchair, requests, booking for someone else',
     travelClass: 'Class of travel', classes: { '': 'Not specified', first: 'First', business: 'Business', premium_economy: 'Premium Economy', economy: 'Economy' },
     assistance: 'Assistance', wheelchair: 'Wheelchair needed',
-    requests: 'Special requests', requestsPh: 'Child seat, flowers, dietary needs…',
+    requests: 'Special requests', requestsPh: 'APEC card, medical needs, child seat, flowers…',
     someoneElse: 'I am booking for someone else',
     cFirst: 'Your given name', cLast: 'Your surname', cEmail: 'Your email', cPhone: 'Your mobile',
     s3Title: 'Review & pay',
@@ -146,7 +146,7 @@ const COPY = {
     optional: '선택 — 좌석 등급, 휠체어, 요청사항, 다른 분을 위한 예약',
     travelClass: '좌석 등급', classes: { '': '선택 안 함', first: '퍼스트', business: '비즈니스', premium_economy: '프리미엄 이코노미', economy: '이코노미' },
     assistance: '도움 필요', wheelchair: '휠체어 필요',
-    requests: '요청사항', requestsPh: '유아 카시트, 꽃다발, 식이 제한 등',
+    requests: '요청사항', requestsPh: 'APEC 카드 소지, 의료 사정, 유아 카시트, 꽃다발 등',
     someoneElse: '다른 분을 위해 예약합니다',
     cFirst: '예약자 이름', cLast: '예약자 성', cEmail: '예약자 이메일', cPhone: '예약자 휴대폰',
     s3Title: '확인 및 결제',
@@ -200,13 +200,14 @@ const NOTICE = {
       closing: 'Enjoy a seamless airport experience with our personalized Meet & Assist Service.',
     },
     fastTrack: {
-      title: 'Fast Track Service Notice',
-      lead: 'Fast Track service is subject to airport regulations and eligibility requirements.',
+      title: 'Fast Track at Incheon — what to expect',
+      lead: 'Incheon Airport has no official, paid Fast Track. Instead, priority immigration lanes are open to eligible travellers.',
       paras: [
-        'This service is not available to all passengers and may only be provided to eligible travelers, such as seniors and passengers requiring special assistance, in accordance with airport guidelines.',
-        'Eligibility is determined solely by the relevant airport authorities, and availability may vary depending on airport policies and operational conditions.',
+        'Eligible travellers include diplomats, APEC Business Travel Card (ABTC) holders, seniors, children aged 7 and under (with their family), and wheelchair users or passengers with reduced mobility. If any of these apply to you, or you have special circumstances such as medical or business needs, let us know in advance and we will guide you to the priority lane.',
+        'If you are not eligible, we take you along the fastest route based on conditions on the day, aiming to get you through in under 20 minutes once you join the queue.',
+        'Airport conditions change constantly — even the priority lane can move at about the same pace as the regular lanes. That is why we choose the best route in real time.',
       ],
-      closing: 'Our team will gladly assist in checking eligibility prior to your travel.',
+      closing: 'Eligibility and lane operations are decided by the immigration authorities.',
     },
     contact: 'For more information or reservation inquiries, please contact us at',
     ok: 'OK, continue',
@@ -224,13 +225,14 @@ const NOTICE = {
       closing: '맞춤형 Meet & Assist 서비스로 매끄러운 공항 경험을 누려 보세요.',
     },
     fastTrack: {
-      title: 'Fast Track 서비스 안내',
-      lead: 'Fast Track 서비스는 공항 규정과 이용 자격 요건에 따릅니다.',
+      title: '패스트트랙·우대 출입국 심사 안내',
+      lead: '인천공항에는 공식적으로 판매되는 Fast Track이 없습니다. 대신 대상자를 위한 우대 출입국 심사 라인이 운영됩니다.',
       paras: [
-        '모든 승객이 이용할 수 있는 서비스가 아니며, 공항 지침에 따라 고령자·특별 지원이 필요한 승객 등 자격을 갖춘 분께만 제공될 수 있습니다.',
-        '이용 자격은 관련 공항 당국이 단독으로 결정하며, 공항 정책과 운영 상황에 따라 이용 가능 여부가 달라질 수 있습니다.',
+        '우대 심사 대상: 외교관, APEC 기업인 여행카드(ABTC) 소지자, 고령자, 7세 이하 어린이(동반 가족 포함), 휠체어 이용 등 거동이 불편한 분 등. 해당 사항이 있거나 의료·비즈니스 등 특수한 사정이 있으면 미리 알려 주세요. 우대 심사 라인으로 안내해 드립니다.',
+        '대상이 아닌 고객은 당일 공항 상황을 보고 가장 빠른 동선으로 안내해, 대기줄에 들어선 뒤 20분 안에 통과하는 것을 목표로 합니다.',
+        '공항 상황은 수시로 바뀌어, 우대 심사 라인에 들어가더라도 일반 라인과 비슷한 시간이 걸릴 수 있습니다. 그래서 저희가 그때그때 가장 빠른 동선을 골라 안내합니다.',
       ],
-      closing: '여행 전 이용 자격 확인을 기꺼이 도와드리겠습니다.',
+      closing: '우대 심사 대상 여부와 라인 운영은 출입국 당국이 결정합니다.',
     },
     contact: '자세한 정보나 예약 문의는 아래 주소로 연락해 주세요.',
     ok: '확인',
@@ -242,18 +244,18 @@ const NOTICE = {
 // 서비스 포함 내역 (기존 1단계 내용 요약)
 const INCLUDED = {
   en: {
-    arrival: ['Personal greeting at the aircraft door (air-bridge) with a name board', 'Priority guidance through immigration (Fast Track only for eligible passengers*)', 'Baggage assistance and customs escort', 'Escort all the way to your driver or pick-up point', 'Real-time flight monitoring — we wait if you are delayed', 'Service duration: 3 hours'],
-    departure: ['Personal greeting on the departure floor with a name board', 'Priority guidance through check-in, security and immigration (Fast Track only for eligible passengers*)', 'Baggage assistance from your car', 'Tax refund assistance — escort to customs check and refund counters (eligibility set by Korea Customs)', 'Escort all the way to your gate', 'Service duration: 2 hours'],
-    transfer: ['Personal greeting at the arrival gate with a name sign', 'Guidance through transfer procedures (Fast Track only for eligible passengers*)', 'Baggage assistance on request', 'Escort to your connecting flight'],
+    arrival: ['Personal greeting at the aircraft door (air-bridge) with a name board', 'Fastest route through immigration (priority lane for eligible travellers*)', 'Baggage assistance and customs escort', 'Escort all the way to your driver or pick-up point', 'Real-time flight monitoring — we wait if you are delayed', 'Service duration: 3 hours'],
+    departure: ['Personal greeting on the departure floor with a name board', 'Fastest route through check-in, security and immigration (priority lane for eligible travellers*)', 'Baggage assistance from your car', 'Tax refund assistance — escort to customs check and refund counters (eligibility set by Korea Customs)', 'Escort all the way to your gate', 'Service duration: 2 hours'],
+    transfer: ['Personal greeting at the arrival gate with a name sign', 'Guidance through transfer procedures (priority lane for eligible travellers*)', 'Baggage assistance on request', 'Escort to your connecting flight'],
     picketing: ['Name-board greeting at the arrival hall', 'Guidance to your driver or pick-up point'],
-    notes: ['* Incheon Airport does not officially sell Fast Track; our staff take you the most efficient route available.', 'Escort support only — immigration and customs procedures are completed by the passenger.', 'Cancellation: free up to 48 h before service · 50% within 24–48 h · no refund within 24 h.'],
+    notes: ['* Incheon has no official paid Fast Track. Priority immigration lanes are for eligible travellers (diplomats, APEC card holders, seniors, children aged 7 and under, passengers with reduced mobility, etc.) — tell us in advance. Everyone else is guided along the fastest route.', 'Escort support only — immigration and customs procedures are completed by the passenger.', 'Cancellation: free up to 48 h before service · 50% within 24–48 h · no refund within 24 h.'],
   },
   ko: {
-    arrival: ['항공기 탑승교(게이트)에서 이름 피켓으로 영접', '입국 심사 우선 안내 (패스트트랙은 대상 승객만*)', '수하물 수취 지원 및 세관 동행', '기사님·픽업 장소까지 동행', '실시간 항공편 확인 — 지연 시에도 기다립니다', '서비스 시간: 3시간'],
-    departure: ['출국장에서 이름 피켓으로 영접', '체크인·보안검색·출국심사 우선 안내 (패스트트랙은 대상 승객만*)', '차량에서부터 수하물 지원', '택스리펀드 지원 — 세관 확인·환급 창구 동행 (환급 여부는 세관 기준)', '탑승 게이트까지 동행', '서비스 시간: 2시간'],
-    transfer: ['도착 게이트에서 이름 피켓으로 영접', '환승 절차 안내 (패스트트랙은 대상 승객만*)', '요청 시 수하물 지원', '연결편 탑승구까지 동행'],
+    arrival: ['항공기 탑승교(게이트)에서 이름 피켓으로 영접', '입국 심사 — 가장 빠른 동선 안내 (우대 심사는 대상자만*)', '수하물 수취 지원 및 세관 동행', '기사님·픽업 장소까지 동행', '실시간 항공편 확인 — 지연 시에도 기다립니다', '서비스 시간: 3시간'],
+    departure: ['출국장에서 이름 피켓으로 영접', '체크인·보안검색·출국심사 — 가장 빠른 동선 안내 (우대 심사는 대상자만*)', '차량에서부터 수하물 지원', '택스리펀드 지원 — 세관 확인·환급 창구 동행 (환급 여부는 세관 기준)', '탑승 게이트까지 동행', '서비스 시간: 2시간'],
+    transfer: ['도착 게이트에서 이름 피켓으로 영접', '환승 절차 안내 (우대 심사는 대상자만*)', '요청 시 수하물 지원', '연결편 탑승구까지 동행'],
     picketing: ['입국장에서 이름 피켓으로 영접', '기사님·픽업 장소까지 안내'],
-    notes: ['* 인천공항은 패스트트랙을 공식 판매하지 않습니다. 가능한 가장 빠른 경로로 안내합니다.', '동행 지원 서비스이며 출입국·세관 절차는 승객 본인이 진행합니다.', '취소 규정: 서비스 48시간 전까지 무료 · 24~48시간 전 50% · 24시간 이내 환불 불가'],
+    notes: ['* 인천공항에는 공식 Fast Track이 없습니다. 우대 출입국 심사는 대상자(외교관·APEC 카드 소지자·고령자·7세 이하 어린이·거동이 불편한 분 등)만 이용할 수 있으니 미리 알려 주세요. 그 외에는 가장 빠른 동선으로 안내합니다.', '동행 지원 서비스이며 출입국·세관 절차는 승객 본인이 진행합니다.', '취소 규정: 서비스 48시간 전까지 무료 · 24~48시간 전 50% · 24시간 이내 환불 불가'],
   },
 };
 
@@ -486,7 +488,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     else { setStep(prev => prev - 1); toTop(); }
   };
 
-  // 결제 버튼 → 먼저 Fast Track 안내를 보여 주고, 확인하면 결제를 진행한다
+  // 결제 버튼 → 먼저 패스트트랙·우대 심사 안내를 보여 주고, 확인하면 결제를 진행한다
   const requestPayment = () => {
     if (isSubmitting) return;
     track('Booking Notice', { kind: 'payment', lang });
