@@ -158,3 +158,24 @@
 }
 @media (prefers-reduced-motion: reduce){.bp *{animation:none!important;transition:none!important}.bp .issued .stamp{opacity:1;transform:rotate(-8deg)}}
 .bp.still *{animation:none!important;transition:none!important}.bp.still.issued .stamp{opacity:1;transform:rotate(-8deg)}
+
+/* 안내 팝업 (예약 시작·결제 직전) — 확인을 눌러야 다음으로 */
+.bp .bp-notice-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(7, 18, 31, 0.62); animation: bp-fade .2s ease; }
+.bp .bp-notice { width: min(640px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; background: #FFFDF8; color: #1A1712; border-radius: 16px; box-shadow: 0 30px 80px rgba(7, 18, 31, 0.35); overflow: hidden; }
+.bp .bp-notice-body { padding: 28px 30px 8px; overflow-y: auto; word-break: keep-all; }
+.bp .bp-notice-sec h2 { margin: 0 0 12px; font-family: var(--font-serif); font-weight: 500; font-size: 1.7rem; line-height: 1.2; color: #0B1B33; }
+.bp .bp-notice-sec p { margin: 0 0 12px; font-size: 0.98rem; line-height: 1.75; color: #3A342B; text-wrap: pretty; }
+.bp .bp-notice-sec .bp-notice-lead, .bp .bp-notice-sec .bp-notice-closing { font-weight: 700; color: #1A1712; }
+.bp .bp-notice-sec--rule { margin-top: 18px; padding-top: 20px; border-top: 1px solid #E4DCCD; }
+.bp .bp-notice-contact { margin: 4px 0 18px; font-size: 0.9rem; color: #5E574C; }
+.bp .bp-notice-contact a { color: #7A5C17; font-weight: 600; }
+.bp .bp-notice-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 30px 20px; border-top: 1px solid #EFE8DB; background: #FFFDF8; }
+.bp .bp-notice-actions .btn { width: auto; min-width: 140px; padding: 0 22px; }
+@keyframes bp-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 560px) {
+  .bp .bp-notice-body { padding: 22px 20px 4px; }
+  .bp .bp-notice-sec h2 { font-size: 1.4rem; }
+  .bp .bp-notice-actions { padding: 12px 20px 18px; }
+  .bp .bp-notice-actions .btn { flex: 1; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .bp .bp-notice-backdrop { animation: none; } }

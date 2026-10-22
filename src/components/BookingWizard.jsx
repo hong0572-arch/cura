@@ -187,6 +187,58 @@ const COPY = {
   },
 };
 
+// 안내 팝업 (예약 시작 시 + 결제 직전) — 확인을 눌러야 다음으로 진행
+const NOTICE = {
+  en: {
+    intro: {
+      title: 'Meet & Assist Service',
+      lead: 'First time visiting the airport?',
+      paras: [
+        'No need to feel overwhelmed by complex airport procedures, unfamiliar signs, or language barriers.',
+        'Our professional greeters will welcome you upon arrival and provide personalized assistance throughout your airport journey. From immigration and baggage claim to ground transportation, we ensure a smooth, comfortable, and stress-free experience from start to finish.',
+      ],
+      closing: 'Enjoy a seamless airport experience with our personalized Meet & Assist Service.',
+    },
+    fastTrack: {
+      title: 'Fast Track Service Notice',
+      lead: 'Fast Track service is subject to airport regulations and eligibility requirements.',
+      paras: [
+        'This service is not available to all passengers and may only be provided to eligible travelers, such as seniors and passengers requiring special assistance, in accordance with airport guidelines.',
+        'Eligibility is determined solely by the relevant airport authorities, and availability may vary depending on airport policies and operational conditions.',
+      ],
+      closing: 'Our team will gladly assist in checking eligibility prior to your travel.',
+    },
+    contact: 'For more information or reservation inquiries, please contact us at',
+    ok: 'OK, continue',
+    okPay: 'I understand — continue to payment',
+    cancel: 'Back',
+  },
+  ko: {
+    intro: {
+      title: 'Meet & Assist 서비스',
+      lead: '공항이 처음이신가요?',
+      paras: [
+        '복잡한 공항 절차, 낯선 안내판, 언어 장벽 때문에 걱정하지 않으셔도 됩니다.',
+        '전문 그리터가 도착하시는 순간부터 맞이하고, 공항 이용 전 과정을 1:1로 도와드립니다. 입국심사와 수하물 수취부터 지상 교통편까지, 처음부터 끝까지 편안하고 여유로운 경험을 약속드립니다.',
+      ],
+      closing: '맞춤형 Meet & Assist 서비스로 매끄러운 공항 경험을 누려 보세요.',
+    },
+    fastTrack: {
+      title: 'Fast Track 서비스 안내',
+      lead: 'Fast Track 서비스는 공항 규정과 이용 자격 요건에 따릅니다.',
+      paras: [
+        '모든 승객이 이용할 수 있는 서비스가 아니며, 공항 지침에 따라 고령자·특별 지원이 필요한 승객 등 자격을 갖춘 분께만 제공될 수 있습니다.',
+        '이용 자격은 관련 공항 당국이 단독으로 결정하며, 공항 정책과 운영 상황에 따라 이용 가능 여부가 달라질 수 있습니다.',
+      ],
+      closing: '여행 전 이용 자격 확인을 기꺼이 도와드리겠습니다.',
+    },
+    contact: '자세한 정보나 예약 문의는 아래 주소로 연락해 주세요.',
+    ok: '확인',
+    okPay: '확인하고 결제 진행',
+    cancel: '이전으로',
+  },
+};
+
 // 서비스 포함 내역 (기존 1단계 내용 요약)
 const INCLUDED = {
   en: {
@@ -234,6 +286,8 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   const [bookingToken] = useState(() => crypto.randomUUID());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payError, setPayError] = useState('');
+  // 안내 팝업: 'intro'(예약 시작) → 확인 / 'payment'(결제 직전) → 확인하면 결제 진행
+  const [notice, setNotice] = useState('intro');
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -432,6 +486,13 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     else { setStep(prev => prev - 1); toTop(); }
   };
 
+  // 결제 버튼 → 먼저 Fast Track 안내를 보여 주고, 확인하면 결제를 진행한다
+  const requestPayment = () => {
+    if (isSubmitting) return;
+    track('Booking Notice', { kind: 'payment', lang });
+    setNotice('payment');
+  };
+
   const handlePayment = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -483,7 +544,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   const passName = hasName ? `${formData.lastName.toUpperCase()} / ${formData.firstName.toUpperCase()}` : P.placeholderName;
   const tags = [formData.wheelchair && P.wheelchair, dep && P.taxRefund, formData.travelClass && c.classes[formData.travelClass].toUpperCase()].filter(Boolean);
   const ctaLabel = step === 3 ? (isSubmitting ? c.paying : c.pay(priceMain)) : c.cta[step];
-  const onCta = step === 3 ? handlePayment : handleNext;
+  const onCta = step === 3 ? requestPayment : handleNext;
   // 경로: 입국·환승은 [항공편 → 공항], 출국은 [공항 → 항공편]
   const flightEnd = { code: flightNo || '···', name: formData.airline || P.enterFlight, keys: ['flightNumber', 'airline'] };
   const airportEnd = { code: formData.airport, name: airportName(formData.airport), keys: ['airport'] };
@@ -830,6 +891,41 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
             {step === 3 ? (isSubmitting ? c.paying : c.payShort) : `${c.continue} (${step}/3)`}
           </button>
         </div>
+
+        {/* 안내 팝업 — 예약 시작(서비스 소개 + Fast Track 안내), 결제 직전(Fast Track 안내) */}
+        {notice && (() => {
+          const n = NOTICE[isKo ? 'ko' : 'en'];
+          const blocks = notice === 'intro' ? [n.intro, n.fastTrack] : [n.fastTrack];
+          const confirm = () => {
+            track('Booking Notice OK', { kind: notice, lang });
+            const wasPayment = notice === 'payment';
+            setNotice(null);
+            if (wasPayment) handlePayment();
+          };
+          return (
+            <div className="bp-notice-backdrop" role="presentation">
+              <div className="bp-notice" role="dialog" aria-modal="true" aria-labelledby="bp-notice-title">
+                <div className="bp-notice-body">
+                  {blocks.map((b, i) => (
+                    <section key={b.title} className={i ? 'bp-notice-sec bp-notice-sec--rule' : 'bp-notice-sec'}>
+                      <h2 id={i ? undefined : 'bp-notice-title'}>{b.title}</h2>
+                      <p className="bp-notice-lead">{b.lead}</p>
+                      {b.paras.map(t => <p key={t}>{t}</p>)}
+                      <p className="bp-notice-closing">{b.closing}</p>
+                    </section>
+                  ))}
+                  <p className="bp-notice-contact">{n.contact} <a href="mailto:cura@beyondthegate.kr">cura@beyondthegate.kr</a></p>
+                </div>
+                <div className="bp-notice-actions">
+                  {notice === 'payment' && <button type="button" className="btn btn-ghost" onClick={() => setNotice(null)}>{n.cancel}</button>}
+                  <button type="button" className={`btn ${notice === 'payment' ? 'btn-gold' : 'btn-navy'}`} onClick={confirm} autoFocus>
+                    {notice === 'payment' ? n.okPay : n.ok}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
