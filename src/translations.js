@@ -189,7 +189,7 @@ export const translations = {
           steps: [
             { title: "공항도착장소 영접", desc: "전용 하차 구역 안내" },
             { title: "항공사 체크인", desc: "신속한 발권 지원" },
-            { title: "보안지원", desc: "Fast Track 등 안내" },
+            { title: "보안검색 지원", desc: "우대 대상 확인·최단 동선 안내" },
             { title: "출국동행", desc: "출국심사/환전/라운지 이동" },
             { title: "게이트 이동 탑승확인", desc: "최종 탑승 에스코트" }
           ],
@@ -774,7 +774,7 @@ export const translations = {
           steps: [
             { title: "Curbside Greeting", desc: "Guidance at drop-off zone" },
             { title: "Airline Check-in", desc: "Expedited ticketing support" },
-            { title: "Security Support", desc: "Fast Track guidance" },
+            { title: "Security Screening", desc: "Priority lane if eligible · fastest route" },
             { title: "Departure Escort", desc: "Immigration/Exchange/Lounge" },
             { title: "Boarding Confirmation", desc: "Final boarding escort" }
           ],
