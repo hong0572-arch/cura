@@ -812,6 +812,42 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   { label: 'Step Title', key: 'title' },
                   { label: 'Step Description', key: 'desc', isTextArea: true, rows: 2 }
                 ])}
+
+                {/* 홈 '공항 동선' 모션 그림(ServiceJourney)의 단계 이름·말풍선 설명 — services.diagrams.* */}
+                <div className="divider"></div>
+                <h3>4. Home airport route animation (공항 동선 그림)</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  Step name and the short line shown in the speech bubble on the home page animation. Keep descriptions short (about 15–25 characters).
+                </p>
+                <h4 style={{ marginTop: '16px', color: 'var(--gold-primary)' }}>Arrival route (5 steps)</h4>
+                {renderField('Arrival panel title', 'services.diagrams.arrival.title')}
+                {renderField('Arrival panel description', 'services.diagrams.arrival.desc', true, 3)}
+                {renderArrayCard('Arrival route step', 'services.diagrams.arrival.steps', 5, [
+                  { label: 'Step name', key: 'title' },
+                  { label: 'Short description (bubble)', key: 'desc' }
+                ])}
+                {renderField('Arrival panel footer', 'services.diagrams.arrival.footer', true, 2)}
+
+                <h4 style={{ marginTop: '16px', color: 'var(--gold-primary)' }}>Departure route (5 steps + tax refund step 3)</h4>
+                {renderField('Departure panel title', 'services.diagrams.departure.title')}
+                {renderField('Departure panel description', 'services.diagrams.departure.desc', true, 3)}
+                {renderArrayCard('Departure route step', 'services.diagrams.departure.steps', 5, [
+                  { label: 'Step name', key: 'title' },
+                  { label: 'Short description (bubble)', key: 'desc' }
+                ])}
+                {renderField('Tax refund step name (shown as step 3)', 'services.diagrams.departure.taxRefund.title')}
+                {renderField('Tax refund short description', 'services.diagrams.departure.taxRefund.desc')}
+                {renderField('Tax refund note (below the panel)', 'services.diagrams.departure.taxRefund.note', true, 3)}
+                {renderField('Departure panel footer', 'services.diagrams.departure.footer', true, 2)}
+
+                <h4 style={{ marginTop: '16px', color: 'var(--gold-primary)' }}>Transfer route (4 steps)</h4>
+                {renderField('Transfer panel title', 'services.diagrams.transfer.title')}
+                {renderField('Transfer panel description', 'services.diagrams.transfer.desc', true, 3)}
+                {renderArrayCard('Transfer route step', 'services.diagrams.transfer.steps', 4, [
+                  { label: 'Step name', key: 'title' },
+                  { label: 'Short description (bubble)', key: 'desc' }
+                ])}
+                {renderField('Transfer panel footer', 'services.diagrams.transfer.footer', true, 2)}
               </div>
             )}
 
