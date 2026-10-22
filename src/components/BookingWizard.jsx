@@ -73,7 +73,7 @@ const COPY = {
     optional: 'Optional — class of travel, wheelchair, requests, booking for someone else',
     travelClass: 'Class of travel', classes: { '': 'Not specified', first: 'First', business: 'Business', premium_economy: 'Premium Economy', economy: 'Economy' },
     assistance: 'Assistance', wheelchair: 'Wheelchair needed',
-    requests: 'Special requests', requestsPh: 'Child seat, flowers, dietary needs…',
+    requests: 'Special requests', requestsPh: 'APEC card, medical needs, child seat, flowers…',
     someoneElse: 'I am booking for someone else',
     cFirst: 'Your given name', cLast: 'Your surname', cEmail: 'Your email', cPhone: 'Your mobile',
     s3Title: 'Review & pay',
@@ -146,7 +146,7 @@ const COPY = {
     optional: '선택 — 좌석 등급, 휠체어, 요청사항, 다른 분을 위한 예약',
     travelClass: '좌석 등급', classes: { '': '선택 안 함', first: '퍼스트', business: '비즈니스', premium_economy: '프리미엄 이코노미', economy: '이코노미' },
     assistance: '도움 필요', wheelchair: '휠체어 필요',
-    requests: '요청사항', requestsPh: '유아 카시트, 꽃다발, 식이 제한 등',
+    requests: '요청사항', requestsPh: 'APEC 카드 소지, 의료 사정, 유아 카시트, 꽃다발 등',
     someoneElse: '다른 분을 위해 예약합니다',
     cFirst: '예약자 이름', cLast: '예약자 성', cEmail: '예약자 이메일', cPhone: '예약자 휴대폰',
     s3Title: '확인 및 결제',
@@ -187,21 +187,75 @@ const COPY = {
   },
 };
 
+// 안내 팝업 (예약 시작 시 + 결제 직전) — 확인을 눌러야 다음으로 진행
+const NOTICE = {
+  en: {
+    intro: {
+      title: 'Meet & Assist Service',
+      lead: 'First time visiting the airport?',
+      paras: [
+        'No need to feel overwhelmed by complex airport procedures, unfamiliar signs, or language barriers.',
+        'Our professional greeters will welcome you upon arrival and provide personalized assistance throughout your airport journey. From immigration and baggage claim to ground transportation, we ensure a smooth, comfortable, and stress-free experience from start to finish.',
+      ],
+      closing: 'Enjoy a seamless airport experience with our personalized Meet & Assist Service.',
+    },
+    fastTrack: {
+      title: 'Fast Track at Incheon — what to expect',
+      lead: 'Incheon Airport has no official, paid Fast Track. Instead, priority immigration lanes are open to eligible travellers.',
+      paras: [
+        'Eligible travellers include diplomats, APEC Business Travel Card (ABTC) holders, seniors, children aged 7 and under (with their family), and wheelchair users or passengers with reduced mobility. If any of these apply to you, or you have special circumstances such as medical or business needs, let us know in advance and we will guide you to the priority lane.',
+        'If you are not eligible, we take you along the fastest route based on conditions on the day, aiming to get you through in under 20 minutes once you join the queue.',
+        'Airport conditions change constantly — even the priority lane can move at about the same pace as the regular lanes. That is why we choose the best route in real time.',
+      ],
+      closing: 'Eligibility and lane operations are decided by the immigration authorities.',
+    },
+    contact: 'For more information or reservation inquiries, please contact us at',
+    ok: 'OK, continue',
+    okPay: 'I understand — continue to payment',
+    cancel: 'Back',
+  },
+  ko: {
+    intro: {
+      title: 'Meet & Assist 서비스',
+      lead: '공항이 처음이신가요?',
+      paras: [
+        '복잡한 공항 절차, 낯선 안내판, 언어 장벽 때문에 걱정하지 않으셔도 됩니다.',
+        '전문 그리터가 도착하시는 순간부터 맞이하고, 공항 이용 전 과정을 1:1로 도와드립니다. 입국심사와 수하물 수취부터 지상 교통편까지, 처음부터 끝까지 편안하고 여유로운 경험을 약속드립니다.',
+      ],
+      closing: '맞춤형 Meet & Assist 서비스로 매끄러운 공항 경험을 누려 보세요.',
+    },
+    fastTrack: {
+      title: '패스트트랙·우대 출입국 심사 안내',
+      lead: '인천공항에는 공식적으로 판매되는 Fast Track이 없습니다. 대신 대상자를 위한 우대 출입국 심사 라인이 운영됩니다.',
+      paras: [
+        '우대 심사 대상: 외교관, APEC 기업인 여행카드(ABTC) 소지자, 고령자, 7세 이하 어린이(동반 가족 포함), 휠체어 이용 등 거동이 불편한 분 등. 해당 사항이 있거나 의료·비즈니스 등 특수한 사정이 있으면 미리 알려 주세요. 우대 심사 라인으로 안내해 드립니다.',
+        '대상이 아닌 고객은 당일 공항 상황을 보고 가장 빠른 동선으로 안내해, 대기줄에 들어선 뒤 20분 안에 통과하는 것을 목표로 합니다.',
+        '공항 상황은 수시로 바뀌어, 우대 심사 라인에 들어가더라도 일반 라인과 비슷한 시간이 걸릴 수 있습니다. 그래서 저희가 그때그때 가장 빠른 동선을 골라 안내합니다.',
+      ],
+      closing: '우대 심사 대상 여부와 라인 운영은 출입국 당국이 결정합니다.',
+    },
+    contact: '자세한 정보나 예약 문의는 아래 주소로 연락해 주세요.',
+    ok: '확인',
+    okPay: '확인하고 결제 진행',
+    cancel: '이전으로',
+  },
+};
+
 // 서비스 포함 내역 (기존 1단계 내용 요약)
 const INCLUDED = {
   en: {
-    arrival: ['Personal greeting at the aircraft door (air-bridge) with a name board', 'Priority guidance through immigration (Fast Track only for eligible passengers*)', 'Baggage assistance and customs escort', 'Escort all the way to your driver or pick-up point', 'Real-time flight monitoring — we wait if you are delayed', 'Service duration: 3 hours'],
-    departure: ['Personal greeting on the departure floor with a name board', 'Priority guidance through check-in, security and immigration (Fast Track only for eligible passengers*)', 'Baggage assistance from your car', 'Tax refund assistance — escort to customs check and refund counters (eligibility set by Korea Customs)', 'Escort all the way to your gate', 'Service duration: 2 hours'],
-    transfer: ['Personal greeting at the arrival gate with a name sign', 'Guidance through transfer procedures (Fast Track only for eligible passengers*)', 'Baggage assistance on request', 'Escort to your connecting flight'],
+    arrival: ['Personal greeting at the aircraft door (air-bridge) with a name board', 'Fastest route through immigration (priority lane for eligible travellers*)', 'Baggage assistance and customs escort', 'Escort all the way to your driver or pick-up point', 'Real-time flight monitoring — we wait if you are delayed', 'Service duration: 3 hours'],
+    departure: ['Personal greeting on the departure floor with a name board', 'Fastest route through check-in, security and immigration (priority lane for eligible travellers*)', 'Baggage assistance from your car', 'Tax refund assistance — escort to customs check and refund counters (eligibility set by Korea Customs)', 'Escort all the way to your gate', 'Service duration: 2 hours'],
+    transfer: ['Personal greeting at the arrival gate with a name sign', 'Guidance through transfer procedures (priority lane for eligible travellers*)', 'Baggage assistance on request', 'Escort to your connecting flight'],
     picketing: ['Name-board greeting at the arrival hall', 'Guidance to your driver or pick-up point'],
-    notes: ['* Incheon Airport does not officially sell Fast Track; our staff take you the most efficient route available.', 'Escort support only — immigration and customs procedures are completed by the passenger.', 'Cancellation: free up to 48 h before service · 50% within 24–48 h · no refund within 24 h.'],
+    notes: ['* Incheon has no official paid Fast Track. Priority immigration lanes are for eligible travellers (diplomats, APEC card holders, seniors, children aged 7 and under, passengers with reduced mobility, etc.) — tell us in advance. Everyone else is guided along the fastest route.', 'Escort support only — immigration and customs procedures are completed by the passenger.', 'Cancellation: free up to 48 h before service · 50% within 24–48 h · no refund within 24 h.'],
   },
   ko: {
-    arrival: ['항공기 탑승교(게이트)에서 이름 피켓으로 영접', '입국 심사 우선 안내 (패스트트랙은 대상 승객만*)', '수하물 수취 지원 및 세관 동행', '기사님·픽업 장소까지 동행', '실시간 항공편 확인 — 지연 시에도 기다립니다', '서비스 시간: 3시간'],
-    departure: ['출국장에서 이름 피켓으로 영접', '체크인·보안검색·출국심사 우선 안내 (패스트트랙은 대상 승객만*)', '차량에서부터 수하물 지원', '택스리펀드 지원 — 세관 확인·환급 창구 동행 (환급 여부는 세관 기준)', '탑승 게이트까지 동행', '서비스 시간: 2시간'],
-    transfer: ['도착 게이트에서 이름 피켓으로 영접', '환승 절차 안내 (패스트트랙은 대상 승객만*)', '요청 시 수하물 지원', '연결편 탑승구까지 동행'],
+    arrival: ['항공기 탑승교(게이트)에서 이름 피켓으로 영접', '입국 심사 — 가장 빠른 동선 안내 (우대 심사는 대상자만*)', '수하물 수취 지원 및 세관 동행', '기사님·픽업 장소까지 동행', '실시간 항공편 확인 — 지연 시에도 기다립니다', '서비스 시간: 3시간'],
+    departure: ['출국장에서 이름 피켓으로 영접', '체크인·보안검색·출국심사 — 가장 빠른 동선 안내 (우대 심사는 대상자만*)', '차량에서부터 수하물 지원', '택스리펀드 지원 — 세관 확인·환급 창구 동행 (환급 여부는 세관 기준)', '탑승 게이트까지 동행', '서비스 시간: 2시간'],
+    transfer: ['도착 게이트에서 이름 피켓으로 영접', '환승 절차 안내 (우대 심사는 대상자만*)', '요청 시 수하물 지원', '연결편 탑승구까지 동행'],
     picketing: ['입국장에서 이름 피켓으로 영접', '기사님·픽업 장소까지 안내'],
-    notes: ['* 인천공항은 패스트트랙을 공식 판매하지 않습니다. 가능한 가장 빠른 경로로 안내합니다.', '동행 지원 서비스이며 출입국·세관 절차는 승객 본인이 진행합니다.', '취소 규정: 서비스 48시간 전까지 무료 · 24~48시간 전 50% · 24시간 이내 환불 불가'],
+    notes: ['* 인천공항에는 공식 Fast Track이 없습니다. 우대 출입국 심사는 대상자(외교관·APEC 카드 소지자·고령자·7세 이하 어린이·거동이 불편한 분 등)만 이용할 수 있으니 미리 알려 주세요. 그 외에는 가장 빠른 동선으로 안내합니다.', '동행 지원 서비스이며 출입국·세관 절차는 승객 본인이 진행합니다.', '취소 규정: 서비스 48시간 전까지 무료 · 24~48시간 전 50% · 24시간 이내 환불 불가'],
   },
 };
 
@@ -234,6 +288,8 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   const [bookingToken] = useState(() => crypto.randomUUID());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payError, setPayError] = useState('');
+  // 안내 팝업: 'intro'(예약 시작) → 확인 / 'payment'(결제 직전) → 확인하면 결제 진행
+  const [notice, setNotice] = useState('intro');
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -432,6 +488,13 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     else { setStep(prev => prev - 1); toTop(); }
   };
 
+  // 결제 버튼 → 먼저 패스트트랙·우대 심사 안내를 보여 주고, 확인하면 결제를 진행한다
+  const requestPayment = () => {
+    if (isSubmitting) return;
+    track('Booking Notice', { kind: 'payment', lang });
+    setNotice('payment');
+  };
+
   const handlePayment = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -483,7 +546,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   const passName = hasName ? `${formData.lastName.toUpperCase()} / ${formData.firstName.toUpperCase()}` : P.placeholderName;
   const tags = [formData.wheelchair && P.wheelchair, dep && P.taxRefund, formData.travelClass && c.classes[formData.travelClass].toUpperCase()].filter(Boolean);
   const ctaLabel = step === 3 ? (isSubmitting ? c.paying : c.pay(priceMain)) : c.cta[step];
-  const onCta = step === 3 ? handlePayment : handleNext;
+  const onCta = step === 3 ? requestPayment : handleNext;
   // 경로: 입국·환승은 [항공편 → 공항], 출국은 [공항 → 항공편]
   const flightEnd = { code: flightNo || '···', name: formData.airline || P.enterFlight, keys: ['flightNumber', 'airline'] };
   const airportEnd = { code: formData.airport, name: airportName(formData.airport), keys: ['airport'] };
@@ -830,6 +893,41 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
             {step === 3 ? (isSubmitting ? c.paying : c.payShort) : `${c.continue} (${step}/3)`}
           </button>
         </div>
+
+        {/* 안내 팝업 — 예약 시작(서비스 소개 + Fast Track 안내), 결제 직전(Fast Track 안내) */}
+        {notice && (() => {
+          const n = NOTICE[isKo ? 'ko' : 'en'];
+          const blocks = notice === 'intro' ? [n.intro, n.fastTrack] : [n.fastTrack];
+          const confirm = () => {
+            track('Booking Notice OK', { kind: notice, lang });
+            const wasPayment = notice === 'payment';
+            setNotice(null);
+            if (wasPayment) handlePayment();
+          };
+          return (
+            <div className="bp-notice-backdrop" role="presentation">
+              <div className="bp-notice" role="dialog" aria-modal="true" aria-labelledby="bp-notice-title">
+                <div className="bp-notice-body">
+                  {blocks.map((b, i) => (
+                    <section key={b.title} className={i ? 'bp-notice-sec bp-notice-sec--rule' : 'bp-notice-sec'}>
+                      <h2 id={i ? undefined : 'bp-notice-title'}>{b.title}</h2>
+                      <p className="bp-notice-lead">{b.lead}</p>
+                      {b.paras.map(t => <p key={t}>{t}</p>)}
+                      <p className="bp-notice-closing">{b.closing}</p>
+                    </section>
+                  ))}
+                  <p className="bp-notice-contact">{n.contact} <a href="mailto:cura@beyondthegate.kr">cura@beyondthegate.kr</a></p>
+                </div>
+                <div className="bp-notice-actions">
+                  {notice === 'payment' && <button type="button" className="btn btn-ghost" onClick={() => setNotice(null)}>{n.cancel}</button>}
+                  <button type="button" className={`btn ${notice === 'payment' ? 'btn-gold' : 'btn-navy'}`} onClick={confirm} autoFocus>
+                    {notice === 'payment' ? n.okPay : n.ok}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
