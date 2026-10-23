@@ -11,7 +11,6 @@ import Fleet from './components/Fleet';
 import CasRoadmap from './components/CasRoadmap';
 import Team from './components/Team';
 import Faq from './components/Faq';
-import TermsModal from './components/TermsModal';
 import Footer from './components/Footer';
 import AboutUs from './pages/AboutUs';
 import VehicleReservation from './pages/VehicleReservation';
@@ -66,7 +65,6 @@ function App({ initialSiteData = null }) {
   const lang = langFromPath(location.pathname);
 
   const [selectedVehicle, setSelectedVehicle] = useState('none');
-  const [termsOpen, setTermsOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardData, setWizardData] = useState(null);
 
@@ -412,13 +410,7 @@ function App({ initialSiteData = null }) {
         </Routes>
       </main>
 
-      <Footer t={t} onOpenTerms={() => setTermsOpen(true)} />
-
-      <TermsModal
-        isOpen={termsOpen}
-        onClose={() => setTermsOpen(false)}
-        t={t}
-      />
+      <Footer t={t} />
 
       <Chatbot settings={settings} lang={lang} />
 

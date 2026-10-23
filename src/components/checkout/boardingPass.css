@@ -180,3 +180,10 @@
   .bp .bp-notice-actions .btn-ghost { flex: 0 0 auto; padding: 0 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .bp .bp-notice-backdrop { animation: none; } }
+
+/* 휠체어 등 건강 관련 정보(민감정보) 별도 동의 */
+.bp .health-consent { margin: 0 0 14px; padding: 12px 14px; border-radius: 8px; background: #F1EADC; }
+.bp .health-consent .check { min-height: 0; align-items: flex-start; }
+.bp .health-consent .check input { margin-top: 3px; }
+.bp .health-consent p { margin: 6px 0 0 26px; font-size: 0.8rem; line-height: 1.6; color: #5E574C; }
+.bp .health-consent[data-invalid] { outline: 2px solid #B42318; outline-offset: 1px; }

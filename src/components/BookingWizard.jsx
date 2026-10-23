@@ -73,6 +73,8 @@ const COPY = {
     optional: 'Optional — class of travel, wheelchair, requests, booking for someone else',
     travelClass: 'Class of travel', classes: { '': 'Not specified', first: 'First', business: 'Business', premium_economy: 'Premium Economy', economy: 'Economy' },
     assistance: 'Assistance', wheelchair: 'Wheelchair needed',
+    healthConsent: '[Required] I agree to the collection and use of health-related information.',
+    healthConsentDetail: 'Item: whether you need a wheelchair or other assistance · Purpose: arranging assistance at the airport · Retention: as set out in our Privacy Policy. You may decline, but we then cannot arrange the assistance.',
     requests: 'Special requests', requestsPh: 'APEC card, medical needs, child seat, flowers…',
     someoneElse: 'I am booking for someone else',
     cFirst: 'Your given name', cLast: 'Your surname', cEmail: 'Your email', cPhone: 'Your mobile',
@@ -110,6 +112,7 @@ const COPY = {
       transferAirline: 'Connecting airline', transferFlightNumber: 'Connecting flight number', transferFlightTime: 'Connecting flight time',
       firstName: 'Given name', lastName: 'Surname', email: 'Email (valid address)', phoneLocal: 'Mobile number',
       contactFirst: 'Your given name', contactLast: 'Your surname', contactEmail: 'Your email', contactPhoneLocal: 'Your mobile',
+      healthConsent: 'Consent to health-related information',
     },
   },
   ko: {
@@ -146,6 +149,8 @@ const COPY = {
     optional: '선택 — 좌석 등급, 휠체어, 요청사항, 다른 분을 위한 예약',
     travelClass: '좌석 등급', classes: { '': '선택 안 함', first: '퍼스트', business: '비즈니스', premium_economy: '프리미엄 이코노미', economy: '이코노미' },
     assistance: '도움 필요', wheelchair: '휠체어 필요',
+    healthConsent: '[필수] 건강 관련 정보(민감정보) 수집·이용에 동의합니다.',
+    healthConsentDetail: '항목: 휠체어 등 도움 필요 여부 · 목적: 공항 내 이동 지원 준비 · 보유 기간: 개인정보처리방침에 따름. 동의를 거부할 수 있으나, 거부하시면 해당 지원을 준비할 수 없습니다.',
     requests: '요청사항', requestsPh: 'APEC 카드 소지, 의료 사정, 유아 카시트, 꽃다발 등',
     someoneElse: '다른 분을 위해 예약합니다',
     cFirst: '예약자 이름', cLast: '예약자 성', cEmail: '예약자 이메일', cPhone: '예약자 휴대폰',
@@ -183,6 +188,7 @@ const COPY = {
       transferAirline: '연결편 항공사', transferFlightNumber: '연결편 번호', transferFlightTime: '연결편 시간',
       firstName: '이름(영문)', lastName: '성(영문)', email: '이메일(올바른 주소)', phoneLocal: '휴대폰 번호',
       contactFirst: '예약자 이름', contactLast: '예약자 성', contactEmail: '예약자 이메일', contactPhoneLocal: '예약자 휴대폰',
+      healthConsent: '건강 관련 정보 동의',
     },
   },
 };
@@ -320,6 +326,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     phoneLocal: '',
     phone: '',
     wheelchair: false,
+    healthConsent: false, // 휠체어 등 건강 관련 정보(민감정보) 별도 동의
     sameAsPrimary: true,
     contactFirst: '',
     contactLast: '',
@@ -475,6 +482,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
     } else if (step === 2) {
       const gaps = missingOf(['firstName', 'lastName', 'phoneLocal']);
       if (!formData.sameAsPrimary) gaps.push(...missingOf(['contactFirst', 'contactLast', 'contactEmail', 'contactPhoneLocal']));
+      if (formData.wheelchair && !formData.healthConsent) gaps.push('healthConsent'); // 민감정보 별도 동의
       if (gaps.length) return showMissing(gaps);
     }
     setMissing([]);
@@ -742,7 +750,7 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                   <p className="note">{c.nameBoard}: <b>{formData.lastName ? `${formData.firstName.toUpperCase()} ${formData.lastName.toUpperCase()}`.trim() : c.yourName}</b></p>
                 </div>
 
-                <details className="card more" open={!formData.sameAsPrimary || undefined}>
+                <details className="card more" open={!formData.sameAsPrimary || formData.wheelchair || undefined}>
                   <summary>{c.optional}</summary>
                   <div className="row" style={{ marginTop: 16 }}>
                     <div className="f">
@@ -753,9 +761,15 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                     </div>
                     <div className="f">
                       <label>{c.assistance}</label>
-                      <label className="check"><input type="checkbox" checked={formData.wheelchair} onChange={e => updateForm('wheelchair', e.target.checked)} /> {c.wheelchair}</label>
+                      <label className="check"><input type="checkbox" checked={formData.wheelchair} onChange={e => { updateForm('wheelchair', e.target.checked); if (!e.target.checked) updateForm('healthConsent', false); }} /> {c.wheelchair}</label>
                     </div>
                   </div>
+                  {formData.wheelchair && (
+                    <div className="health-consent" {...(missing.includes('healthConsent') ? { 'data-invalid': true } : {})}>
+                      <label className="check"><input type="checkbox" checked={formData.healthConsent} onChange={e => updateForm('healthConsent', e.target.checked)} aria-invalid={missing.includes('healthConsent') || undefined} /> <b>{c.healthConsent}</b></label>
+                      <p>{c.healthConsentDetail}</p>
+                    </div>
+                  )}
                   <div className="f">
                     <label htmlFor="bp-req">{c.requests}</label>
                     <input id="bp-req" value={formData.specialRequests} onChange={e => updateForm('specialRequests', e.target.value)} placeholder={c.requestsPh} />
