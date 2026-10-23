@@ -976,8 +976,8 @@ async function cached(key, ttlMs, fn) {
   return value;
 }
 
-async function dataGoKr(path, params) {
-  const key = process.env.DATA_GO_KR_KEY;
+async function dataGoKr(path, params, keyOverride) {
+  const key = keyOverride || process.env.DATA_GO_KR_KEY;
   if (!key) { const e = new Error('DATA_GO_KR_KEY missing'); e.code = 503; throw e; }
   const qs = new URLSearchParams({ ...params, serviceKey: key });
   const res = await fetch(`${DATA_GO_KR}${path}?${qs}`, { signal: AbortSignal.timeout(8000) });
@@ -1185,11 +1185,12 @@ app.get('/api/incheon/congestion', async (req, res) => {
   const day = req.query.day === '1' ? '1' : '0';
   try {
     const data = await cached(`icn-congestion-${day}`, 30 * 60_000, async () => {
-      const items = await dataGoKr(CONGESTION_PATH, { selectdate: day, type: 'json', numOfRows: '100', pageNo: '1' });
+      // 인천공항공사 API 용 키가 따로 있으면 그것을 쓴다 (없으면 공용 DATA_GO_KR_KEY)
+      const items = await dataGoKr(CONGESTION_PATH, { selectdate: day, type: 'json', numOfRows: '100', pageNo: '1' }, process.env.INCHEON_DATA_KEY);
       // 비어 있으면 캐시하지 않고 오류로 돌려준다 (활용 승인 전·응답 형식 변경 확인용)
       if (!items.length) {
         // 응답 구조(키 이름·결과 코드)만 확인용으로 돌려준다 — 값·인증키는 포함하지 않는다
-        const key = process.env.DATA_GO_KR_KEY;
+        const key = process.env.INCHEON_DATA_KEY || process.env.DATA_GO_KR_KEY;
         const qs = new URLSearchParams({ selectdate: day, type: 'json', numOfRows: '50', pageNo: '1', serviceKey: key });
         const raw = await (await fetch(`${DATA_GO_KR}${CONGESTION_PATH}?${qs}`, { signal: AbortSignal.timeout(8000) })).text();
         let shape = raw.slice(0, 120).replace(/serviceKey=[^&\s"]+/gi, '');
