@@ -1183,7 +1183,19 @@ app.get('/api/incheon/congestion', async (req, res) => {
     const data = await cached(`icn-congestion-${day}`, 30 * 60_000, async () => {
       const items = await dataGoKr(CONGESTION_PATH, { selectdate: day, type: 'json', numOfRows: '50', pageNo: '1' });
       // 비어 있으면 캐시하지 않고 오류로 돌려준다 (활용 승인 전·응답 형식 변경 확인용)
-      if (!items.length) throw new Error('KIAC passenger notice: empty response');
+      if (!items.length) {
+        // 응답 구조(키 이름·결과 코드)만 확인용으로 돌려준다 — 값·인증키는 포함하지 않는다
+        const key = process.env.DATA_GO_KR_KEY;
+        const qs = new URLSearchParams({ selectdate: day, type: 'json', numOfRows: '50', pageNo: '1', serviceKey: key });
+        const raw = await (await fetch(`${DATA_GO_KR}${CONGESTION_PATH}?${qs}`, { signal: AbortSignal.timeout(8000) })).text();
+        let shape = raw.slice(0, 120).replace(/serviceKey=[^&\s"]+/gi, '');
+        try {
+          const j = JSON.parse(raw);
+          const keysOf = (o) => (o && typeof o === 'object' ? Object.keys(o).slice(0, 12).join(',') : typeof o);
+          shape = `top:${keysOf(j)} | response:${keysOf(j.response)} | header:${JSON.stringify(j.response?.header || j.header || {}).slice(0, 120)} | body:${keysOf(j.response?.body || j.body)} | items:${keysOf(j.response?.body?.items || j.body?.items)}`;
+        } catch { /* XML 등 */ }
+        throw new Error(`KIAC passenger notice: empty response (${shape})`);
+      }
       const rows = items
         .map(it => {
           const hour = parseInt(String(it.atime || '').slice(0, 2), 10);
