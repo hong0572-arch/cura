@@ -87,7 +87,10 @@ export default function ArrivalsLive({ lang = 'ko', enabled = false }) {
   });
   const maxPax = Math.max(1, ...byHall.map(h => h.pax));
   const level = (p) => (p / maxPax < 0.4 ? 0 : p / maxPax < 0.75 ? 1 : 2);
-  const upcoming = [...list].sort((a, b) => a.estimated.localeCompare(b.estimated)).slice(0, 14);
+  // 도착 예정: 15분 전부터 (이미 내린 편은 빼고), 시간순
+  const since = data.updatedAt ? new Date(data.updatedAt).getTime() - 15 * 60_000 : 0;
+  const upcoming = [...list].filter(f => !since || new Date(f.estimated).getTime() >= since)
+    .sort((a, b) => a.estimated.localeCompare(b.estimated)).slice(0, 14);
   const q = norm(query);
   const found = q.length >= 3 ? data.flights.find(f => norm(f.flight) === q) || data.flights.find(f => norm(f.flight).includes(q)) : null;
 
@@ -142,6 +145,7 @@ export default function ArrivalsLive({ lang = 'ko', enabled = false }) {
                 </ul>
                 <p className="ac-note">{c.note}</p>
                 <p className="ac-k">{c.upcoming}</p>
+                {upcoming.length === 0 && <p className="ac-muted">{c.empty}</p>}
                 <div className="al-table-wrap">
                   <table className="al-table">
                     <thead><tr>{c.cols.map(h => <th key={h} scope="col">{h}</th>)}</tr></thead>
