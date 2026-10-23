@@ -987,6 +987,9 @@ async function dataGoKr(path, params) {
     // 키 오류 등은 XML 로 온다
     throw new Error(`data.go.kr ${path}: ${text.slice(0, 160)}`);
   }
+  // 공공데이터포털 게이트웨이 오류 형식 (미승인 키·잘못된 서비스 주소·호출 한도 등)
+  const gw = json?.OpenAPI_ServiceResponse?.cmmMsgHeader;
+  if (gw) throw new Error(`data.go.kr ${path}: ${gw.returnReasonCode || ''} ${gw.returnAuthMsg || gw.errMsg || ''}`.trim());
   const header = json?.response?.header;
   if (header && header.resultCode !== '0000' && header.resultCode !== '00') throw new Error(`data.go.kr ${path}: ${header.resultCode} ${header.resultMsg}`);
   // 응답 모양이 기관마다 조금씩 다르다: body.items.item / body.items(배열) / items
