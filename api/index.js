@@ -989,8 +989,10 @@ async function dataGoKr(path, params) {
   }
   const header = json?.response?.header;
   if (header && header.resultCode !== '0000' && header.resultCode !== '00') throw new Error(`data.go.kr ${path}: ${header.resultCode} ${header.resultMsg}`);
-  const items = json?.response?.body?.items?.item;
-  return Array.isArray(items) ? items : items ? [items] : [];
+  // 응답 모양이 기관마다 조금씩 다르다: body.items.item / body.items(배열) / items
+  const body = json?.response?.body ?? json?.body ?? json;
+  const items = body?.items?.item ?? body?.items ?? body?.item ?? [];
+  return Array.isArray(items) ? items : items && typeof items === 'object' ? [items] : [];
 }
 
 // 오류 원인(결과 코드·메시지)만 돌려준다 — 인증키는 절대 포함하지 않는다
@@ -1180,6 +1182,8 @@ app.get('/api/incheon/congestion', async (req, res) => {
   try {
     const data = await cached(`icn-congestion-${day}`, 30 * 60_000, async () => {
       const items = await dataGoKr(CONGESTION_PATH, { selectdate: day, type: 'json', numOfRows: '50', pageNo: '1' });
+      // 비어 있으면 캐시하지 않고 오류로 돌려준다 (활용 승인 전·응답 형식 변경 확인용)
+      if (!items.length) throw new Error('KIAC passenger notice: empty response');
       const rows = items
         .map(it => {
           const hour = parseInt(String(it.atime || '').slice(0, 2), 10);
