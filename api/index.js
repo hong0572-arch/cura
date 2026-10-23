@@ -1249,6 +1249,9 @@ app.get('/api/incheon/check', async (req, res) => {
     keySource: process.env.INCHEON_DATA_KEY ? 'INCHEON_DATA_KEY' : 'DATA_GO_KR_KEY',
     passengerForecast: await probe('/B551177/passgrAnncmt/getPassgrAnncmt', { selectdate: '0' }),
     arrivalsStatus: await probe('/B551177/StatusOfArrivals/getArrivalsCongestion', {}),
+    // 입국장현황 응답 항목 이름과 첫 항목 예시(공개 운항 정보)
+    arrivalsSample: await dataGoKr('/B551177/StatusOfArrivals/getArrivalsCongestion', { type: 'json', numOfRows: '3', pageNo: '1' }, process.env.INCHEON_DATA_KEY)
+      .then(items => items.slice(0, 3)).catch(() => null),
   });
 });
 
