@@ -401,8 +401,8 @@ function App({ initialSiteData = null }) {
           } />
           <Route path="about" element={<AboutUs t={t} />} />
           <Route path="book-vehicle" element={<VehicleReservation t={t} settings={settings} lang={lang} />} />
-          <Route path="terms" element={<Terms t={t} />} />
-          <Route path="privacy" element={<Privacy t={t} />} />
+          <Route path="terms" element={<Terms lang={lang} />} />
+          <Route path="privacy" element={<Privacy lang={lang} />} />
           <Route path="blog" element={<Blog t={t} lang={lang} />} />
           <Route path="blog/:postId" element={<Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--ivory)' }} />}><BlogPost lang={lang} /></Suspense>} />
           <Route path="business" element={<BusinessProposal t={t} />} />

@@ -35,12 +35,12 @@ const PAGE_META = {
     en: { title: 'Corporate & Partnership Inquiries', description: 'Corporate travel, delegation and buyer hosting, and travel agency partnerships with Beyond the Gate in Korea.' },
   },
   '/terms': {
-    ko: { title: '이용약관', description: 'Beyond the Gate 서비스 이용약관.' },
-    en: { title: 'Terms & Conditions', description: 'Terms and conditions for Beyond the Gate services.' },
+    ko: { title: '이용약관', description: '주식회사 큐라공항서비스(Beyond the Gate) 공항 의전·차량 서비스 이용약관 — 예약, 요금, 취소·환불 규정.' },
+    en: { title: 'Terms of Service', description: 'Terms of Service of Cura Airport Service Co. (Beyond the Gate) — booking, prices, cancellation and refunds.' },
   },
   '/privacy': {
-    ko: { title: '개인정보처리방침', description: 'Beyond the Gate 개인정보처리방침.' },
-    en: { title: 'Privacy Policy', description: 'Privacy policy of Beyond the Gate.' },
+    ko: { title: '개인정보처리방침', description: '주식회사 큐라공항서비스(Beyond the Gate) 개인정보처리방침 — 수집 항목, 보유 기간, 위탁·국외 이전, 보호책임자.' },
+    en: { title: 'Privacy Policy', description: 'Privacy Policy of Cura Airport Service Co. (Beyond the Gate) — data collected, retention, processors and international transfers.' },
   },
 };
 
