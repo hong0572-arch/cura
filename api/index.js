@@ -1249,10 +1249,39 @@ app.get('/api/incheon/check', async (req, res) => {
     keySource: process.env.INCHEON_DATA_KEY ? 'INCHEON_DATA_KEY' : 'DATA_GO_KR_KEY',
     passengerForecast: await probe('/B551177/passgrAnncmt/getPassgrAnncmt', { selectdate: '0' }),
     arrivalsStatus: await probe('/B551177/StatusOfArrivals/getArrivalsCongestion', {}),
-    // 입국장현황 응답 항목 이름과 첫 항목 예시(공개 운항 정보)
-    arrivalsSample: await dataGoKr('/B551177/StatusOfArrivals/getArrivalsCongestion', { type: 'json', numOfRows: '3', pageNo: '1' }, process.env.INCHEON_DATA_KEY)
-      .then(items => items.slice(0, 3)).catch(() => null),
   });
+});
+
+// 인천공항 입국장 현황 (공공데이터: 인천국제공항공사_입국장현황 정보 서비스) — 조회 시각 기준 H-2~H+2 도착편
+// 항목: terno 터미널, entrygate 입국장(A~F 등), gatenumber 게이트, flightid 편명, airport 출발 공항,
+//       scheduletime/estimatedtime 예정·변경 도착(YYYYMMDDHHmm, KST), korean/foreigner 내국인·외국인 승객 수
+const ymdhm = (v) => {
+  const t = String(v || '');
+  return t.length === 12 ? `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6, 8)}T${t.slice(8, 10)}:${t.slice(10, 12)}:00+09:00` : '';
+};
+app.get('/api/incheon/arrivals', async (req, res) => {
+  try {
+    const data = await cached('icn-arrivals', 2 * 60_000, async () => {
+      const items = await dataGoKr('/B551177/StatusOfArrivals/getArrivalsCongestion', { type: 'json', numOfRows: '500', pageNo: '1' }, process.env.INCHEON_DATA_KEY);
+      const flights = items.map(it => ({
+        terminal: String(it.terno || '').toUpperCase(),
+        hall: String(it.entrygate || '').trim(),
+        gate: String(it.gatenumber || '').trim(),
+        flight: String(it.flightid || '').trim(),
+        from: String(it.airport || '').trim(),
+        scheduled: ymdhm(it.scheduletime),
+        estimated: ymdhm(it.estimatedtime || it.scheduletime),
+        korean: Math.round(Number(it.korean) || 0),
+        foreign: Math.round(Number(it.foreigner) || 0),
+      })).filter(f => f.flight && f.terminal);
+      return { flights, updatedAt: new Date().toISOString() };
+    });
+    res.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+    res.json({ ...data, source: 'Incheon International Airport Corporation (arrival hall status) via data.go.kr' });
+  } catch (error) {
+    console.error('Incheon arrivals failed:', error.message);
+    res.status(error.code === 503 ? 503 : 502).json({ error: 'Arrival status unavailable', detail: safeDetail(error) });
+  }
 });
 
 // --- Nicepay Integration ---

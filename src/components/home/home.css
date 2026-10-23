@@ -653,3 +653,24 @@ html[lang="ko"] .svc-head h2 { letter-spacing: -0.02em; line-height: 1.25; }
   .ac-chart { height: 170px; gap: 1px; }
   .ac-x { font-size: 10px; }
 }
+
+/* ---------- 인천공항 입국장 실시간 (ArrivalsLive, 테스트) ---------- */
+.al-find { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 14px; color: #C9D2DF; font-size: 0.9rem; }
+.al-find input { font: 500 16px 'IBM Plex Mono', monospace; padding: 10px 14px; border-radius: 8px; border: 1px solid #2B3E5C; background: #102440; color: #F4EEE2; width: 180px; text-transform: uppercase; }
+.al-find input:focus { outline: 2px solid #FEC74D; outline-offset: 1px; }
+.al-found { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid #FEC74D; border-radius: 10px; background: rgba(254, 199, 77, 0.08); color: #DCE3EE; }
+.al-found b { font: 500 1.3rem 'IBM Plex Mono', monospace; color: #FEC74D; }
+.al-halls { list-style: none; margin: 8px 0 10px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.al-hall { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 14px 14px 18px; border: 1px solid #1E3354; border-radius: 10px; overflow: hidden; }
+.al-hall-name { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .12em; color: #8FA0B8; text-transform: uppercase; }
+.al-hall b { font: 500 1.6rem/1.1 var(--font-serif); color: #F4EEE2; }
+.al-hall span:last-of-type { font-size: 0.82rem; color: #9FB0C6; }
+.al-meter { position: absolute; left: 0; bottom: 0; height: 4px; width: var(--w); background: rgba(254, 199, 77, 0.45); border-radius: 0 4px 0 0; }
+.al-lv2 .al-meter { background: #FEC74D; }
+.al-lv2 { border-color: #7A5C17; }
+.al-table-wrap { overflow-x: auto; }
+.al-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; color: #C9D2DF; }
+.al-table th { text-align: left; font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .1em; color: #8FA0B8; padding: 6px 10px 6px 0; border-bottom: 1px solid #1E3354; }
+.al-table td { padding: 8px 10px 8px 0; border-bottom: 1px solid #13284A; white-space: nowrap; }
+.al-table .mono { font-family: 'IBM Plex Mono', monospace; }
+.al-table s { margin-left: 6px; color: #5F7393; font-size: 0.8em; }
