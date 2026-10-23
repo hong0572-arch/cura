@@ -613,3 +613,43 @@ html[lang="ko"] .svc-head h2 { letter-spacing: -0.02em; line-height: 1.25; }
   .protocol { grid-template-columns: 1fr; gap: 32px; padding: 36px 24px; }
   .protocol-actions .btg-btn { flex: 1 1 auto; justify-content: center; }
 }
+
+/* ---------- 인천공항 예상 혼잡도 (AirportCongestion, 테스트) ---------- */
+.ac { position: relative; padding: 40px 44px 30px; border-radius: 18px; background: #0B1B33; color: #F4EEE2; }
+.ac-test { position: absolute; top: 12px; right: 16px; margin: 0; font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .1em; color: #0B1B33; background: #FEC74D; padding: 3px 8px; border-radius: 4px; }
+.ac .btg-eyebrow { color: #FEC74D; }
+.ac-head { display: flex; justify-content: space-between; gap: 28px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 22px; }
+.ac-title { margin: 8px 0 10px; color: #F4EEE2; font-size: clamp(1.7rem, 2.6vw, 2.3rem); line-height: 1.2; text-wrap: balance; word-break: keep-all; }
+.ac-desc { margin: 0; max-width: 560px; color: #C9D2DF; line-height: 1.7; word-break: keep-all; }
+.ac-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.ac-seg { display: inline-flex; border: 1px solid #2B3E5C; border-radius: 999px; overflow: hidden; }
+.ac-seg button { border: none; background: transparent; color: #9FB0C6; font: 600 13px var(--font-sans); padding: 8px 14px; cursor: pointer; min-height: 36px; }
+.ac-seg button.is-on { background: #FEC74D; color: #0B1B33; }
+.ac-summary p { margin: 0 0 4px; color: #C9D2DF; font-size: 0.95rem; }
+.ac-summary b { color: #F4EEE2; }
+.ac-chart { position: relative; display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 2px; align-items: end; height: 220px; margin: 18px 0 30px; border-bottom: 1px solid #2B3E5C; }
+.ac-bar { position: relative; height: 100%; display: flex; align-items: flex-end; border: none; background: transparent; padding: 0; cursor: pointer; }
+.ac-fill { display: block; width: 100%; height: var(--h); border-radius: 4px 4px 0 0; background: rgba(254, 199, 77, 0.42); transition: background .2s; }
+.ac-bar:hover .ac-fill, .ac-bar.is-sel .ac-fill { background: rgba(254, 199, 77, 0.75); }
+.ac-bar.is-now .ac-fill { background: #FEC74D; box-shadow: 0 0 0 2px #0B1B33, 0 0 0 3px #FEC74D; }
+.ac-x { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font: 400 11px 'IBM Plex Mono', monospace; color: #8FA0B8; }
+.ac-now { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: .08em; color: #FEC74D; white-space: nowrap; }
+.ac-tip { position: absolute; bottom: calc(var(--h) + 8px); left: 50%; transform: translateX(-50%); z-index: 2; padding: 6px 8px; border-radius: 6px; background: #F4EEE2; color: #0B1B33; font: 600 12px var(--font-sans); line-height: 1.35; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; }
+.ac-bar:hover .ac-tip, .ac-bar:focus-visible .ac-tip { opacity: 1; }
+.ac-note { margin: 0 0 14px; font-size: 0.78rem; color: #8FA0B8; }
+.ac-gates { margin: 0 0 14px; }
+.ac-k { margin: 0 0 8px; font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: .1em; color: #8FA0B8; text-transform: uppercase; }
+.ac-gates ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.ac-gates li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 12px; border: 1px solid #1E3354; border-radius: 8px; font-size: 0.9rem; color: #C9D2DF; }
+.ac-gates li span, .ac-gates b { white-space: nowrap; }
+.ac-gates b { color: #F4EEE2; font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
+.ac-table summary { cursor: pointer; color: #C9D2DF; font-size: 0.85rem; }
+.ac-table table { margin-top: 8px; border-collapse: collapse; font-size: 0.85rem; color: #C9D2DF; }
+.ac-table th, .ac-table td { padding: 4px 14px 4px 0; text-align: left; font-weight: 400; }
+.ac-source { margin: 14px 0 0; font-size: 0.72rem; color: #8FA0B8; }
+.ac-muted { color: #9FB0C6; }
+@media (max-width: 760px) {
+  .ac { padding: 32px 18px 24px; }
+  .ac-chart { height: 170px; gap: 1px; }
+  .ac-x { font-size: 10px; }
+}
