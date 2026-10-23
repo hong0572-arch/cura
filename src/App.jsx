@@ -35,7 +35,7 @@ import SEOMeta from './components/SEOMeta';
 import ThreeWays from './components/home/ThreeWays';
 import KoreaNow from './components/home/KoreaNow';
 import ProtocolSupport from './components/home/ProtocolSupport';
-import AirportCongestion from './components/home/AirportCongestion';
+import ArrivalsLive from './components/home/ArrivalsLive';
 import { FEATURES } from './config/features';
 import OpsTracker from './components/home/OpsTracker';
 import ClosingCta from './components/home/ClosingCta';
@@ -381,7 +381,8 @@ function App({ initialSiteData = null }) {
               <OpsTracker copy={(homeCopy[lang] || homeCopy.ko).ops} />
 
               {/* 인천공항 시간대별 예상 혼잡도 — 테스트(비공개, ?congestion=1) */}
-              <AirportCongestion lang={lang} enabled={FEATURES.congestion} />
+              {/* 예상 혼잡도(승객예고 API)는 키 승인 후 다시 연결 — 지금은 입국장 실시간 현황 */}
+              <ArrivalsLive lang={lang} enabled={FEATURES.congestion} />
 
               <Fleet
                 t={t}
