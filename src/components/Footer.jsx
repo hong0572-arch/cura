@@ -2,6 +2,7 @@ import React from 'react';
 import { Mail, Phone, MapPin, ArrowUp, ExternalLink, Lock } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { langFromPath, localizePath, stripLocale } from '../utils/locale';
+import { BUSINESS, FTC_BIZ_URL } from '../content/businessInfo';
 
 export default function Footer({ t, onOpenTerms }) {
   const navigate = useNavigate();
@@ -15,6 +16,22 @@ export default function Footer({ t, onOpenTerms }) {
   };
 
   const lang = langFromPath(location.pathname);
+  const isKo = lang === 'ko';
+  const L = isKo
+    ? { company: '상호', ceo: '대표자', bizNo: '사업자등록번호', mailOrder: '통신판매업 신고번호', address: '주소', phone: '전화', email: '이메일', hosting: '호스팅 서비스 제공자', terms: '이용약관', privacy: '개인정보처리방침', ftc: '사업자정보 확인' }
+    : { company: 'Company', ceo: 'CEO', bizNo: 'Business Reg. No.', mailOrder: 'Mail-order Sales Reg. No.', address: 'Address', phone: 'Phone', email: 'Email', hosting: 'Hosting', terms: 'Terms of Service', privacy: 'Privacy Policy', ftc: 'Verify business (KFTC)' };
+  const pick = (v) => (typeof v === 'string' ? v : v?.[isKo ? 'ko' : 'en'] || v?.ko || '');
+  // 비어 있는 값(상호·대표자 확인 대기)은 표시하지 않는다
+  const bizRows = [
+    [L.company, pick(BUSINESS.company)],
+    [L.ceo, pick(BUSINESS.ceo)],
+    [L.bizNo, BUSINESS.bizNo],
+    [L.mailOrder, BUSINESS.mailOrderNo],
+    [L.address, pick(BUSINESS.address)],
+    [L.phone, BUSINESS.phone],
+    [L.email, BUSINESS.email],
+    [L.hosting, BUSINESS.hosting],
+  ].filter(([, v]) => v);
 
   const handleLinkClick = (id, path = '/') => {
     if (stripLocale(location.pathname) !== path) {
@@ -120,10 +137,16 @@ export default function Footer({ t, onOpenTerms }) {
         <div className="footer-bottom-row">
           <div className="copyright-box">
             <span>© 2026 {t.brand}. {t.footer?.copyright || 'All rights reserved. Under CAS Aviation Portfolio.'}</span>
-            <div style={{ marginTop: '8px', display: 'flex', gap: '12px', flexWrap: 'wrap', color: 'var(--text-muted)' }}>
-              <span>통신판매업 번호: 제 2026-영종구-0090호</span>
-              <span style={{ opacity: 0.5 }}>|</span>
-              <span>사업자등록번호: 696-87-04263</span>
+            {/* 사업자 정보 (전자상거래법 제10조) — 값은 content/businessInfo.js */}
+            <dl className="biz-info">
+              {bizRows.map(([k, v]) => (
+                <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
+              ))}
+            </dl>
+            <div className="biz-links">
+              <a href={localizePath('/terms', lang)} onClick={(e) => { e.preventDefault(); navigate(localizePath('/terms', lang)); }}>{L.terms}</a>
+              <a className="biz-privacy" href={localizePath('/privacy', lang)} onClick={(e) => { e.preventDefault(); navigate(localizePath('/privacy', lang)); }}>{L.privacy}</a>
+              <a href={FTC_BIZ_URL} target="_blank" rel="noopener noreferrer">{L.ftc}</a>
             </div>
           </div>
 
