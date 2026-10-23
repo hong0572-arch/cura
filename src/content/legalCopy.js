@@ -121,6 +121,9 @@ export const privacyCopy = {
         '결제하지 않은 예약 진행 정보와 상담 문의: 1년',
         '보유 기간이 지나거나 처리 목적이 달성되면 지체 없이 파기합니다.',
       ]],
+      ['3-1. 민감정보(건강 관련 정보)', [
+        '휠체어 이용 등 도움 필요 여부는 건강에 관한 정보(민감정보)에 해당할 수 있어, 고객이 선택한 경우에만 별도 동의를 받아 공항 내 이동 지원 준비에만 사용합니다. 보유 기간은 위 3항에 따르며, 동의를 거부해도 다른 서비스 이용에는 영향이 없습니다.',
+      ]],
       ['4. 제3자 제공', [
         '회사는 고객의 개인정보를 제3자에게 제공하지 않습니다. 다만 의전 협조 서비스를 요청한 고객의 경우, 고객의 동의를 받아 필요한 범위의 정보를 공항 당국·관계 부처에 제공할 수 있으며, 법령에 따른 요청이 있는 경우에는 예외로 합니다.',
       ]],
@@ -165,6 +168,9 @@ export const privacyCopy = {
         'Website access logs: 3 months (Protection of Communications Secrets Act)',
         'Unpaid booking drafts and enquiries: 1 year',
         'Data is destroyed without delay once the retention period ends or the purpose is fulfilled.',
+      ]],
+      ['3-1. Sensitive data (health-related)', [
+        'Whether you need a wheelchair or other assistance may count as health information (sensitive data). We collect it only if you choose to tell us, with your separate consent, and use it only to arrange assistance at the airport. It is kept for the periods in section 3; declining does not affect the rest of the service.',
       ]],
       ['4. Sharing with third parties', [
         'We do not share your personal data with third parties, except — with your consent — the information needed for a protocol cooperation request you asked us to make to airport authorities or ministries, or where required by law.',

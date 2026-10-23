@@ -101,7 +101,7 @@ const STRING_FIELDS = {
   contactFirst: 100, contactLast: 100, contactEmail: 200, contactPhone: 40,
   vehicleType: 30, transferAddress: 500, specialRequests: 2000,
 };
-const BOOLEAN_FIELDS = ['addTransfer', 'wheelchair', 'sameAsPrimary'];
+const BOOLEAN_FIELDS = ['addTransfer', 'wheelchair', 'sameAsPrimary', 'healthConsent']; // healthConsent: 휠체어 등 민감정보 별도 동의
 
 function sanitizeFormData(input = {}) {
   const out = {};

@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { langFromPath, localizePath, stripLocale } from '../utils/locale';
 import { BUSINESS, FTC_BIZ_URL } from '../content/businessInfo';
 
-export default function Footer({ t, onOpenTerms }) {
+export default function Footer({ t }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -151,7 +151,7 @@ export default function Footer({ t, onOpenTerms }) {
           </div>
 
           <div className="legal-links-box">
-            <button onClick={onOpenTerms} className="legal-btn">
+            <button onClick={() => navigate(localizePath('/terms', lang))} className="legal-btn">
               <span>{t.terms.title}</span>
               <ExternalLink size={12} className="legal-icon" />
             </button>
