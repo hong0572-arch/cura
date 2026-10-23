@@ -1234,6 +1234,24 @@ app.get('/api/incheon/congestion', async (req, res) => {
   }
 });
 
+// 인천공항공사 API 키 점검 — 어느 API 에 승인된 키인지 결과 코드만 돌려준다 (키·데이터는 내보내지 않음)
+app.get('/api/incheon/check', async (req, res) => {
+  const probe = async (path, params) => {
+    try {
+      const items = await dataGoKr(path, { type: 'json', numOfRows: '1', pageNo: '1', ...params }, process.env.INCHEON_DATA_KEY);
+      return `OK (${items.length} item${items.length === 1 ? '' : 's'})`;
+    } catch (e) {
+      return safeDetail(e).replace(/^data\.go\.kr \S+: /, '');
+    }
+  };
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    keySource: process.env.INCHEON_DATA_KEY ? 'INCHEON_DATA_KEY' : 'DATA_GO_KR_KEY',
+    passengerForecast: await probe('/B551177/passgrAnncmt/getPassgrAnncmt', { selectdate: '0' }),
+    arrivalsStatus: await probe('/B551177/StatusOfArrivals/getArrivalsCongestion', {}),
+  });
+});
+
 // --- Nicepay Integration ---
 // 테스트 시 NICEPAY_API_BASE=https://sandbox-api.nicepay.co.kr
 const NICEPAY_API_BASE = process.env.NICEPAY_API_BASE || 'https://api.nicepay.co.kr';
