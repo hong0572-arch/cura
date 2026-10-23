@@ -1173,7 +1173,8 @@ app.get('/api/korea/highlights', async (req, res) => {
 // --- 인천공항 시간대별 예상 승객 수 (공공데이터: 인천국제공항공사_승객예고-출·입국장별) ---
 // 조회일(D+0)·다음날(D+1) 시간대별 예상 승객 수. 매일 17시 갱신 → 30분 캐시.
 // ※ 예상 혼잡도를 대민 서비스로 공개할 때는 안내 문구를 공사 인프라DX팀과 협의해야 한다(이용 조건). 현재 테스트(비공개).
-const CONGESTION_PATH = '/B551177/PassengerNoticeKR/getfPassengerNoticeIKR';
+// 2026: 예전 주소(PassengerNoticeKR/getfPassengerNoticeIKR)는 폐기됨 → passgrAnncmt
+const CONGESTION_PATH = '/B551177/passgrAnncmt/getPassgrAnncmt';
 // 응답 항목(활용가이드 기준): adate 표출일자, atime 시간대("00_01"),
 // t1sum1 입국장 동편(A,B) · t1sum2 입국장 서편(E,F) · t1sum3 입국심사(C) · t1sum4 입국심사(D) · t1sumset1 입국장 합계
 // t1sum5 출국장1,2 · t1sum6 출국장3 · t1sum7 출국장4 · t1sum8 출국장5,6 · t1sumset2 출국장 합계
@@ -1184,7 +1185,7 @@ app.get('/api/incheon/congestion', async (req, res) => {
   const day = req.query.day === '1' ? '1' : '0';
   try {
     const data = await cached(`icn-congestion-${day}`, 30 * 60_000, async () => {
-      const items = await dataGoKr(CONGESTION_PATH, { selectdate: day, type: 'json', numOfRows: '50', pageNo: '1' });
+      const items = await dataGoKr(CONGESTION_PATH, { selectdate: day, type: 'json', numOfRows: '100', pageNo: '1' });
       // 비어 있으면 캐시하지 않고 오류로 돌려준다 (활용 승인 전·응답 형식 변경 확인용)
       if (!items.length) {
         // 응답 구조(키 이름·결과 코드)만 확인용으로 돌려준다 — 값·인증키는 포함하지 않는다
@@ -1207,11 +1208,11 @@ app.get('/api/incheon/congestion', async (req, res) => {
             t1: {
               arrival: num(it.t1sumset1), departure: num(it.t1sumset2),
               immigration: (num(it.t1sum3) ?? 0) + (num(it.t1sum4) ?? 0),
-              gates: [['1·2', num(it.t1sum5)], ['3', num(it.t1sum6)], ['4', num(it.t1sum7)], ['5·6', num(it.t1sum8)]], // 순서 유지를 위해 배열
+              gates: (it.t1dg1 !== undefined ? [1, 2, 3, 4, 5, 6].map(n => [String(n), num(it[`t1dg${n}`])]) : [['1·2', num(it.t1sum5)], ['3', num(it.t1sum6)], ['4', num(it.t1sum7)], ['5·6', num(it.t1sum8)]]), // 순서 유지를 위해 배열
             },
             t2: {
               arrival: num(it.t2sumset1), departure: num(it.t2sumset2),
-              gates: [['1', num(it.t2sum3)], ['2', num(it.t2sum4)]],
+              gates: (it.t2dg1 !== undefined ? [['1', num(it.t2dg1)], ['2', num(it.t2dg2)]] : [['1', num(it.t2sum3)], ['2', num(it.t2sum4)]]),
             },
           };
         })

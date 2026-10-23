@@ -57,7 +57,7 @@ export default function AirportCongestion({ lang = 'ko', enabled = false }) {
   const show = enabled || preview === 'on';
   const [day, setDay] = useState(0);
   const [terminal, setTerminal] = useState('t1');
-  const [kind, setKind] = useState('departure');
+  const [kind, setKind] = useState('arrival'); // 입국장부터 보여 준다
   const [data, setData] = useState({ status: 'loading', hours: [], key: '' });
   const [picked, setPicked] = useState(null);
 
@@ -95,7 +95,7 @@ export default function AirportCongestion({ lang = 'ko', enabled = false }) {
                 {['t1', 't2'].map(t => <button key={t} type="button" className={seg(terminal === t)} aria-pressed={terminal === t} onClick={() => { setTerminal(t); setPicked(null); }}>{t.toUpperCase()}</button>)}
               </div>
               <div className="ac-seg" role="group" aria-label={c.kind}>
-                {['departure', 'arrival'].map(k => <button key={k} type="button" className={seg(kind === k)} aria-pressed={kind === k} onClick={() => { setKind(k); setPicked(null); }}>{c[k]}</button>)}
+                {['arrival', 'departure'].map(k => <button key={k} type="button" className={seg(kind === k)} aria-pressed={kind === k} onClick={() => { setKind(k); setPicked(null); }}>{c[k]}</button>)}
               </div>
               <div className="ac-seg" role="group" aria-label={c.day}>
                 {[0, 1].map(d => <button key={d} type="button" className={seg(day === d)} aria-pressed={day === d} onClick={() => { setDay(d); setPicked(null); }}>{d ? c.tomorrow : c.today}</button>)}
