@@ -674,3 +674,12 @@ html[lang="ko"] .svc-head h2 { letter-spacing: -0.02em; line-height: 1.25; }
 .al-table td { padding: 8px 10px 8px 0; border-bottom: 1px solid #13284A; white-space: nowrap; }
 .al-table .mono { font-family: 'IBM Plex Mono', monospace; }
 .al-table s { margin-left: 6px; color: #5F7393; font-size: 0.8em; }
+
+/* ---------- 푸터 사업자 정보 (전자상거래법 표시 사항) ---------- */
+.biz-info { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 10px 0 0; font-size: 0.8rem; color: var(--text-muted, #8FA0B8); }
+.biz-info div { display: flex; gap: 6px; }
+.biz-info dt { font-weight: 600; opacity: 0.85; }
+.biz-info dd { margin: 0; }
+.biz-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 0.85rem; }
+.biz-links a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.biz-links .biz-privacy { font-weight: 700; color: var(--gold, #FEC74D); }
