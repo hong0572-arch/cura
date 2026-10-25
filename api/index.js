@@ -1182,6 +1182,9 @@ const CONGESTION_PATH = '/B551177/passgrAnncmt/getPassgrAnncmt';
 // t1sum1 입국장 동편(A,B) · t1sum2 입국장 서편(E,F) · t1sum3 입국심사(C) · t1sum4 입국심사(D) · t1sumset1 입국장 합계
 // t1sum5 출국장1,2 · t1sum6 출국장3 · t1sum7 출국장4 · t1sum8 출국장5,6 · t1sumset2 출국장 합계
 // t2sum1 입국장1 · t2sum2 입국장2 · t2sumset1 입국장 합계 · t2sum3 출국장1 · t2sum4 출국장2 · t2sumset2 출국장 합계
+// 새 항목(passgrAnncmt, 2026-10 확인): t1dg1~6 출국장1~6 · t1dgsum1 출국장 합계 · t1eg1~4 입국장(동편·서편·입국심사C·D) · t1egsum1 입국장 합계
+//   t2dg1·2 출국장1·2 · t2dgsum2 출국장 합계 · t2eg1·2 입국장1·2 · t2egsum1 입국장 합계 (옛 이름도 함께 읽는다)
+const pick = (it, ...names) => { for (const n of names) { const v = num(it[n]); if (v !== null && it[n] !== undefined && it[n] !== '') return v; } return null; };
 const num = (v) => { const n = Number(String(v ?? '').replace(/,/g, '')); return Number.isFinite(n) ? Math.round(n) : null; };
 
 app.get('/api/incheon/congestion', async (req, res) => {
@@ -1210,12 +1213,14 @@ app.get('/api/incheon/congestion', async (req, res) => {
           return {
             hour,
             t1: {
-              arrival: num(it.t1sumset1), departure: num(it.t1sumset2),
-              immigration: (num(it.t1sum3) ?? 0) + (num(it.t1sum4) ?? 0),
+              arrival: pick(it, 't1egsum1', 't1sumset1'), departure: pick(it, 't1dgsum1', 't1sumset2'),
+              immigration: (pick(it, 't1eg3', 't1sum3') ?? 0) + (pick(it, 't1eg4', 't1sum4') ?? 0),
+              arrivalHalls: [['A·B', pick(it, 't1eg1', 't1sum1')], ['E·F', pick(it, 't1eg2', 't1sum2')], ['C', pick(it, 't1eg3', 't1sum3')], ['D', pick(it, 't1eg4', 't1sum4')]],
               gates: (it.t1dg1 !== undefined ? [1, 2, 3, 4, 5, 6].map(n => [String(n), num(it[`t1dg${n}`])]) : [['1·2', num(it.t1sum5)], ['3', num(it.t1sum6)], ['4', num(it.t1sum7)], ['5·6', num(it.t1sum8)]]), // 순서 유지를 위해 배열
             },
             t2: {
-              arrival: num(it.t2sumset1), departure: num(it.t2sumset2),
+              arrival: pick(it, 't2egsum1', 't2sumset1'), departure: pick(it, 't2dgsum2', 't2sumset2'),
+              arrivalHalls: [['1', pick(it, 't2eg1', 't2sum1')], ['2', pick(it, 't2eg2', 't2sum2')]],
               gates: (it.t2dg1 !== undefined ? [['1', num(it.t2dg1)], ['2', num(it.t2dg2)]] : [['1', num(it.t2sum3)], ['2', num(it.t2sum4)]]),
             },
           };
