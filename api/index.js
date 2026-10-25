@@ -99,7 +99,8 @@ const STRING_FIELDS = {
   firstName: 100, lastName: 100, dobMonth: 2, dobDay: 2, dobYear: 4,
   travelClass: 30, phone: 40,
   contactFirst: 100, contactLast: 100, contactEmail: 200, contactPhone: 40,
-  vehicleType: 30, transferAddress: 500, specialRequests: 2000,
+  // vehicleType: 관리자 차량 ID는 자유 입력이라 길 수 있다. 잘리면 가격표와 매칭되지 않아 차량비가 0이 된다(2026-10 사고)
+  vehicleType: 100, transferAddress: 500, specialRequests: 2000,
 };
 const BOOLEAN_FIELDS = ['addTransfer', 'wheelchair', 'sameAsPrimary', 'healthConsent']; // healthConsent: 휠체어 등 민감정보 별도 동의
 
@@ -271,6 +272,8 @@ app.post('/api/reservations/:id/submit', async (req, res) => {
 
     const settings = await loadSettings();
     const quote = computeQuote(r.data, settings);
+    // 선택한 차량을 가격표에서 찾지 못하면 차량비 없이 결제되지 않도록 막는다
+    if (quote.vehicleUnknown) return res.status(422).json({ error: 'Unknown vehicle' });
     const amount = method === 'paypal' ? quote.paypalTotalUsd : quote.nicepayTotalKrw;
     const currency = method === 'paypal' ? 'USD' : 'KRW';
 

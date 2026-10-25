@@ -20,7 +20,7 @@ function parseFlightDate(date, time, airport) {
   if (!date || !time) return null;
   const offset = AIRPORT_UTC_OFFSET[airport] || '';
   const d = new Date(`${date}T${time}${time.length === 5 ? ':00' : ''}${offset}`);
-  return Number.isNaN(d.getTime()) ? null : d;
+  return Number.isNaN(d.getTime()) ? null : d; 
 }
 
 export function computeQuote(formData, settings, now = new Date()) {
@@ -44,6 +44,9 @@ export function computeQuote(formData, settings, now = new Date()) {
   } else if (currentVehicle) {
     vehicleUsd = Number(currentVehicle.priceUsd) || 0;
   }
+  // 차량을 골랐는데 가격표에 없는 ID (서버는 이 경우 결제를 막는다)
+  const vehicleUnknown = Boolean(formData.vehicleType) && formData.vehicleType !== 'none'
+    && !['staria', 'g90', 'sprinter'].includes(formData.vehicleType) && !currentVehicle;
   // Exception for DEP + G90 (Total should be 450. Base 270 + Vehicle 180 = 450)
   if (serviceType === 'departure' && formData.vehicleType === 'g90' && vehicleUsd === 200) {
     vehicleUsd = 180;
@@ -106,6 +109,7 @@ export function computeQuote(formData, settings, now = new Date()) {
     serviceType,
     baseFeeUsd,
     vehicleUsd,
+    vehicleUnknown,
     extraPassCount,
     extraPassUsd,
     extraBags,

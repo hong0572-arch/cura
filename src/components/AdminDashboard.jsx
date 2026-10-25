@@ -1570,7 +1570,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                           </div>
                           <div className="form-field-nested">
                             <label>Vehicle ID (e.g. g90)</label>
-                            <input type="text" value={vehicle.id || ''} onChange={e => handleVehicleChange(aIndex, vIndex, 'id', e.target.value)} />
+                            <input type="text" maxLength={100} value={vehicle.id || ''} onChange={e => handleVehicleChange(aIndex, vIndex, 'id', e.target.value)} />
                           </div>
                           <div className="form-field-nested">
                             <label>Price USD</label>
