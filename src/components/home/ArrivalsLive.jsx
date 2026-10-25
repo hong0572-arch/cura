@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import ArrivalsFlow from './ArrivalsFlow';
 
 // 인천공항 입국장 실시간 현황 (공공데이터: 인천국제공항공사_입국장현황 정보 서비스) — 테스트(비공개)
 // FEATURES.congestion 이 false 이면 주소에 ?congestion=1 을 붙였을 때만 보인다.
@@ -27,6 +28,14 @@ const COPY = {
     source: '자료: 인천국제공항공사 입국장현황 정보(공공데이터포털)',
     test: '테스트 화면 — 방문자에게는 보이지 않습니다',
     empty: '이 터미널에는 지금 앞뒤 2시간 사이 도착편이 없습니다.',
+    radar: '도착 레이더 · 앞뒤 2시간',
+    now: '지금',
+    planeLabel: (f, from, t, hall, pax) => `${f} · ${from} 출발 · ${t} 도착 · 입국장 ${hall || '-'} · ${pax.toLocaleString()}명`,
+    flowTitle: '입국장별 승객 흐름',
+    stages: ['탑승교', '입국심사', '수하물', '입국장'],
+    none: '도착편 없음',
+    legendDot: '점이 많을수록 승객이 많고, 붐비는 입국장은 입국심사에서 머뭅니다',
+    legendEscort: '전담 에스코트 — 가장 빠른 동선으로 안내',
   },
   en: {
     eyebrow: 'INCHEON AIRPORT · ARRIVALS LIVE',
@@ -50,6 +59,14 @@ const COPY = {
     source: 'Source: Incheon International Airport Corporation arrival hall status (data.go.kr)',
     test: 'Test view — not shown to visitors',
     empty: 'No flights landing at this terminal within two hours of now.',
+    radar: 'Arrivals radar · two hours either side',
+    now: 'Now',
+    planeLabel: (f, from, t, hall, pax) => `${f} from ${from} · lands ${t} · Hall ${hall || '-'} · ${pax.toLocaleString()} pax`,
+    flowTitle: 'Passenger flow by arrival hall',
+    stages: ['Gate', 'Immigration', 'Baggage', 'Arrival hall'],
+    none: 'No flights',
+    legendDot: 'More dots, more passengers — busy halls slow down at immigration',
+    legendEscort: 'Your escort — the fastest way through',
   },
 };
 
@@ -80,13 +97,6 @@ export default function ArrivalsLive({ lang = 'ko', enabled = false }) {
   if (!show) return null;
 
   const list = data.flights.filter(f => f.terminal === terminal);
-  const halls = [...new Set(list.map(f => f.hall).filter(Boolean))].sort();
-  const byHall = halls.map(h => {
-    const fs = list.filter(f => f.hall === h);
-    return { hall: h, flights: fs.length, pax: fs.reduce((t, f) => t + f.korean + f.foreign, 0) };
-  });
-  const maxPax = Math.max(1, ...byHall.map(h => h.pax));
-  const level = (p) => (p / maxPax < 0.4 ? 0 : p / maxPax < 0.75 ? 1 : 2);
   // 도착 예정: 15분 전부터 (이미 내린 편은 빼고), 시간순
   const since = data.updatedAt ? new Date(data.updatedAt).getTime() - 15 * 60_000 : 0;
   const upcoming = [...list].filter(f => !since || new Date(f.estimated).getTime() >= since)
@@ -133,16 +143,14 @@ export default function ArrivalsLive({ lang = 'ko', enabled = false }) {
           {data.status === 'ok' && (
             list.length === 0 ? <p className="ac-muted">{c.empty}</p> : (
               <>
-                <ul className="al-halls">
-                  {byHall.map(h => (
-                    <li key={h.hall} className={`al-hall al-lv${level(h.pax)}`}>
-                      <span className="al-hall-name">{c.hall(h.hall)}</span>
-                      <b>{c.pax(h.pax)}</b>
-                      <span>{c.flights(h.flights)} · {c.levels[level(h.pax)]}</span>
-                      <i className="al-meter" style={{ '--w': `${Math.max(4, (h.pax / maxPax) * 100)}%` }} aria-hidden="true" />
-                    </li>
-                  ))}
-                </ul>
+                <ArrivalsFlow
+                  c={c}
+                  flights={data.flights}
+                  terminal={terminal}
+                  updatedAt={data.updatedAt}
+                  highlightHall={found && found.terminal === terminal ? found.hall : ''} highlightFlight={found ? found.flight : ''}
+                  onPick={(f) => setQuery(f)}
+                />
                 <p className="ac-note">{c.note}</p>
                 <p className="ac-k">{c.upcoming}</p>
                 {upcoming.length === 0 && <p className="ac-muted">{c.empty}</p>}
