@@ -683,3 +683,83 @@ html[lang="ko"] .svc-head h2 { letter-spacing: -0.02em; line-height: 1.25; }
 .biz-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 0.85rem; }
 .biz-links a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .biz-links .biz-privacy { font-weight: 700; color: var(--gold, #FEC74D); }
+
+/* ---------- 입국장 실시간 모션 (ArrivalsFlow) ---------- */
+.af { --len: 200px; margin: 6px 0 14px; }
+/* 도착 레이더 */
+.af-radar { margin-bottom: 26px; }
+.af-sky { position: relative; height: 118px; border-bottom: 1px solid #2B3E5C; border-radius: 10px 10px 0 0; background: linear-gradient(90deg, rgba(255, 255, 255, 0.025) 50%, transparent 50%); overflow: hidden; }
+.af-now { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed #FEC74D; }
+.af-now em { position: absolute; top: 6px; left: 6px; font: 600 10px 'IBM Plex Mono', monospace; font-style: normal; letter-spacing: .08em; color: #FEC74D; white-space: nowrap; }
+.af-plane { position: absolute; bottom: calc(10px + var(--lane) * 32px); display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px; border: none; background: none; color: #C9D2DF; cursor: pointer; transform: translateX(-50%); transition: left 30s linear; }
+.af-plane svg { width: calc(20px * var(--s)); height: calc(20px * var(--s)); fill: currentColor; }
+.af-plane:focus-visible { outline: 2px solid #FEC74D; border-radius: 4px; }
+.af-tag { font: 500 10px 'IBM Plex Mono', monospace; color: inherit; opacity: 0; transition: opacity .15s; white-space: nowrap; }
+.af-plane:hover .af-tag, .af-plane:focus-visible .af-tag, .af-plane.is-landing .af-tag, .af-plane.is-hl .af-tag { opacity: 1; }
+.af-plane.is-landed { color: #5F7393; }
+.af-plane.is-landing { color: #FEC74D; }
+.af-plane.is-landing svg { filter: drop-shadow(0 0 6px rgba(254, 199, 77, 0.7)); }
+.af-plane.is-hl { color: #FEC74D; z-index: 2; }
+.af-plane.is-hl svg { filter: drop-shadow(0 0 0 #FEC74D) drop-shadow(0 0 8px rgba(254, 199, 77, 0.9)); }
+.af-axis { display: flex; justify-content: space-between; margin-top: 6px; font: 400 10px 'IBM Plex Mono', monospace; color: #8FA0B8; }
+.af-axis .is-now { color: #FEC74D; }
+/* 입국장 흐름 */
+.af-flow { position: relative; }
+.af-stages { position: absolute; top: 0; left: 0; right: 0; height: var(--len); display: grid; grid-template-rows: repeat(4, 1fr); pointer-events: none; }
+.af-stages span { border-top: 1px dashed #1A2F50; padding: 3px 0 0 4px; font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .06em; color: #5F7393; text-transform: uppercase; }
+.af-cols { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 10px; }
+.af-track { position: relative; height: var(--len); border-radius: 8px 8px 0 0; background: linear-gradient(to bottom, rgba(254, 199, 77, 0) 40%, rgba(254, 199, 77, 0.05)); overflow: hidden; }
+.af-dot { position: absolute; top: 0; left: var(--x); width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #9FB0C6; opacity: 0; animation: af-fall var(--t) linear var(--d) infinite; animation-play-state: paused; }
+.af-lv1 .af-dot { animation-name: af-slow; background: #C9D2DF; }
+.af-lv2 .af-dot { animation-name: af-queue; background: #F4EEE2; }
+.af-col .af-dot.af-escort { width: 10px; height: 10px; margin: -5px 0 0 -5px; background: #FEC74D; box-shadow: 0 0 0 3px rgba(254, 199, 77, 0.22), 0 0 12px rgba(254, 199, 77, 0.65); animation-name: af-fall; z-index: 1; }
+.af[data-play] .af-dot { animation-play-state: running; }
+@keyframes af-fall {
+  0% { transform: translateY(0); opacity: 0; }
+  8%, 90% { opacity: 1; }
+  100% { transform: translateY(var(--len)); opacity: 0; }
+}
+/* 보통: 입국심사 구간에서 조금 느려진다 */
+@keyframes af-slow {
+  0% { transform: translateY(0); opacity: 0; }
+  8%, 90% { opacity: 1; }
+  25% { transform: translateY(calc(var(--len) * 0.27)); }
+  50% { transform: translateY(calc(var(--len) * 0.47)); }
+  100% { transform: translateY(var(--len)); opacity: 0; }
+}
+/* 붐빔: 입국심사 구간에서 머문다 */
+@keyframes af-queue {
+  0% { transform: translateY(0); opacity: 0; }
+  8%, 90% { opacity: 1; }
+  18% { transform: translateY(calc(var(--len) * 0.27)); }
+  66% { transform: translateY(calc(var(--len) * 0.46)); }
+  100% { transform: translateY(var(--len)); opacity: 0; }
+}
+.af-door { position: relative; display: grid; place-items: center; height: 46px; border: 1px solid #2B3E5C; border-radius: 0 0 8px 8px; background: #0E2240; overflow: hidden; }
+.af-fill { position: absolute; left: 0; right: 0; bottom: 0; height: var(--h); background: rgba(254, 199, 77, 0.18); transform-origin: bottom; animation: af-rise 1.1s cubic-bezier(.2, .7, .2, 1) both; }
+.af-lv1 .af-fill { background: rgba(254, 199, 77, 0.3); }
+.af-lv2 .af-fill { background: rgba(254, 199, 77, 0.5); }
+@keyframes af-rise { from { transform: scaleY(0); } }
+.af-door b { position: relative; font: 500 1.35rem/1 var(--font-serif); color: #F4EEE2; }
+.af-col.is-hl .af-door { border-color: #FEC74D; box-shadow: 0 0 0 1px #FEC74D; }
+.af-meta { display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 8px; text-align: center; font-size: 0.78rem; line-height: 1.35; color: #9FB0C6; word-break: keep-all; }
+.af-meta strong { font: 500 0.95rem 'IBM Plex Mono', monospace; color: #F4EEE2; }
+.af-lv2 .af-level { color: #FEC74D; font-weight: 600; }
+.af-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 14px 0 0; font-size: 0.78rem; color: #8FA0B8; }
+.af-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.af-key { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #C9D2DF; }
+.af-key-escort { width: 9px; height: 9px; background: #FEC74D; box-shadow: 0 0 8px rgba(254, 199, 77, 0.7); }
+@media (max-width: 640px) {
+  .af { --len: 160px; }
+  .af-cols { gap: 5px; }
+  .af-meta { font-size: 0.68rem; }
+  .af-meta strong { font-size: 0.8rem; }
+  .af-stages span { font-size: 9px; }
+  .af-plane .af-tag { display: none; }
+  .af-plane.is-hl .af-tag { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .af-dot { animation: none !important; opacity: 0.9; transform: translateY(calc(var(--len) * var(--p))); }
+  .af-fill { animation: none; }
+  .af-plane { transition: none; }
+}
