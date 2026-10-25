@@ -763,3 +763,61 @@ html[lang="ko"] .svc-head h2 { letter-spacing: -0.02em; line-height: 1.25; }
   .af-fill { animation: none; }
   .af-plane { transition: none; }
 }
+
+/* ---------- 시간대별 예상 (ForecastStrip) ---------- */
+.fc { margin-top: 30px; padding-top: 26px; border-top: 1px solid #1E3354; }
+.fc-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px 24px; flex-wrap: wrap; margin-bottom: 14px; }
+.fc-title { margin: 4px 0 0; font: 500 clamp(1.3rem, 2vw, 1.6rem)/1.25 var(--font-serif); color: #F4EEE2; word-break: keep-all; }
+.fc-peak { display: flex; flex-direction: column; gap: 2px; margin: 0 0 6px; font-size: 0.92rem; color: #C9D2DF; }
+.fc-peak span:first-child { color: #F4EEE2; font-weight: 600; }
+.fc-detail { padding: 14px 16px; border: 1px solid #1E3354; border-radius: 10px; background: rgba(255, 255, 255, 0.02); margin-bottom: 12px; }
+.fc-detail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin: 0 0 10px; color: #C9D2DF; }
+.fc-detail-head b { font: 500 1.05rem 'IBM Plex Mono', monospace; color: #F4EEE2; }
+.fc-badge { padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; border: 1px solid #2B3E5C; color: #C9D2DF; }
+.fc-badge.fc-lv2, .fc-badge.fc-lv3 { border-color: #FEC74D; color: #FEC74D; }
+.fc-parts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px 22px; }
+.fc-parts li { display: grid; grid-template-columns: 7.5em 1fr auto; align-items: center; gap: 10px; font-size: 0.85rem; color: #C9D2DF; }
+.fc-parts i { display: block; height: 6px; width: var(--w); border-radius: 3px; background: rgba(254, 199, 77, 0.55); transition: width .4s ease; }
+.fc-parts b { font: 500 0.85rem 'IBM Plex Mono', monospace; color: #F4EEE2; }
+@media (prefers-reduced-motion: reduce) {
+  .fc-seg, .fc[data-play] .fc-seg, .fc[data-play] .fc-seg.is-now { animation: none; transform: none; opacity: 1; }
+  .fc-hand, .fc[data-play] .fc-hand { transition: none; animation: none; }
+  .fc-parts i { transition: none; }
+}
+.fc-parts li { grid-template-columns: max-content 1fr auto; }
+.fc-parts li span { white-space: nowrap; min-width: 6.5em; }
+
+/* 24시간 다이얼 */
+.fc-body { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: 12px 36px; align-items: center; margin: 10px 0 12px; }
+.fc-dial { width: 100%; height: auto; display: block; overflow: visible; }
+.fc-ring { fill: none; stroke: #1E3354; stroke-width: 1; }
+.fc-ring-outer { stroke-dasharray: 2 4; }
+.fc-hr { font: 400 10px 'IBM Plex Mono', monospace; fill: #8FA0B8; }
+.fc-seg { fill: rgba(159, 176, 198, 0.45); stroke: #0B1B33; stroke-width: 1; cursor: pointer; transform-origin: 160px 160px; transform-box: view-box; transform: scale(0.35); opacity: 0; transition: fill .2s; }
+.fc[data-play] .fc-seg { animation: fc-bloom .8s cubic-bezier(.2, .7, .2, 1) calc(var(--i) * 40ms) forwards; }
+@keyframes fc-bloom { to { transform: scale(1); opacity: 1; } }
+.fc-seg.fc-lv1 { fill: rgba(254, 199, 77, 0.35); }
+.fc-seg.fc-lv2 { fill: rgba(254, 199, 77, 0.62); }
+.fc-seg.fc-lv3 { fill: #E9A23B; }
+.fc-seg.is-past { fill-opacity: 0.4; }
+.fc-seg.is-now { fill: #F4EEE2; fill-opacity: 1; }
+.fc-seg.is-sel, .fc-seg:hover { stroke: #F4EEE2; stroke-width: 1.5; }
+.fc-seg:focus-visible { outline: none; stroke: #FEC74D; stroke-width: 2; }
+.fc-peak-dot { fill: #FEC74D; opacity: 0; }
+.fc[data-play] .fc-peak-dot { animation: fc-fade .4s ease 1.3s forwards; }
+@keyframes fc-fade { to { opacity: 1; } }
+.fc-hand { transform-origin: 160px 160px; transform-box: view-box; transform: rotate(0deg); pointer-events: none; }
+.fc[data-play] .fc-hand { transform: rotate(var(--deg)); transition: transform 1.6s cubic-bezier(.3, .8, .25, 1) .5s; }
+.fc-hand line { stroke: #FEC74D; stroke-width: 1.5; stroke-linecap: round; }
+.fc-hand circle { fill: #FEC74D; }
+.fc-sweep { fill: rgba(254, 199, 77, 0.08); }
+.fc-hub { fill: #0B1B33; stroke: #2B3E5C; stroke-width: 1; pointer-events: none; }
+.fc-c1 { font: 500 10px 'IBM Plex Mono', monospace; fill: #8FA0B8; letter-spacing: .04em; }
+.fc-c2 { font: 500 26px var(--font-serif); fill: #F4EEE2; }
+.fc-c3 { font: 600 10px var(--font-sans); fill: #C9D2DF; letter-spacing: .04em; }
+.fc-c3.fc-lv2, .fc-c3.fc-lv3 { fill: #FEC74D; }
+.fc-body .fc-detail { margin: 0; }
+@media (max-width: 760px) {
+  .fc-body { grid-template-columns: 1fr; }
+  .fc-dial { max-width: 330px; margin: 0 auto; }
+}

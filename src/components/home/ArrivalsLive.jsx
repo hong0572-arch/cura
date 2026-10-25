@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import ArrivalsFlow from './ArrivalsFlow';
+import ForecastStrip from './ForecastStrip';
 
 // 인천공항 입국장 실시간 현황 (공공데이터: 인천국제공항공사_입국장현황 정보 서비스) — 테스트(비공개)
 // FEATURES.congestion 이 false 이면 주소에 ?congestion=1 을 붙였을 때만 보인다.
@@ -25,7 +26,7 @@ const COPY = {
     error: '지금은 입국장 정보를 불러올 수 없습니다.',
     updated: (t) => `${t} 기준`,
     note: '입국장 붐빔 정도는 같은 시간 다른 입국장과 비교한 값입니다. 승객 수는 공항공사 집계 기준이며 실제와 다를 수 있습니다.',
-    source: '자료: 인천국제공항공사 입국장현황 정보(공공데이터포털)',
+    source: '자료: 인천국제공항공사 입국장현황 정보·승객예고(공공데이터포털)',
     test: '테스트 화면 — 방문자에게는 보이지 않습니다',
     empty: '이 터미널에는 지금 앞뒤 2시간 사이 도착편이 없습니다.',
     radar: '도착 레이더 · 앞뒤 2시간',
@@ -36,6 +37,20 @@ const COPY = {
     none: '도착편 없음',
     legendDot: '점이 많을수록 승객이 많고, 붐비는 입국장은 입국심사에서 머뭅니다',
     legendEscort: '전담 에스코트 — 가장 빠른 동선으로 안내',
+    fcEyebrow: '시간대별 예상 · 인천국제공항공사 예고',
+    fcTitle: '오늘 남은 시간, 언제 붐빌까요?',
+    fcKind: '구분', fcDay: '날짜',
+    fcKinds: { arrival: '입국장', departure: '출국장' },
+    fcToday: '오늘', fcTomorrow: '내일',
+    fcLoading: '예상 승객 수를 불러오는 중…',
+    fcPeople: (n) => `예상 ${n.toLocaleString()}명`,
+    fcNow: (r, n, lvl) => `지금(${r}) 예상 ${n.toLocaleString()}명 · ${lvl}`,
+    fcPeakLeft: (r, n) => `남은 시간 중 가장 붐빔: ${r} (약 ${n.toLocaleString()}명)`,
+    fcPeakDay: (r, n) => `가장 붐비는 시간: ${r} (약 ${n.toLocaleString()}명)`,
+    fcLevels: ['여유', '보통', '혼잡', '매우 혼잡'],
+    fcHall: (h) => `입국장 ${h}`,
+    fcGate: (g) => `출국장 ${g}`,
+    fcNote: '인천국제공항공사가 예고한 예상치이며 실제와 다를 수 있습니다. 붐빔 단계는 그날 가장 붐비는 시간과 비교한 값입니다.',
   },
   en: {
     eyebrow: 'INCHEON AIRPORT · ARRIVALS LIVE',
@@ -56,7 +71,7 @@ const COPY = {
     error: 'Arrival information is not available right now.',
     updated: (t) => `as of ${t} KST`,
     note: 'Hall levels compare each hall with the others at the same time. Passenger numbers come from the airport and may differ from actual conditions.',
-    source: 'Source: Incheon International Airport Corporation arrival hall status (data.go.kr)',
+    source: 'Source: Incheon International Airport Corporation arrival hall status and passenger forecast (data.go.kr)',
     test: 'Test view — not shown to visitors',
     empty: 'No flights landing at this terminal within two hours of now.',
     radar: 'Arrivals radar · two hours either side',
@@ -67,6 +82,20 @@ const COPY = {
     none: 'No flights',
     legendDot: 'More dots, more passengers — busy halls slow down at immigration',
     legendEscort: 'Your escort — the fastest way through',
+    fcEyebrow: 'Hourly forecast · published by the airport',
+    fcTitle: 'When will Incheon be busy today?',
+    fcKind: 'Area', fcDay: 'Day',
+    fcKinds: { arrival: 'Arrivals', departure: 'Departures' },
+    fcToday: 'Today', fcTomorrow: 'Tomorrow',
+    fcLoading: 'Loading the passenger forecast…',
+    fcPeople: (n) => `about ${n.toLocaleString()} people`,
+    fcNow: (r, n, lvl) => `Now (${r}): about ${n.toLocaleString()} people · ${lvl}`,
+    fcPeakLeft: (r, n) => `Busiest for the rest of today: ${r} (about ${n.toLocaleString()})`,
+    fcPeakDay: (r, n) => `Busiest: ${r} (about ${n.toLocaleString()})`,
+    fcLevels: ['Quiet', 'Moderate', 'Busy', 'Very busy'],
+    fcHall: (h) => `Hall ${h}`,
+    fcGate: (g) => `Departure area ${g}`,
+    fcNote: 'Forecasts published by Incheon International Airport Corporation; actual numbers may differ. Levels compare each hour with the busiest hour of the same day.',
   },
 };
 
@@ -174,6 +203,7 @@ export default function ArrivalsLive({ lang = 'ko', enabled = false }) {
               </>
             )
           )}
+          <ForecastStrip c={c} terminal={terminal} />
           <p className="ac-source">{c.source}{data.updatedAt ? ` · ${c.updated(kst(data.updatedAt))}` : ''}</p>
         </div>
       </div>
