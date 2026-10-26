@@ -5,6 +5,7 @@ import { useLoadScript, Autocomplete } from '@react-google-maps/api';
 import { localizePath } from '../utils/locale';
 import { CONTACT } from '../components/checkout/checkoutCopy';
 import { computeVehicleQuote } from '../utils/pricing';
+import { MAX_ADVANCE_DAYS, seoulToday, maxBookingDate, isBookableDate } from '../utils/bookingWindow';
 import './VehicleReservation.css';
 
 const libraries = ['places'];
@@ -59,6 +60,8 @@ const text = {
     badEmail: '이메일 주소를 확인해 주세요.',
     lead: `출발 ${MIN_LEAD_HOURS}시간 이내 예약은 차량 배정을 먼저 확인해야 합니다. WhatsApp이나 전화로 문의해 주세요.`,
     past: '지난 시간은 선택할 수 없습니다.',
+    tooFar: `이용일 기준 ${MAX_ADVANCE_DAYS}일 이내 날짜만 예약할 수 있습니다.`,
+    period: `서비스 제공기간: 예약한 이용일 당일 1회 이동 · 사전예약은 이용일 기준 ${MAX_ADVANCE_DAYS}일 이내`,
     seats: (v) => `최대 ${v.pax}명 · 수하물 ${v.bags}개`,
     from: '부터',
     capacity: (v) => `선택한 차량의 권장 인원은 ${v.pax}명, 수하물 ${v.bags}개입니다. 초과 시 추가 요금이 붙으며, 더 큰 차량을 권장합니다.`,
@@ -87,6 +90,8 @@ const text = {
     badEmail: 'Please check your email address.',
     lead: `Bookings within ${MIN_LEAD_HOURS} hours need a quick availability check — please message us on WhatsApp or call.`,
     past: 'Please choose a future date and time.',
+    tooFar: `Bookings open up to ${MAX_ADVANCE_DAYS} days before the service date.`,
+    period: `Service period: one transfer on the booked date · bookable up to ${MAX_ADVANCE_DAYS} days ahead`,
     seats: (v) => `Up to ${v.pax} guests · ${v.bags} bags`,
     from: 'from',
     capacity: (v) => `This vehicle comfortably seats ${v.pax} with ${v.bags} bags. Extra guests or bags are charged, and a larger vehicle is recommended.`,
@@ -97,10 +102,6 @@ const text = {
   },
 };
 
-// 서울 시각 기준 'YYYY-MM-DD'
-function seoulToday() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
-}
 function hoursUntil(date, time) {
   const at = Date.parse(`${date}T${time}:00+09:00`);
   return Number.isNaN(at) ? null : (at - Date.now()) / 3_600_000;
@@ -236,6 +237,7 @@ export default function VehicleReservation({ settings, lang = 'en' }) {
     const lead = hoursUntil(formData.date, formData.time);
     if (lead !== null && lead < 0) { setInvalid({ date: true, time: true }); setError(c.past); return; }
     if (lead !== null && lead < MIN_LEAD_HOURS) { setError(c.lead); return; }
+    if (!isBookableDate(formData.date)) { setInvalid({ date: true }); setError(c.tooFar); return; }
     if (!hasQuote || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -374,7 +376,7 @@ export default function VehicleReservation({ settings, lang = 'en' }) {
               <div className="vr-grid-4">
                 <div>
                   <label className="vr-label" htmlFor="vr-date"><Calendar size={16} aria-hidden="true" /> {c.date}</label>
-                  <input id="vr-date" type="date" name="date" min={minDate || undefined} value={formData.date} onFocus={ensureMinDate} onPointerDown={ensureMinDate} onChange={handleChange} required className={inputClass('date')} />
+                  <input id="vr-date" type="date" name="date" min={minDate || undefined} max={minDate ? maxBookingDate() : undefined} value={formData.date} onFocus={ensureMinDate} onPointerDown={ensureMinDate} onChange={handleChange} required className={inputClass('date')} />
                 </div>
                 <div>
                   <label className="vr-label" htmlFor="vr-time"><Clock size={16} aria-hidden="true" /> {c.time}</label>
@@ -389,6 +391,7 @@ export default function VehicleReservation({ settings, lang = 'en' }) {
                   <input id="vr-luggage" type="number" min="0" max="100" name="luggage" value={formData.luggage} onChange={handleChange} className="vr-input" />
                 </div>
               </div>
+              <p className="vr-hint">{c.period}</p>
               {overCapacity && <p className="vr-notice"><AlertCircle size={16} aria-hidden="true" /> {c.capacity(cap)}</p>}
             </fieldset>
 

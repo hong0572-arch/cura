@@ -8,6 +8,7 @@ import { auth, googleProvider } from '../firebase';
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
 import { AIRLINES } from '../utils/airlines';
 import { vehiclesFor, isOverCapacity } from '../utils/vehicles';
+import { MAX_ADVANCE_DAYS, seoulToday, maxBookingDate, isBookableDate } from '../utils/bookingWindow';
 import './checkout/boardingPass.css';
 
 // 예약 위저드 — "탑승권" 디자인 3단계 (일정 → 탑승객 → 확인·결제).
@@ -62,6 +63,7 @@ const COPY = {
     addressPh: 'Hotel name or address in Seoul',
     surchargeNote: 'Supplements apply — the reason for each one is shown on your pass.',
     included: "What's included & cancellation policy",
+    dateHint: `Bookable up to ${MAX_ADVANCE_DAYS} days ahead. Service is provided once, on the date you book.`,
     s2Title: 'Who are we welcoming?',
     s2Lede: 'Lead guest only — exactly as printed in the passport. No date of birth or passport number needed.',
     given: 'Given name(s)', surname: 'Surname',
@@ -110,7 +112,7 @@ const COPY = {
     labels: {
       transferAddress: 'Car address', airline: 'Airline', flightNumber: 'Flight number', flightTime: 'Flight time',
       transferAirline: 'Connecting airline', transferFlightNumber: 'Connecting flight number', transferFlightTime: 'Connecting flight time',
-      firstName: 'Given name', lastName: 'Surname', email: 'Email (valid address)', phoneLocal: 'Mobile number',
+      date: `Date (today to ${MAX_ADVANCE_DAYS} days ahead)`, firstName: 'Given name', lastName: 'Surname', email: 'Email (valid address)', phoneLocal: 'Mobile number',
       contactFirst: 'Your given name', contactLast: 'Your surname', contactEmail: 'Your email', contactPhoneLocal: 'Your mobile',
       healthConsent: 'Consent to health-related information',
     },
@@ -138,6 +140,7 @@ const COPY = {
     addressPh: '호텔 이름 또는 서울 내 주소',
     surchargeNote: '할증이 적용됩니다 — 항목별 이유는 탑승권에 표시됩니다.',
     included: '포함 내역 및 취소 규정',
+    dateHint: `이용일 기준 ${MAX_ADVANCE_DAYS}일 이내까지 예약할 수 있습니다. 서비스는 예약한 이용일 당일 1회 제공됩니다.`,
     s2Title: '어느 분을 모실까요?',
     s2Lede: '대표 탑승객 한 분만, 여권에 적힌 영문 그대로 입력해 주세요. 생년월일·여권번호는 필요 없습니다.',
     given: '이름 (영문)', surname: '성 (영문)',
@@ -186,7 +189,7 @@ const COPY = {
     labels: {
       transferAddress: '차량 주소', airline: '항공사', flightNumber: '항공편 번호', flightTime: '항공편 시간',
       transferAirline: '연결편 항공사', transferFlightNumber: '연결편 번호', transferFlightTime: '연결편 시간',
-      firstName: '이름(영문)', lastName: '성(영문)', email: '이메일(올바른 주소)', phoneLocal: '휴대폰 번호',
+      date: `날짜(오늘부터 ${MAX_ADVANCE_DAYS}일 이내)`, firstName: '이름(영문)', lastName: '성(영문)', email: '이메일(올바른 주소)', phoneLocal: '휴대폰 번호',
       contactFirst: '예약자 이름', contactLast: '예약자 성', contactEmail: '예약자 이메일', contactPhoneLocal: '예약자 휴대폰',
       healthConsent: '건강 관련 정보 동의',
     },
@@ -254,14 +257,14 @@ const INCLUDED = {
     departure: ['Personal greeting on the departure floor with a name board', 'Fastest route through check-in, security and immigration (priority lane for eligible travellers*)', 'Baggage assistance from your car', 'Tax refund assistance — escort to customs check and refund counters (eligibility set by Korea Customs)', 'Escort all the way to your gate', 'Service duration: 2 hours'],
     transfer: ['Personal greeting at the arrival gate with a name sign', 'Guidance through transfer procedures (priority lane for eligible travellers*)', 'Baggage assistance on request', 'Escort to your connecting flight'],
     picketing: ['Name-board greeting at the arrival hall', 'Guidance to your driver or pick-up point'],
-    notes: ['* Incheon has no official paid Fast Track. Priority immigration lanes are for eligible travellers (diplomats, APEC card holders, seniors, children aged 7 and under, passengers with reduced mobility, etc.) — tell us in advance. Everyone else is guided along the fastest route.', 'Escort support only — immigration and customs procedures are completed by the passenger.', 'Cancellation: free up to 48 h before service · 50% within 24–48 h · no refund within 24 h.'],
+    notes: ['* Incheon has no official paid Fast Track. Priority immigration lanes are for eligible travellers (diplomats, APEC card holders, seniors, children aged 7 and under, passengers with reduced mobility, etc.) — tell us in advance. Everyone else is guided along the fastest route.', 'Escort support only — immigration and customs procedures are completed by the passenger.', 'Cancellation: free up to 48 h before service · 50% within 24–48 h · no refund within 24 h.', `Service period: provided once, on the booked service date only (no multi-day or subscription service).`, `Advance booking: up to ${MAX_ADVANCE_DAYS} days before the service date.`],
   },
   ko: {
     arrival: ['항공기 탑승교(게이트)에서 이름 피켓으로 영접', '입국 심사 — 가장 빠른 동선 안내 (우대 심사는 대상자만*)', '수하물 수취 지원 및 세관 동행', '기사님·픽업 장소까지 동행', '실시간 항공편 확인 — 지연 시에도 기다립니다', '서비스 시간: 3시간'],
     departure: ['출국장에서 이름 피켓으로 영접', '체크인·보안검색·출국심사 — 가장 빠른 동선 안내 (우대 심사는 대상자만*)', '차량에서부터 수하물 지원', '택스리펀드 지원 — 세관 확인·환급 창구 동행 (환급 여부는 세관 기준)', '탑승 게이트까지 동행', '서비스 시간: 2시간'],
     transfer: ['도착 게이트에서 이름 피켓으로 영접', '환승 절차 안내 (우대 심사는 대상자만*)', '요청 시 수하물 지원', '연결편 탑승구까지 동행'],
     picketing: ['입국장에서 이름 피켓으로 영접', '기사님·픽업 장소까지 안내'],
-    notes: ['* 인천공항에는 공식 Fast Track이 없습니다. 우대 출입국 심사는 대상자(외교관·APEC 카드 소지자·고령자·7세 이하 어린이·거동이 불편한 분 등)만 이용할 수 있으니 미리 알려 주세요. 그 외에는 가장 빠른 동선으로 안내합니다.', '동행 지원 서비스이며 출입국·세관 절차는 승객 본인이 진행합니다.', '취소 규정: 서비스 48시간 전까지 무료 · 24~48시간 전 50% · 24시간 이내 환불 불가'],
+    notes: ['* 인천공항에는 공식 Fast Track이 없습니다. 우대 출입국 심사는 대상자(외교관·APEC 카드 소지자·고령자·7세 이하 어린이·거동이 불편한 분 등)만 이용할 수 있으니 미리 알려 주세요. 그 외에는 가장 빠른 동선으로 안내합니다.', '동행 지원 서비스이며 출입국·세관 절차는 승객 본인이 진행합니다.', '취소 규정: 서비스 48시간 전까지 무료 · 24~48시간 전 50% · 24시간 이내 환불 불가', '서비스 제공기간: 예약한 이용일 당일 1회 제공 (여러 날에 걸친 서비스·정기 서비스 없음)', `사전예약 기간: 이용일 기준 ${MAX_ADVANCE_DAYS}일 전부터 예약 가능`],
   },
 };
 
@@ -474,6 +477,8 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
   const handleNext = () => {
     if (step === 1) {
       const gaps = missingOf(['flightNumber', 'airline', 'flightTime']);
+      // 이용일은 오늘부터 60일 이내만 (PG 입점 기준)
+      if (!isBookableDate(formData.date)) gaps.unshift('date');
       if (svc === 'transfer') gaps.push(...missingOf(['transferFlightNumber', 'transferAirline', 'transferFlightTime']));
       if (svc !== 'transfer' && formData.vehicleType !== 'none') gaps.push(...missingOf(['transferAddress']));
       // 이메일은 1단계에서 필수 (형식까지 확인)
@@ -515,6 +520,12 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: bookingToken, method: selectedPayment }),
       });
+      if (res.status === 422 && (await res.json().catch(() => ({}))).code === 'date_out_of_range') {
+        // 이용일이 예약 가능 기간(60일)을 벗어남 — 1단계 날짜 안내를 그대로 보여 준다
+        setPayError(c.dateHint);
+        setIsSubmitting(false);
+        return;
+      }
       if (!res.ok) throw new Error(`submit failed (${res.status})`);
       const checkout = await res.json();
       track('Booking Pay Click', { method: selectedPayment, lang });
@@ -618,7 +629,8 @@ export default function BookingWizard({ onClose, initialData, settings, t, lang 
                     </div>
                     <div className="f">
                       <label htmlFor="bp-date">{c.date(dep)}</label>
-                      <input id="bp-date" type="date" value={formData.date} onChange={e => updateForm('date', e.target.value)} />
+                      <input id="bp-date" type="date" value={formData.date} min={seoulToday()} max={maxBookingDate()} onChange={e => updateForm('date', e.target.value)} {...inv('date')} />
+                      <small>{c.dateHint}</small>
                     </div>
                   </div>
                   <div className="row">
