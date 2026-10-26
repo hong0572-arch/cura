@@ -10,6 +10,7 @@ import { GoogleGenAI } from "@google/genai";
 import { computeQuote, computeVehicleQuote, computeJourneyQuote, haversineKm, VEHICLE_ROAD_FACTOR, VEHICLE_TYPES } from '../src/utils/pricing.js';
 import { generateProposalHtml } from '../src/utils/emailTemplate.js';
 import { FEATURES } from '../src/config/features.js';
+import { isBookableDate, MAX_ADVANCE_DAYS } from '../src/utils/bookingWindow.js';
 
 dotenv.config();
 
@@ -269,6 +270,8 @@ app.post('/api/reservations/:id/submit', async (req, res) => {
     const r = await loadReservation(req.params.id, String(req.body.token || ''));
     if (r.error) return res.status(r.code).json({ error: r.error });
     if (r.data.status === STATUS_PAID) return res.status(409).json({ error: 'Already paid' });
+    // PG 입점 기준: 이용일은 오늘부터 60일 이내만 결제할 수 있다
+    if (!isBookableDate(r.data.date)) return res.status(422).json({ error: `Service date must be within ${MAX_ADVANCE_DAYS} days`, code: 'date_out_of_range' });
 
     const settings = await loadSettings();
     const quote = computeQuote(r.data, settings);
@@ -540,6 +543,9 @@ app.post('/api/vehicle-reservations/:id', async (req, res) => {
   const form = sanitizeVehicleForm(req.body.form);
   if (!form.date || !form.time || !form.name || !form.email || !form.phone) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+  if (!isBookableDate(form.date)) {
+    return res.status(422).json({ error: `Service date must be within ${MAX_ADVANCE_DAYS} days`, code: 'date_out_of_range' });
   }
 
   try {
