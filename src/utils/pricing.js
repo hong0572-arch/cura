@@ -13,6 +13,11 @@ const DEFAULT_BASE_USD = { arrival: 250, departure: 270, transfer: 340, picketin
 
 // 의전 기본 요금에 포함되는 인원 (그 이상은 1인당 extraPassengerFeeUsd)
 export const INCLUDED_PASSENGERS = 3;
+// 의전 직원 1명이 맡는 손님 수·수하물 수 (2026-10): 손님 3명마다 직원 1명, 직원 1명당 수하물 4개 포함
+export const GUESTS_PER_STAFF = 3;
+export const BAGS_PER_STAFF = 4;
+// 한도를 넘는 수하물은 포터 1명당 4개
+export const BAGS_PER_PORTER = 4;
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -57,19 +62,17 @@ export function computeQuote(formData, settings, now = new Date()) {
   const extraPassCount = Math.max(0, passengers - INCLUDED_PASSENGERS);
   const extraPassUsd = extraPassCount * (settings?.extraPassengerFeeUsd || 120);
 
-  // Luggage & porter
+  // Staff, luggage & porter
+  // 추가 인원 요금으로 직원이 늘어나므로 수하물 한도도 직원 수만큼 늘어난다 (예: 4명·8개 → 직원 2명·한도 8개 → 포터 없음)
+  const staffCount = Math.ceil(passengers / GUESTS_PER_STAFF);
+  const bagAllowance = staffCount * BAGS_PER_STAFF;
   const totalBags = Math.max(0, parseInt(formData.luggageCount, 10) || 0);
-  let extraLugUsd = 0;
-  let porterUsd = 0;
-  let extraBags = 0;
-  if (totalBags >= 9) {
-    porterUsd = (settings?.porterFeeUsd || 110) * 2;
-  } else if (totalBags >= 5) {
-    porterUsd = settings?.porterFeeUsd || 110;
-  } else {
-    extraBags = Math.max(0, totalBags - Math.max(2, passengers));
-    extraLugUsd = extraBags * (settings?.extraLuggageFeeUsd || 40);
-  }
+  const overBags = Math.max(0, totalBags - bagAllowance);
+  const porterCount = Math.ceil(overBags / BAGS_PER_PORTER);
+  const porterUsd = porterCount * (settings?.porterFeeUsd || 110);
+  // 개당 추가 수하물 요금은 의전에서 받지 않는다 (예전 견적·메일 호환용으로 0을 둔다)
+  const extraBags = 0;
+  const extraLugUsd = 0;
 
   // Surcharges
   let nightFeeUsd = 0, urgentFeeUsd = 0, weekendFeeUsd = 0;
@@ -112,8 +115,11 @@ export function computeQuote(formData, settings, now = new Date()) {
     vehicleUnknown,
     extraPassCount,
     extraPassUsd,
+    staffCount,
+    bagAllowance,
     extraBags,
     extraLugUsd,
+    porterCount,
     porterUsd,
     surcharges: { nightFeeUsd, urgentFeeUsd, weekendFeeUsd, urgentWindow },
     subtotalUsd: round2(subtotalUsd),

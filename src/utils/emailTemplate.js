@@ -197,8 +197,7 @@ export const generateProposalHtml = (rawFormData, quote, bookingId) => {
 - Base Assist Fee: $${baseFeeUsd}
 - Chauffeur Vehicle Fee: $${vehicleUsd || 0}
 - Extra Passenger Surcharge: $${extraPassUsd || 0}
-- Extra Baggage Surcharge: $${extraLugUsd || 0}
-${porterUsd > 0 ? `- Porter Service: $${porterUsd}\n` : ''}${surcharges?.nightFeeUsd > 0 ? `- Night Service Surcharge: $${surcharges.nightFeeUsd}\n` : ''}${surcharges?.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${surcharges.urgentFeeUsd}\n` : ''}${surcharges?.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${surcharges.weekendFeeUsd}\n` : ''}--------------------------------------------------
+${extraLugUsd > 0 ? `- Extra Baggage Surcharge: $${extraLugUsd}\n` : ''}${porterUsd > 0 ? `- Porter Service: $${porterUsd}\n` : ''}${surcharges?.nightFeeUsd > 0 ? `- Night Service Surcharge: $${surcharges.nightFeeUsd}\n` : ''}${surcharges?.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${surcharges.urgentFeeUsd}\n` : ''}${surcharges?.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${surcharges.weekendFeeUsd}\n` : ''}--------------------------------------------------
 - Subtotal: $${subtotalUsd.toFixed(2)}
 - Total (Korean card, KRW): ₩${nicepayTotalKrw.toLocaleString()}
 - Total (PayPal, USD, incl. 4% fee): $${paypalTotalUsd.toFixed(2)}

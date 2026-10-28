@@ -1744,7 +1744,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 <div className="form-row-2">
                   <div className="form-field-pair">
                     <label className="field-main-label">Extra Passenger Surcharge (USD)</label>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per passenger beyond 2 passengers</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per passenger beyond 3 (1 escort per 3 guests, 4 bags per escort included)</p>
                     <div className="form-field">
                       <input
                         type="number"
@@ -1756,7 +1756,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                   </div>
                   <div className="form-field-pair">
                     <label className="field-main-label">Extra Luggage Surcharge (USD)</label>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per checked bag beyond allowed</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Vehicle-only bookings (/book-vehicle): per bag beyond 4. Not charged on airport services.</p>
                     <div className="form-field">
                       <input
                         type="number"
@@ -1771,7 +1771,7 @@ export default function AdminDashboard({ data, images, settings, onSave, onReset
                 <div className="form-row-2" style={{ marginTop: '1rem' }}>
                   <div className="form-field-pair">
                     <label className="field-main-label">Porter Fee Base (USD)</label>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Applied when bags &ge; 5</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Per porter: 1 porter per 4 bags beyond the escorts' allowance</p>
                     <div className="form-field">
                       <input
                         type="number"

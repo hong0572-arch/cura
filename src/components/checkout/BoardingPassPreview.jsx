@@ -76,8 +76,7 @@ export default function BoardingPassPreview() {
     { label: `${SERVICES[service]} meet & assist (1–${INC} guests)`, usd: quote.baseFeeUsd },
     quote.vehicleUsd > 0 && { label: `Car · ${CARS[form.car].name}`, usd: quote.vehicleUsd, why: form.address ? `${dep ? 'Pick-up from' : 'Drop-off at'} ${form.address}` : '' },
     quote.extraPassUsd > 0 && { label: `Extra guests × ${quote.extraPassCount}`, usd: quote.extraPassUsd, why: `Base price covers up to ${INC} guests` },
-    quote.extraLugUsd > 0 && { label: `Extra bags × ${quote.extraBags}`, usd: quote.extraLugUsd, why: `One bag per guest is included (min. 2)` },
-    quote.porterUsd > 0 && { label: `Porter × ${form.bags >= 9 ? 2 : 1}`, usd: quote.porterUsd, why: `${form.bags} bags — a porter carries them for you` },
+    quote.porterUsd > 0 && { label: `Porter × ${quote.porterCount}`, usd: quote.porterUsd, why: `${form.bags} bags — your escorts carry ${quote.bagAllowance}, a porter carries the rest` },
     surcharges.nightFeeUsd > 0 && { label: 'Night supplement', usd: surcharges.nightFeeUsd, why: `Flight ${dep ? 'departs' : 'lands'} ${time} — between 22:00 and 06:00` },
     surcharges.urgentFeeUsd > 0 && { label: 'Short-notice supplement', usd: surcharges.urgentFeeUsd, why: `Booked within ${surcharges.urgentWindow === '6h' ? 6 : 24} hours of the flight` },
     surcharges.weekendFeeUsd > 0 && { label: 'Weekend supplement', usd: surcharges.weekendFeeUsd, why: 'Saturday or Sunday flight' },
@@ -190,7 +189,7 @@ export default function BoardingPassPreview() {
                     <select id="bp-bags" value={form.bags} onChange={e => set('bags', parseInt(e.target.value, 10))}>
                       {Array.from({ length: 13 }, (_, n) => <option key={n} value={n}>{n} bag{n === 1 ? '' : 's'}</option>)}
                     </select>
-                    <small>5+ bags include a porter.</small>
+                    <small>Each escort carries up to 4 bags (one escort per 3 guests). A porter joins for the rest.</small>
                   </div>
                 </div>
                 <div className="f">

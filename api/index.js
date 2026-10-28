@@ -322,8 +322,8 @@ ${data.vehicleType && data.vehicleType !== 'none' ? `- Transfer Address: ${data.
 - Base Assist Fee: $${quote.baseFeeUsd}
 - Chauffeur Vehicle Fee: $${quote.vehicleUsd}
 - Extra Passenger Surcharge: $${quote.extraPassUsd}
-- Extra Baggage Surcharge: $${quote.extraLugUsd}
-${quote.porterUsd > 0 ? `- Porter Service: $${quote.porterUsd}\n` : ''}${s.nightFeeUsd > 0 ? `- Night Service Surcharge: $${s.nightFeeUsd}\n` : ''}${s.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${s.urgentFeeUsd}\n` : ''}${s.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${s.weekendFeeUsd}\n` : ''}--------------------------------------------------
+- Escorts / Bag Allowance: ${quote.staffCount} escort(s) / ${quote.bagAllowance} bags
+${quote.porterUsd > 0 ? `- Porter Service (x${quote.porterCount}): $${quote.porterUsd}\n` : ''}${s.nightFeeUsd > 0 ? `- Night Service Surcharge: $${s.nightFeeUsd}\n` : ''}${s.urgentFeeUsd > 0 ? `- Urgent Request Surcharge: $${s.urgentFeeUsd}\n` : ''}${s.weekendFeeUsd > 0 ? `- Weekend/Holiday Surcharge: $${s.weekendFeeUsd}\n` : ''}--------------------------------------------------
 - Payment Method: ${method === 'paypal' ? 'PayPal (USD, incl. 4% fee)' : 'NICEPAY (KRW, no card fee)'}
 - Amount to Charge: ${currency === 'USD' ? `$${amount.toFixed(2)} USD` : `₩${amount.toLocaleString()}`}
 
