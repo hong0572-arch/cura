@@ -148,15 +148,15 @@
     },
     {
       "source": "/sitemap-blog.xml",
-      "destination": "/api/sitemap-blog"
+      "destination": "/api/index.js"
     },
     {
       "source": "/blog/:postId",
-      "destination": "/api/blog-page/:postId"
+      "destination": "/api/index.js"
     },
     {
       "source": "/en/blog/:postId",
-      "destination": "/api/blog-page/:postId?lang=en"
+      "destination": "/api/index.js"
     },
     {
       "source": "/(.*)",
