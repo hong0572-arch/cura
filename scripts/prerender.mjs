@@ -13,6 +13,7 @@ const PROJECT_ID = 'cura-1969a'
 
 // 사전 렌더링할 공개 페이지 (한국어 경로 기준, 영어는 /en 접두사)
 import { FEATURES } from '../src/config/features.js'
+import { MARKET_SLUGS, marketsCopy, arrivalFromUsd } from '../src/content/marketsCopy.js'
 
 const ALL_PAGES = [
   { path: '/', priority: '1.0', changefreq: 'weekly' },
@@ -21,6 +22,9 @@ const ALL_PAGES = [
   { path: '/about', priority: '0.8', changefreq: 'monthly' },
   { path: '/blog', priority: '0.7', changefreq: 'daily' },
   { path: '/business', priority: '0.6', changefreq: 'monthly' },
+  // 해외 손님 국가별 안내 (미국·인도·중동·독일·영국·싱가포르)
+  { path: '/travel-from', priority: '0.8', changefreq: 'monthly' },
+  ...MARKET_SLUGS.map(slug => ({ path: `/travel-from/${slug}`, priority: '0.8', changefreq: 'monthly' })),
   { path: '/terms', priority: '0.3', changefreq: 'yearly' },
   { path: '/privacy', priority: '0.3', changefreq: 'yearly' },
 ]
@@ -92,6 +96,48 @@ ${urls.join('\n')}
 `
 }
 
+// AI 검색(ChatGPT·Claude·Perplexity 등)이 사이트를 요약할 때 참고하는 안내문 — https://llmstxt.org
+// 요금은 빌드 시점 관리자 설정(인천공항)을 쓴다 → 요금을 바꾸면 재배포해야 반영된다.
+function buildLlmsTxt(siteData) {
+  const settings = siteData?.settings
+  const icn = settings?.airports?.find?.(a => a.code === 'ICN')
+  const services = icn?.services || settings?.servicePrices || {}
+  const usd = (key) => (Number(services[key]?.usd) > 0 ? `from US$${Number(services[key].usd)}` : 'see website')
+  const en = marketsCopy.en
+  const marketLines = MARKET_SLUGS.map(slug => `- [${en.markets[slug].eyebrow}](${SITE_URL}/en/travel-from/${slug}): ${en.markets[slug].description}`)
+  const faqLines = en.commonFaq.map(item => `### ${item.q}\n${item.a}`)
+  const arrival = arrivalFromUsd(settings)
+  return `# Beyond the Gate
+
+> Beyond the Gate (operated by Cura Airport Service Co., Incheon, Republic of Korea) provides VIP meet & assist and private chauffeur transfers at Incheon International Airport (ICN, Terminals 1 and 2) and Gimpo International Airport (GMP) in Seoul, South Korea. English-speaking escorts meet guests at the aircraft gate and accompany them through immigration, baggage claim and customs to their car. Bookings are made online in USD (PayPal) or KRW (card via NICEPAY).
+
+## Key facts
+- Services: Arrival meet & assist (${usd('arrival')}), Departure meet & assist (${usd('departure')}), Transit assistance (${usd('transfer')}), Welcome picketing (${usd('picketing')}), private chauffeur transfers (Genesis G90, Hyundai Staria, Mercedes Sprinter), and coordination for delegations and corporate groups.
+- Prices include up to 3 guests${arrival ? ` (arrival from US$${arrival})` : ''}; one escort per 3 guests; each escort covers 4 bags and a porter is added for every extra 1–4 bags.
+- Booking window: service dates from today up to 60 days ahead (Korea time). Service is delivered once, on the booked date.
+- Operating hours: 24/7. Languages: English and Korean.
+- Fast Track: Incheon Airport has no official Fast Track product. Priority immigration is only for eligible travellers (e.g. diplomats, APEC Business Travel Card holders, seniors, children aged 7 and under, travellers with reduced mobility) as decided by immigration authorities. Otherwise the escort uses the shortest route, targeting under 20 minutes from joining the queue (not guaranteed).
+- Payment: PayPal (USD, 4% PayPal fee) or Korean-won card via NICEPAY (no card surcharge).
+- Contact: ${SITE_URL} · cura@beyondthegate.kr · +82 10-2853-3998 (WhatsApp)
+
+## Guides for international travellers
+- [Travelling to Korea from abroad](${SITE_URL}/en/travel-from): overview for international guests.
+${marketLines.join('\n')}
+
+## Main pages
+- [Home — book airport VIP](${SITE_URL}/en)
+- [Airport chauffeur booking](${SITE_URL}/en/book-vehicle)
+- [Corporate & partnership enquiries](${SITE_URL}/en/business)
+- [About us](${SITE_URL}/en/about)
+- [Travel guide blog](${SITE_URL}/en/blog)
+- [Terms of Service](${SITE_URL}/en/terms) · [Privacy Policy](${SITE_URL}/en/privacy)
+- Korean version: ${SITE_URL}/
+
+## FAQ
+${faqLines.join('\n\n')}
+`
+}
+
 async function main() {
   // 사전 렌더링하지 않는 경로(결제, 관리자 등)는 빈 셸(spa.html)을 받는다.
   // 다시 실행해도 이미 렌더링된 index.html 을 템플릿으로 쓰지 않도록 spa.html 을 원본으로 보관한다.
@@ -130,6 +176,9 @@ async function main() {
     await fs.writeFile(out, page)
     console.log(`[prerender] ${url} → dist/${file}`)
   }
+
+  await fs.writeFile(path.join(dist, 'llms.txt'), buildLlmsTxt(siteData))
+  console.log('[prerender] llms.txt')
 
   await fs.writeFile(path.join(dist, 'sitemap.xml'), buildSitemap())
   console.log(`[prerender] sitemap.xml (${routes.length} URLs)`)

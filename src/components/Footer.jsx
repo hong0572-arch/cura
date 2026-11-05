@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin, ArrowUp, ExternalLink, Lock } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { langFromPath, localizePath, stripLocale } from '../utils/locale';
 import { BUSINESS, FTC_BIZ_URL } from '../content/businessInfo';
+import { MARKET_SLUGS, MARKET_LABELS } from '../content/marketsCopy';
 
 export default function Footer({ t }) {
   const navigate = useNavigate();
@@ -148,6 +149,13 @@ export default function Footer({ t }) {
               <a className="biz-privacy" href={localizePath('/privacy', lang)} onClick={(e) => { e.preventDefault(); navigate(localizePath('/privacy', lang)); }}>{L.privacy}</a>
               <a href={FTC_BIZ_URL} target="_blank" rel="noopener noreferrer">{L.ftc}</a>
             </div>
+            {/* 해외 손님 국가별 안내 — 모든 페이지에서 크롤링되는 내부 링크 */}
+            <nav className="biz-links footer-markets" aria-label={isKo ? '해외 손님 안내' : 'International guests'}>
+              <a href={localizePath('/travel-from', lang)} onClick={(e) => { e.preventDefault(); navigate(localizePath('/travel-from', lang)); }}>{isKo ? '해외 손님 안내' : 'International guests'}</a>
+              {MARKET_SLUGS.map(slug => (
+                <a key={slug} href={localizePath(`/travel-from/${slug}`, lang)} onClick={(e) => { e.preventDefault(); navigate(localizePath(`/travel-from/${slug}`, lang)); }}>{MARKET_LABELS[lang][slug]}</a>
+              ))}
+            </nav>
           </div>
 
           <div className="legal-links-box">

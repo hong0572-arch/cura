@@ -20,6 +20,9 @@ const app = (
   </StrictMode>
 )
 
+// 블로그 글은 서버가 크롤러용 본문(#prerender-post)을 함께 보낸다 (api/_lib/blogPage.js) — 앱이 그리므로 지운다
+document.getElementById('prerender-post')?.remove()
+
 const container = document.getElementById('root')
 if (container.hasChildNodes()) {
   hydrateRoot(container, app)

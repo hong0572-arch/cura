@@ -1,4 +1,33 @@
+# Beyond the Gate — https://beyondthegate.kr
+# 검색엔진과 AI 검색(답변 엔진) 크롤러 모두 공개 페이지를 읽을 수 있게 한다.
+# 결제·완료 화면과 API 는 색인 대상이 아니다.
+
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /payment
+Disallow: /success
+Disallow: /fail
+Disallow: /preview/
+
+# AI search & assistants (explicitly welcome)
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bingbot
+User-agent: DuckAssistBot
+Allow: /
+Disallow: /api/
+Disallow: /payment
+Disallow: /success
+Disallow: /fail
 
 Sitemap: https://beyondthegate.kr/sitemap.xml
+Sitemap: https://beyondthegate.kr/sitemap-blog.xml
