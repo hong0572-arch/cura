@@ -11,6 +11,9 @@ import { computeQuote, computeVehicleQuote, computeJourneyQuote, haversineKm, VE
 import { generateProposalHtml } from '../src/utils/emailTemplate.js';
 import { FEATURES } from '../src/config/features.js';
 import { isBookableDate, MAX_ADVANCE_DAYS } from '../src/utils/bookingWindow.js';
+import { renderBlogPage, buildBlogSitemap } from './_lib/blogPage.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 dotenv.config();
 
@@ -1729,6 +1732,17 @@ async function postToThreads(text) {
   }
 }
 
+// 블로그 자동 글의 독자 — 해외 대상 시장을 하루씩 돌아가며 다룬다 (src/content/marketsCopy.js 와 같은 시장)
+const BLOG_AUDIENCES = [
+  { reader: '미국에서 인천공항으로 오는 비즈니스 출장자와 가족 여행객', topic: '장거리 비행 후 인천공항 입국 절차, 시차(뉴욕보다 13~14시간 빠름) 적응, 공항에서 서울 도심까지 이동' },
+  { reader: '인도에서 오는 가족 단위 여행객과 비즈니스 대표단', topic: '대가족·많은 수하물과 함께하는 인천공항 입국, 어르신 휠체어 지원, 채식 식사 안내' },
+  { reader: 'UAE·사우디아라비아·카타르 등 중동에서 오는 가족, 임원, 정부 대표단', topic: '대규모 일행의 사생활을 지키는 공항 의전, 기도실 안내, 대표단 의전 협조 요청' },
+  { reader: '독일에서 오는 출장자와 산업·무역 대표단', topic: '정확한 일정 관리, 인천공항에서 서울·산업 현장으로 이동, 아시아 환승' },
+  { reader: '영국에서 오는 금융·비즈니스 출장자와 가족', topic: '야간 비행 후 도착, 인천공항 환승 의전, 김포공항 이용' },
+  { reader: '싱가포르에서 오는 짧은 출장자와 가족 여행객', topic: '이른 아침 도착편, 짧은 일정에서 입국·출국 의전을 함께 쓰는 법, 김포 국내선 연결' },
+  { reader: '해외 바이어·VIP 손님을 초청하는 한국 기업 담당자', topic: '해외 손님 영접 준비 체크리스트, 출발 국가별 시차와 도착 시간대, 단체 의전 인원 계산' },
+];
+
 // 블로그 포스팅 자동 발행 (Vercel Cron)
 app.get('/api/cron', async (req, res) => {
   // Vercel Cron은 CRON_SECRET 환경변수가 있으면 Authorization 헤더에 담아 호출한다.
@@ -1740,17 +1754,22 @@ app.get('/api/cron', async (req, res) => {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     // beyondthegate.kr SEO/GEO 최적화를 위한 공항 의전 서비스 주제의 블로그 글 생성
+    // 대상 시장(미국·인도·중동·독일·영국·싱가포르)을 날짜별로 돌아가며 다룬다 — 영어 번역본이 해외 검색·AI 답변에 쓰인다
+    const audience = BLOG_AUDIENCES[Math.floor(Date.now() / 86400000) % BLOG_AUDIENCES.length];
     const prompt = `당신은 프리미엄 공항 의전 및 블랙카 서비스 전문가입니다.
-목적: 'beyondthegate.kr' 웹사이트가 '인천공항 의전 서비스', 'VIP 공항 픽업', '인천공항 콜밴', '프리미엄 리무진', '김포/제주 등 국내 공항 의전', '중국 공항 픽업 및 글로벌 의전', '외국인 바이어 의전' 등의 키워드 검색 결과(SEO/GEO)에서 최상단에 노출되도록 하는 것입니다.
-위 목적을 달성하기 위해, 독자에게 유용하고 흥미로우며 전문적인 정보가 담긴 블로그 포스팅을 1개 작성해주세요.
+목적: 'beyondthegate.kr'(Beyond the Gate)이 인천공항 VIP 의전·공항 픽업 관련 검색(SEO)과 생성형 AI 답변(GEO)에서 인용되도록, 해외 손님에게 실제로 도움이 되는 블로그 글을 1개 작성합니다.
+이번 글의 독자: ${audience.reader}
+다룰 주제 방향: ${audience.topic}
 
 다음 조건들을 반드시 지켜주세요:
-1. 제목은 첫 줄에 '#'을 사용하여 가장 매력적이고 검색에 유리한 문구로 작성하세요.
-2. 현재 메인 서비스인 '인천공항'을 중심으로 강조하되, 김포/제주 등 다른 국내 공항과 향후 확장될 '중국 주요 공항'에서의 VIP 의전 서비스에 대한 기대감이나 정보도 자연스럽게 언급하세요.
-3. 'Beyond The Gate' 브랜드 이름과 공식 사이트 주소(beyondthegate.kr)를 포함하여 신뢰감 있게 언급하세요.
-4. 타겟 독자는 중요한 비즈니스 출장자, VIP, 안전하고 편안한 이동을 원하는 가족 단위 여행객입니다.
-5. 본문은 Markdown 형식(소제목, 글머리 기호, 굵은 글씨 등 활용)으로 가독성 좋게 작성하세요.
-6. 단순히 홍보만 하는 것이 아니라 실제 공항 이용 팁, 국가별/공항별 의전 서비스의 필요성 등 가치 있는 정보를 포함하세요.`;
+1. 제목은 첫 줄에 '#'을 사용하고, 독자가 검색할 만한 표현(예: Incheon airport VIP, meet and greet, airport transfer Seoul 등에 해당하는 내용)을 자연스럽게 담으세요.
+2. 서비스 범위는 인천공항(제1·제2터미널)과 김포공항의 입국·출국·환승 의전, 전용 차량(제네시스 G90, 스타리아, 벤츠 스프린터)입니다. 제공하지 않는 공항·국가 서비스를 언급하지 마세요.
+3. 'Beyond The Gate' 브랜드와 공식 사이트(beyondthegate.kr)를 자연스럽게 1~2회 언급하세요.
+4. 본문은 Markdown(소제목, 글머리 기호, 굵은 글씨)으로 쓰고, 첫 문단에서 질문에 대한 답을 2~3문장으로 먼저 요약하세요(AI 검색이 인용하기 좋은 구조).
+5. 사실 기준: 인천공항에는 공식 'Fast Track' 상품이 없습니다. 우대 출입국 심사는 외교관·APEC 카드 소지자·고령자·7세 이하·거동 불편 등 대상자만 이용하며 대상 여부는 출입국 당국이 결정합니다. 그 외에는 최단 동선으로 '대기줄 진입 후 20분 이내를 목표'로 안내합니다. 시간 단축을 보장한다고 쓰지 마세요.
+6. 비자·K-ETA 등 입국 요건은 바뀔 수 있으므로 구체적 면제 여부를 단정하지 말고 공식 사이트(k-eta.go.kr 등)에서 확인하라고 안내하세요.
+7. 확인되지 않은 수치(항공편 시간표, 가격, 대기 시간 통계)를 지어내지 마세요. 시차처럼 확실한 사실만 쓰세요.
+8. 홍보보다 실제 공항 이용 팁과 준비 사항 등 가치 있는 정보를 중심으로 쓰세요.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.5-flash-lite',
@@ -1767,7 +1786,7 @@ app.get('/api/cron', async (req, res) => {
     let titleEn = '';
     let contentEn = '';
     try {
-      const enPrompt = `Translate the following blog post into professional English. Keep the markdown formatting exactly as it is.\n\nTitle: ${title}\n\nContent:\n${content}`;
+      const enPrompt = `Translate the following blog post into natural, professional English for international readers (US, UK, India, the Middle East, Germany, Singapore). Keep the markdown formatting exactly as it is, keep every fact unchanged and do not add new claims. Use common search terms such as 'Incheon Airport', 'meet and assist' and 'airport transfer' where they fit naturally.\n\nTitle: ${title}\n\nContent:\n${content}`;
       const enResponse = await ai.models.generateContent({
         model: 'gemini-3.5-flash-lite',
         contents: enPrompt,
@@ -1821,6 +1840,62 @@ ${content.substring(0, 500)}...`;
   } catch (error) {
     console.error('Cron job failed:', error);
     res.status(500).json({ error: 'Failed to generate and publish blog post', details: error.message });
+  }
+});
+
+// --- 블로그 SEO ---
+// /blog/:id, /en/blog/:id 는 vercel.json 에서 이 경로로 보낸다 → 글 제목·본문을 HTML 에 채워 응답
+// (매일 새 글이 생겨 빌드 시 사전 렌더링할 수 없기 때문)
+let spaTemplate = null;
+async function loadSpaTemplate(req) {
+  if (spaTemplate) return spaTemplate;
+  const local = await fs.readFile(path.join(process.cwd(), 'dist', 'spa.html'), 'utf8').catch(() => null);
+  if (local) return (spaTemplate = local);
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const res = await fetch(`${proto}://${req.headers.host}/spa.html`, { signal: AbortSignal.timeout(5000) });
+  if (!res.ok) throw new Error(`spa.html HTTP ${res.status}`);
+  const html = await res.text();
+  if (!html.includes('<div id="root"></div>')) throw new Error('spa.html 형식이 다릅니다');
+  return (spaTemplate = html);
+}
+
+app.get('/api/blog-page/:postId', async (req, res) => {
+  const { postId } = req.params;
+  const lang = req.query.lang === 'en' ? 'en' : 'ko';
+  let template;
+  try {
+    template = await loadSpaTemplate(req);
+  } catch (error) {
+    console.error('Blog page template failed:', error);
+    return res.redirect(302, lang === 'en' ? '/en/blog' : '/blog');
+  }
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  try {
+    const snap = /^[A-Za-z0-9_-]{1,64}$/.test(postId) ? await db.collection('blog_posts').doc(postId).get() : null;
+    if (!snap?.exists || snap.data().published === false) {
+      res.set('Cache-Control', 'public, s-maxage=300');
+      return res.status(404).send(template.replace('</head>', '    <meta name="robots" content="noindex" />\n  </head>'));
+    }
+    res.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=86400');
+    return res.send(renderBlogPage(template, { id: snap.id, ...snap.data() }, lang));
+  } catch (error) {
+    // Firestore 를 못 읽어도 화면은 열리게 빈 셸을 준다 (브라우저가 글을 불러온다)
+    console.error('Blog page render failed:', error);
+    res.set('Cache-Control', 'no-store');
+    return res.send(template);
+  }
+});
+
+app.get('/api/sitemap-blog', async (req, res) => {
+  try {
+    const snap = await db.collection('blog_posts').orderBy('createdAt', 'desc').limit(1000).get();
+    const posts = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.published !== false);
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    res.send(buildBlogSitemap(posts));
+  } catch (error) {
+    console.error('Blog sitemap failed:', error);
+    res.status(503).set('Retry-After', '3600').send('Sitemap temporarily unavailable');
   }
 });
 

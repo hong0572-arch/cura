@@ -19,6 +19,7 @@ import Privacy from './pages/Privacy';
 import Blog from './pages/Blog';
 import BusinessProposal from './pages/BusinessProposal';
 import PrivateJourneys from './pages/PrivateJourneys';
+import TravelFrom from './pages/TravelFrom';
 
 // Admin Components
 // 관리자 화면·예약 위저드는 필요할 때만 불러온다 (첫 화면 JS 용량 절감)
@@ -351,7 +352,7 @@ function App({ initialSiteData = null }) {
   // Render standard Customer Screen
   return (
     <>
-      <SEOMeta lang={lang} path={stripLocale(location.pathname)} translations={content || defaultTranslations} />
+      <SEOMeta lang={lang} path={stripLocale(location.pathname)} translations={content || defaultTranslations} settings={settings} />
       <Navbar lang={lang} setLang={setLang} t={t} />
 
       <main>
@@ -405,6 +406,8 @@ function App({ initialSiteData = null }) {
           <Route path="blog/:postId" element={<Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--ivory)' }} />}><BlogPost lang={lang} /></Suspense>} />
           <Route path="business" element={<BusinessProposal t={t} />} />
           <Route path="private-journeys" element={<PrivateJourneys lang={lang} settings={settings} />} />
+          <Route path="travel-from" element={<TravelFrom lang={lang} settings={settings} />} />
+          <Route path="travel-from/:market" element={<TravelFrom lang={lang} settings={settings} />} />
             </Route>
           ))}
         </Routes>

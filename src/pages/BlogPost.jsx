@@ -112,6 +112,7 @@ export default function BlogPost({ lang }) {
         <link rel="canonical" href={url} />
         <link rel="alternate" hrefLang="ko" href={`${SITE_URL}${path}`} />
         {post.contentEn && <link rel="alternate" hrefLang="en" href={`${SITE_URL}${localizePath(path, 'en')}`} />}
+        <link rel="alternate" hrefLang="x-default" href={`${SITE_URL}${post.contentEn ? localizePath(path, 'en') : path}`} />
         <meta property="og:type" content="article" />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />

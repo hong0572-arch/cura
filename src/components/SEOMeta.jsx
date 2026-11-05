@@ -1,5 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { SITE_URL, localizePath } from '../utils/locale';
+import { BUSINESS as BIZ } from '../content/businessInfo';
+import { MARKET_COUNTRIES, marketCopy, arrivalFromUsd } from '../content/marketsCopy';
 
 // 대표 도메인은 beyondthegate.kr 하나로 통일한다.
 // servicebycura.com 은 beyondthegate.kr 로 리다이렉트만 하며 canonical/hreflang 에 쓰지 않는다.
@@ -44,6 +46,25 @@ const PAGE_META = {
   },
 };
 
+// 해외 손님 안내(/travel-from, /travel-from/:market) — 문구는 content/marketsCopy.js
+function travelMeta(path, lang) {
+  const copy = marketCopy(lang);
+  if (path === '/travel-from') return { title: copy.hub.title, description: copy.hub.description };
+  const market = copy.markets[path.slice('/travel-from/'.length)];
+  return market ? { title: market.title, description: market.description } : null;
+}
+
+const isTravelPath = (path) => path === '/travel-from' || path.startsWith('/travel-from/');
+
+// 관리자 설정의 인천공항 요금(USD) → 구조화 데이터 Offer
+function servicePrices(settings) {
+  const icn = settings?.airports?.find?.(a => a.code === 'ICN');
+  return icn?.services || settings?.servicePrices || {};
+}
+const priceOffer = (usd) => (Number(usd) > 0
+  ? { price: Number(usd), priceCurrency: 'USD', availability: 'https://schema.org/InStock' }
+  : {});
+
 const AIRPORTS = [
   { '@type': 'Airport', name: 'Incheon International Airport', iataCode: 'ICN' },
   { '@type': 'Airport', name: 'Gimpo International Airport', iataCode: 'GMP' },
@@ -52,14 +73,17 @@ const AIRPORTS = [
 // FAQ 답변의 [강조] 표기는 구조화 데이터에서는 제거한다
 const plain = (text = '') => String(text).replace(/[[\]]/g, '');
 
-export default function SEOMeta({ lang, path = '/', translations }) {
+export default function SEOMeta({ lang, path = '/', translations, settings }) {
   // 블로그 글 상세는 BlogPost 가 제목·설명·canonical·구조화 데이터를 직접 넣는다
   if (path.startsWith('/blog/')) {
     return <Helmet htmlAttributes={{ lang }} />;
   }
   const content = translations[lang] || translations.ko;
   const seo = content?.seo || translations.ko.seo;
-  const page = PAGE_META[path]?.[lang];
+  const travel = isTravelPath(path);
+  const page = travel ? travelMeta(path, lang) : PAGE_META[path]?.[lang];
+  // 없는 국가 주소는 색인하지 않는다
+  const noindex = travel && !page;
 
   const title = page ? `${page.title} | ${BUSINESS.name}` : seo.title;
   const description = page?.description || seo.description;
@@ -82,11 +106,17 @@ export default function SEOMeta({ lang, path = '/', translations }) {
     description: translations.en?.seo?.description || seo.description,
     address: {
       '@type': 'PostalAddress',
+      streetAddress: '40-112, Gonghangdong-ro 193beon-gil, Yeongjong-gu',
       addressLocality: 'Incheon',
       addressRegion: 'Incheon',
       addressCountry: 'KR',
     },
-    areaServed: AIRPORTS,
+    legalName: BIZ.company.en,
+    taxID: BIZ.bizNo,
+    areaServed: [...AIRPORTS, { '@type': 'City', name: 'Seoul' }],
+    knowsLanguage: ['en', 'ko'],
+    currenciesAccepted: 'USD, KRW',
+    paymentAccepted: 'PayPal, Credit Card',
     openingHoursSpecification: {
       '@type': 'OpeningHoursSpecification',
       dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
@@ -103,7 +133,18 @@ export default function SEOMeta({ lang, path = '/', translations }) {
     priceRange: '$$$',
   };
 
-  const schemas = [organization];
+  const website = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${SITE_URL}/#website`,
+    name: BUSINESS.name,
+    url: SITE_URL,
+    inLanguage: ['en', 'ko'],
+    publisher: { '@id': `${SITE_URL}/#organization` },
+  };
+
+  const schemas = [organization, website];
+  const prices = servicePrices(settings);
 
   if (path === '/') {
     schemas.push({
@@ -119,9 +160,9 @@ export default function SEOMeta({ lang, path = '/', translations }) {
         '@type': 'OfferCatalog',
         name: lang === 'ko' ? '공항 의전 서비스' : 'Airport services',
         itemListElement: [
-          { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '입국 의전' : 'Arrival Meet & Assist' } },
-          { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '출국 의전' : 'Departure Meet & Assist' } },
-          { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '환승 의전' : 'Transit Assistance' } },
+          { '@type': 'Offer', ...priceOffer(prices.arrival?.usd), itemOffered: { '@type': 'Service', name: lang === 'ko' ? '입국 의전' : 'Arrival Meet & Assist' } },
+          { '@type': 'Offer', ...priceOffer(prices.departure?.usd), itemOffered: { '@type': 'Service', name: lang === 'ko' ? '출국 의전' : 'Departure Meet & Assist' } },
+          { '@type': 'Offer', ...priceOffer(prices.transfer?.usd), itemOffered: { '@type': 'Service', name: lang === 'ko' ? '환승 의전' : 'Transit Assistance' } },
           { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '공항 픽업·샌딩 차량' : 'Airport Chauffeur Transfer' } },
           { '@type': 'Offer', itemOffered: { '@type': 'Service', name: lang === 'ko' ? '외교·정부 인사 및 유명인 공항 의전 협조' : 'Diplomatic, Government & VIP Airport Protocol Coordination' } },
         ],
@@ -143,8 +184,57 @@ export default function SEOMeta({ lang, path = '/', translations }) {
     }
   }
 
+  if (travel && page) {
+    const copy = marketCopy(lang);
+    const slug = path.slice('/travel-from/'.length);
+    const market = path === '/travel-from' ? null : copy.markets[slug];
+    const hubUrl = `${SITE_URL}${localizePath('/travel-from', lang)}`;
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: copy.ui.breadcrumbHome, item: `${SITE_URL}${localizePath('/', lang)}` },
+        { '@type': 'ListItem', position: 2, name: copy.ui.hubCrumb, item: hubUrl },
+        ...(market ? [{ '@type': 'ListItem', position: 3, name: market.eyebrow, item: url }] : []),
+      ],
+    });
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      serviceType: 'Airport VIP Meet and Assist',
+      name: page.title,
+      description,
+      url,
+      provider: { '@id': `${SITE_URL}/#organization` },
+      areaServed: AIRPORTS,
+      availableLanguage: ['English', 'Korean'],
+      ...(market && {
+        audience: {
+          '@type': 'Audience',
+          audienceType: 'International travellers',
+          geographicArea: MARKET_COUNTRIES[slug].map(([name, code]) => ({ '@type': 'Country', name, identifier: code })),
+        },
+      }),
+      ...(arrivalFromUsd(settings) && {
+        offers: { '@type': 'Offer', name: 'Arrival Meet & Assist (up to 3 guests)', ...priceOffer(arrivalFromUsd(settings)) },
+      }),
+    });
+    const faq = [...(market?.faq || []), ...copy.commonFaq];
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      inLanguage: lang,
+      mainEntity: faq.map(item => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    });
+  }
+
   return (
     <Helmet htmlAttributes={{ lang }}>
+      {noindex && <meta name="robots" content="noindex, follow" />}
       <title>{title}</title>
       <meta name="description" content={description} />
       {seo.keywords && <meta name="keywords" content={seo.keywords} />}
@@ -163,6 +253,7 @@ export default function SEOMeta({ lang, path = '/', translations }) {
       <meta property="og:url" content={url} />
       <meta property="og:image" content={image} />
       <meta property="og:locale" content={lang === 'ko' ? 'ko_KR' : 'en_US'} />
+      <meta property="og:locale:alternate" content={lang === 'ko' ? 'en_US' : 'ko_KR'} />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />

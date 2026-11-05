@@ -1,0 +1,75 @@
+/* International travellers — hub and per-country guides (/travel-from) */
+.tf-page { background: var(--ivory); padding-top: 80px; min-height: 100vh; }
+
+.tf-hero { background: var(--navy); padding: 48px 0 72px; }
+.tf-hero .container { max-width: 900px; }
+.tf-crumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; font-size: 0.86rem; color: var(--on-navy-faint); }
+.tf-crumbs a { color: var(--on-navy-muted); text-decoration: none; }
+.tf-crumbs a:hover { color: var(--gold); }
+.tf-hero .btg-eyebrow { color: var(--gold); margin: 0 0 14px; }
+.tf-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(2.1rem, 4.6vw, 3.4rem);
+  line-height: 1.1;
+  color: var(--on-navy);
+  word-break: keep-all;
+}
+.tf-intro { margin: 18px 0 0; max-width: 720px; color: var(--on-navy-muted); font-size: 1.05rem; line-height: 1.75; word-break: keep-all; }
+.tf-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.tf-ghost { color: var(--on-navy); border-color: #3B5277; background: transparent; }
+.tf-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+.tf-body { max-width: 900px; padding-bottom: 96px; }
+
+.tf-facts { margin-top: -36px; position: relative; padding: 24px 28px; box-shadow: var(--shadow-card); }
+.tf-facts-title { margin: 0 0 14px; font: 600 0.78rem/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--champagne); }
+.tf-facts dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 28px; }
+.tf-facts dt { font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 4px; }
+.tf-facts dd { margin: 0; font-weight: 600; color: var(--ink); line-height: 1.5; word-break: keep-all; }
+
+.tf-section { margin-top: 56px; }
+.tf-h2 { margin: 0 0 20px; font-family: var(--font-serif); font-weight: 600; font-size: clamp(1.7rem, 3vw, 2.2rem); line-height: 1.2; color: var(--ink); }
+.tf-h3 { margin: 0 0 14px; font-family: var(--font-serif); font-weight: 600; font-size: 1.5rem; color: var(--ink); }
+
+.tf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+.tf-card { padding: 22px 22px 24px; }
+.tf-card h3 { margin: 0 0 8px; font-size: 1.06rem; font-weight: 700; color: var(--ink); }
+.tf-card p { margin: 0; color: var(--ink-soft); line-height: 1.65; word-break: keep-all; }
+.tf-card--link { display: flex; flex-direction: column; gap: 10px; color: var(--ink); text-decoration: none; transition: transform 0.3s var(--ease-out), box-shadow 0.3s ease; }
+.tf-card--link:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
+.tf-card-eyebrow { font: 500 0.74rem/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--champagne); }
+.tf-card-title { font-family: var(--font-serif); font-weight: 600; font-size: 1.3rem; line-height: 1.25; word-break: keep-all; }
+.tf-card-more { margin-top: auto; font-weight: 700; color: var(--champagne); font-size: 0.92rem; }
+
+.tf-tips { margin: 0; padding-left: 1.3em; line-height: 1.8; color: #2E2A23; word-break: keep-all; }
+.tf-tips li { margin-bottom: 0.5em; }
+.tf-tips li::marker { color: var(--champagne); }
+
+.tf-native { margin-top: 40px; padding: 24px 28px; border-left: 3px solid var(--gold); }
+.tf-native[dir="rtl"] { border-left: 1px solid var(--line); border-right: 3px solid var(--gold); }
+.tf-native p { margin: 0; line-height: 1.8; color: #2E2A23; }
+
+.tf-faq { display: flex; flex-direction: column; gap: 10px; }
+.tf-faq details { padding: 0 22px; }
+.tf-faq summary { cursor: pointer; padding: 18px 0; font-weight: 700; color: var(--ink); line-height: 1.45; word-break: keep-all; }
+.tf-faq summary::marker { color: var(--champagne); }
+.tf-faq details p { margin: 0 0 20px; color: var(--ink-soft); line-height: 1.75; word-break: keep-all; }
+
+.tf-others { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.tf-others a { display: inline-block; padding: 10px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); color: var(--ink); text-decoration: none; font-weight: 600; font-size: 0.92rem; }
+.tf-others a:hover { border-color: var(--champagne); color: var(--champagne); }
+
+.tf-closing { margin-top: 64px; padding: 30px; display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: center; justify-content: space-between; }
+.tf-closing > div:first-child { flex: 1 1 380px; min-width: 0; }
+.tf-closing-title { margin: 0; font-family: var(--font-serif); font-weight: 500; font-size: 1.9rem; line-height: 1.15; color: var(--on-navy); word-break: keep-all; }
+.tf-closing p { margin: 10px 0 0; color: var(--on-navy-muted); line-height: 1.65; word-break: keep-all; }
+.tf-closing .tf-actions { margin-top: 0; }
+
+.tf-missing { padding: 120px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+@media (max-width: 600px) {
+  .tf-facts, .tf-native { padding: 20px; }
+  .tf-closing { padding: 24px 20px; }
+}
