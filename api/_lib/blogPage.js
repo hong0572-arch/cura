@@ -1,6 +1,6 @@
 // 블로그 글(/blog/:id, /en/blog/:id)을 검색엔진·AI 크롤러가 읽을 수 있게 서버에서 HTML 머리말과 본문을 채운다.
 // 글은 매일 cron 으로 늘어나 빌드 시 사전 렌더링할 수 없으므로 요청 때 spa.html 에 끼워 넣는다.
-// - <head>: 제목·설명·canonical·hreflang·OG·Article JSON-LD (data-rh 를 붙여 화면이 뜨면 Helmet 이 교체)
+// - <head>: 제목·설명·canonical·hreflang·OG·Article JSON-LD (data-rh 표시 — 화면이 뜨면 main.jsx 가 지우고 Helmet 이 다시 넣는다)
 // - 본문: #root 밖의 <article id="prerender-post"> — 브라우저에서는 main.jsx 가 시작할 때 지운다
 import { blogImages, excerpt, postTitle, postBody } from '../../src/utils/blogImages.js';
 
@@ -89,7 +89,7 @@ export function renderBlogPage(template, post, lang) {
 
   const rh = 'data-rh="true"';
   const head = [
-    `<title>${escapeHtml(`${title} | Beyond the Gate`)}</title>`,
+    `<title ${rh}>${escapeHtml(`${title} | Beyond the Gate`)}</title>`,
     `<meta ${rh} name="description" content="${escapeHtml(description)}" />`,
     `<link ${rh} rel="canonical" href="${url}" />`,
     `<link ${rh} rel="alternate" hreflang="ko" href="${koUrl}" />`,
@@ -102,7 +102,7 @@ export function renderBlogPage(template, post, lang) {
     `<meta ${rh} property="og:url" content="${url}" />`,
     `<meta ${rh} property="og:image" content="${escapeHtml(absolute(cover))}" />`,
     `<meta ${rh} name="twitter:card" content="summary_large_image" />`,
-    `<script type="application/ld+json">${safeJson(article)}</script>`,
+    `<script ${rh} type="application/ld+json">${safeJson(article)}</script>`,
   ].filter(Boolean).join('\n    ');
 
   const staticArticle = `<article id="prerender-post" lang="${lang}"><h1>${escapeHtml(title)}</h1>\n${markdownToHtml(body)}</article>`;

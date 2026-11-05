@@ -20,8 +20,13 @@ const app = (
   </StrictMode>
 )
 
-// 블로그 글은 서버가 크롤러용 본문(#prerender-post)을 함께 보낸다 (api/_lib/blogPage.js) — 앱이 그리므로 지운다
-document.getElementById('prerender-post')?.remove()
+// 블로그 글은 서버가 크롤러용 본문(#prerender-post)과 머리말(data-rh)을 함께 보낸다 (api/_lib/blogPage.js)
+// — 앱(Helmet)이 같은 내용을 다시 넣으므로 지워 중복을 막는다
+const prerenderPost = document.getElementById('prerender-post')
+if (prerenderPost) {
+  prerenderPost.remove()
+  document.querySelectorAll('head [data-rh]').forEach(el => el.remove())
+}
 
 const container = document.getElementById('root')
 if (container.hasChildNodes()) {
