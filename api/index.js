@@ -1844,8 +1844,9 @@ ${content.substring(0, 500)}...`;
 });
 
 // --- 블로그 SEO ---
-// /blog/:id, /en/blog/:id 는 vercel.json 에서 이 경로로 보낸다 → 글 제목·본문을 HTML 에 채워 응답
-// (매일 새 글이 생겨 빌드 시 사전 렌더링할 수 없기 때문)
+// /blog/:id, /en/blog/:id, /sitemap-blog.xml 은 vercel.json 에서 /api/index.js 로 보낸다
+// (Vercel rewrite 는 이어지지 않으므로 목적지는 함수 파일이어야 하고, Express 는 원래 주소를 받는다)
+// → 글 제목·본문을 HTML 에 채워 응답 (매일 새 글이 생겨 빌드 시 사전 렌더링할 수 없기 때문)
 let spaTemplate = null;
 async function loadSpaTemplate(req) {
   if (spaTemplate) return spaTemplate;
@@ -1859,9 +1860,9 @@ async function loadSpaTemplate(req) {
   return (spaTemplate = html);
 }
 
-app.get('/api/blog-page/:postId', async (req, res) => {
+app.get(['/blog/:postId', '/en/blog/:postId', '/api/blog-page/:postId'], async (req, res) => {
   const { postId } = req.params;
-  const lang = req.query.lang === 'en' ? 'en' : 'ko';
+  const lang = req.path.startsWith('/en/') || req.query.lang === 'en' ? 'en' : 'ko';
   let template;
   try {
     template = await loadSpaTemplate(req);
@@ -1886,7 +1887,7 @@ app.get('/api/blog-page/:postId', async (req, res) => {
   }
 });
 
-app.get('/api/sitemap-blog', async (req, res) => {
+app.get(['/sitemap-blog.xml', '/api/sitemap-blog'], async (req, res) => {
   try {
     const snap = await db.collection('blog_posts').orderBy('createdAt', 'desc').limit(1000).get();
     const posts = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(p => p.published !== false);
